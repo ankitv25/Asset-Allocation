@@ -40,7 +40,7 @@ body.app { background: var(--bg); color: var(--text); font-family: var(--font);
 .appbar-status { margin-left: auto; font-size: 0.78rem; color: #9fb2c4; font-family: var(--mono); }
 
 /* KPI ribbon */
-.kpi-ribbon { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--line);
+.kpi-ribbon { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line);
   border-bottom: 1px solid var(--line); }
 .kpi { background: var(--panel); padding: 0.85rem 1.25rem; }
 .kpi-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
@@ -181,9 +181,40 @@ table.dtbl .z { color: var(--muted); }
 footer.status { max-width: 1320px; margin: 0 auto; padding: 1rem 1.5rem 2rem; font-size: 0.74rem;
   color: var(--muted); }
 
+/* ---- Iteration 3: Attribution page, 9x9 matrix, rebased growth, polish ---- */
+
+/* Page intro header (gives each page a title + question, not just charts) */
+.page-intro { margin: 0.4rem 0 1.1rem; }
+.page-intro h1 { font-size: 1.35rem; font-weight: 750; color: var(--navy); margin: 0 0 0.25rem;
+  letter-spacing: 0.01em; }
+.page-intro p { font-size: 0.92rem; line-height: 1.5; color: #4a5763; margin: 0; max-width: 70ch; }
+.page-intro strong { color: var(--navy); }
+
+/* Feature tiles — a stronger accent rail for the most important sections */
+.tile-feature { border-top: 3px solid var(--accent); }
+
+/* Rebase / control chips row */
+.growth-controls .chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+.muted-note { font-size: 0.8rem; color: #55636f; line-height: 1.45; }
+.muted-note strong { color: var(--navy); }
+
+/* 9x9 cross-sectional metric grid (heat-shaded) */
+table.matrix-tbl td.num { color: var(--ink); font-weight: 600; }
+table.matrix-tbl th, table.matrix-tbl td { border-bottom: 2px solid #fff; padding: 0.5rem 0.55rem; }
+table.matrix-tbl tr.hl td { outline: 1.5px solid var(--accent); outline-offset: -1.5px; }
+
+/* Bigstats wrap to a row when used as a stat strip */
+.statrow .bigstat { background: #f6f8fb; }
+
+@media (min-width: 1500px) {
+  .db, footer.status { max-width: 1460px; }
+  .kpi-value { font-size: 1.42rem; }
+}
+
 @media (max-width: 1000px) {
   .kpi-ribbon { grid-template-columns: repeat(3, 1fr); }
   .grid-2, .grid-3, .grid-3-2 { grid-template-columns: 1fr; }
   .appnav { display: none; }
   .scenario-strip { grid-template-columns: repeat(2, 1fr); }
+  .page-intro h1 { font-size: 1.15rem; }
 }

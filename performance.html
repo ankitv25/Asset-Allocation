@@ -15,6 +15,7 @@
     <a href="index.html">Overview</a>
     <a href="construction.html">Construction</a>
     <a href="performance.html" class="active">Performance</a>
+    <a href="attribution.html">Attribution</a>
     <a href="risk.html">Risk</a>
     <a href="stress.html">Stress</a>
   </nav>
@@ -43,7 +44,10 @@
   <section class="grid grid-1">
     <article class="tile">
       <div class="tile-head"><h2>Growth of $1 — net of cost</h2>
-        <span class="tile-sub" id="perf-window">use the range buttons / slider to zoom · scroll to zoom · drag to pan</span></div>
+        <span class="tile-sub" id="growth-rebase-label">rebased to $1 at inception</span></div>
+      <div class="muted-note">Pick a start date to <strong>rebase every series to $1</strong> from that
+        point — then use the slider to pan/zoom. <span class="tile-sub" id="perf-window"></span></div>
+      <div class="chips growth-controls" id="growth-controls" style="margin:.5rem 0 .7rem"></div>
       <div id="growth-chart" class="chart chart-xl"></div>
       <h3 class="mini-head">Drawdown — strategic vs dynamic</h3>
       <div id="growth-dd" class="chart chart-md"></div>

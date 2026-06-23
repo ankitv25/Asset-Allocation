@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Attribution — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="construction.html">Construction</a>
+    <a href="performance.html">Performance</a>
+    <a href="attribution.html" class="active">Attribution</a>
+    <a href="risk.html">Risk</a>
+    <a href="stress.html">Stress</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <div class="page-intro">
+    <h1>Attribution</h1>
+    <p>Where the return and risk came from — and the central question: <strong>what did the dynamic
+      allocation process (DAA) add beyond the strategic policy (SAA)?</strong>
+      <span class="tile-sub" id="attr-window"></span></p>
+  </div>
+
+  <!-- 1. THE CENTRAL QUESTION: SAA -> DAA value-add -->
+  <section class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>What the dynamic process added — by layer</h2>
+        <span class="tile-sub">net active vs strategic policy, decomposed into each moving part (bp / yr)</span></div>
+      <div class="statrow" id="attr-active-stats"></div>
+      <div id="attr-layer-chart" class="chart chart-lg"></div>
+      <p class="read" id="attr-layer-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Active return by sleeve</h2>
+        <span class="tile-sub">DAA vs SAA weight × return (bp / yr)</span></div>
+      <div id="attr-sleeve-chart" class="chart chart-lg"></div>
+      <p class="read">Which active over/under-weights paid. The dynamic process holds the same sleeves as the
+        policy; only the weights differ, so this is pure allocation timing.</p>
+    </article>
+  </section>
+
+  <!-- 2. Regime / market-state aware (full width — the punchline) -->
+  <section class="grid grid-1">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Where the value-add is earned — by market state</h2>
+        <span class="tile-sub">active return conditioned on realized equity state & macro regime (bp / yr)</span></div>
+      <div id="attr-regime-chart" class="chart chart-lg"></div>
+      <p class="read" id="attr-regime-read"></p>
+    </article>
+  </section>
+
+  <!-- 3. Return attribution -->
+  <section class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Return attribution — by sleeve</h2>
+        <span class="tile-sub">contribution to the dynamic book's return (bp / yr, colored by block)</span></div>
+      <div id="attr-return-chart" class="chart chart-lg"></div>
+      <p class="read" id="attr-return-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>By asset-class block</h2></div>
+      <div class="bigstats" id="attr-block"></div>
+    </article>
+  </section>
+
+  <!-- 4. Risk attribution -->
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Risk attribution — capital vs risk share</h2>
+        <span class="tile-sub">contribution to portfolio volatility per sleeve</span></div>
+      <div id="attr-risk-sleeve-chart" class="chart chart-md"></div>
+      <p class="read" id="attr-risk-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Risk by macro factor</h2>
+        <span class="tile-sub">share of variance driven by each factor</span></div>
+      <div id="attr-risk-factor-chart" class="chart chart-md"></div>
+    </article>
+  </section>
+
+  <!-- 5. Benchmark-relative vs 60/40 -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Benchmark-relative attribution — DAA vs 60/40</h2>
+        <span class="tile-sub">realized active return decomposed through a common macro-factor lens (bp / yr)</span></div>
+      <div id="attr-bench-chart" class="chart chart-md"></div>
+      <p class="read" id="attr-bench-read"></p>
+    </article>
+  </section>
+
+  <!-- 6. 9x9 cross-sectional matrix -->
+  <section class="grid grid-3-2">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Where every book stands — risk vs return</h2>
+        <span class="tile-sub">up-and-left is better · bubble size = max drawdown</span></div>
+      <div id="matrix-scatter" class="chart chart-xl"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Cross-sectional metric grid</h2>
+        <span class="tile-sub">greener = better in that column</span></div>
+      <div id="matrix-grid"></div>
+      <p class="read" id="matrix-read"></p>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

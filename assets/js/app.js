@@ -369,23 +369,55 @@ function _lineTraces(c, keys, dateField) {
 
 function renderGrowth(c) {
   if (!el("growth-chart")) return;
-  // annual rebalance markers (faint vertical lines at each January)
   const dates = c.series["DAA"].map(p => p.date);
-  const years = [...new Set(dates.map(d => d.slice(0, 4)))];
-  const shapes = years.map(y => ({ type: "line", x0: `${y}-01-01`, x1: `${y}-01-01`, yref: "paper",
-    y0: 0, y1: 1, line: { color: "rgba(15,34,51,0.06)", width: 1 } }));
-  Plotly.newPlot("growth-chart", _lineTraces(c, c.order), {
-    ...BASE, margin: { l: 50, r: 14, t: 10, b: 16 }, shapes,
-    legend: { orientation: "h", y: 1.12, font: { size: 10 } },
-    xaxis: { type: "date", rangeslider: { visible: true, thickness: 0.07 },
-      rangeselector: { buttons: [
-        { count: 1, label: "1Y", step: "year", stepmode: "backward" },
-        { count: 3, label: "3Y", step: "year", stepmode: "backward" },
-        { count: 5, label: "5Y", step: "year", stepmode: "backward" },
-        { count: 10, label: "10Y", step: "year", stepmode: "backward" },
-        { step: "all", label: "All" }], font: { size: 10 }, y: 1.12, x: 0 } },
-    yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$" },
-  }, { ...CFG, scrollZoom: true });
+  const firstDate = dates[0];
+  const years = [...new Set(dates.map(d => +d.slice(0, 4)))];
+
+  // Rebase: pick any start date and restate every series to $1 from THAT point
+  // (this is the whole point — panning a slider does not reset the $1 base).
+  // Preset starts: inception + the start of each crisis/cycle the user cares about.
+  const presetYears = [+firstDate.slice(0, 4), 2010, 2013, 2016, 2018, 2020, 2022, 2024];
+  const presets = [...new Set(presetYears)].sort((a, b) => a - b)
+    .map(y => dates.find(d => +d.slice(0, 4) >= y)).filter(Boolean);
+
+  const plotFrom = (startDate, logScale) => {
+    const traces = c.order.map(k => {
+      const s = c.series[k].filter(p => p.date >= startDate);
+      if (!s.length) return null;
+      const base = s[0].v;
+      return { type: "scatter", mode: "lines", name: k, x: s.map(p => p.date), y: s.map(p => p.v / base),
+        line: { width: CMP_WIDTH[k] || 1.3, color: CMP_COLOR[k] },
+        hovertemplate: k + " $%{y:.2f}<extra></extra>" };
+    }).filter(Boolean);
+    const shapes = years.filter(y => `${y}-01-01` >= startDate).map(y => ({
+      type: "line", x0: `${y}-01-01`, x1: `${y}-01-01`, yref: "paper", y0: 0, y1: 1,
+      line: { color: "rgba(15,34,51,0.05)", width: 1 } }));
+    Plotly.react("growth-chart", traces, {
+      ...BASE, margin: { l: 54, r: 16, t: 10, b: 18 }, shapes,
+      legend: { orientation: "h", y: 1.1, font: { size: 10 } },
+      xaxis: { type: "date", rangeslider: { visible: true, thickness: 0.06 } },
+      yaxis: { ...BASE.yaxis, type: logScale ? "log" : "linear", tickprefix: "$",
+        title: { text: `$1 at ${startDate.slice(0, 7)}`, font: { size: 10, color: C.muted } } },
+    }, { ...CFG, scrollZoom: true });
+    if (el("growth-rebase-label"))
+      el("growth-rebase-label").textContent = `rebased to $1 at ${startDate.slice(0, 7)}`;
+  };
+
+  let logScale = true;
+  if (el("growth-controls")) {
+    el("growth-controls").innerHTML =
+      presets.map((d, i) => `<span class="chip clickable ${i === 0 ? "sel" : ""}" data-d="${d}">${d.slice(0, 7)}</span>`).join("")
+      + `<span class="chip clickable" id="growth-logtoggle" style="margin-left:.6rem">log scale ✓</span>`;
+    const setSel = (node) => [...el("growth-controls").querySelectorAll("[data-d]")]
+      .forEach(ch => ch.classList.toggle("sel", ch === node));
+    [...el("growth-controls").querySelectorAll("[data-d]")].forEach(ch =>
+      ch.addEventListener("click", () => { setSel(ch); plotFrom(ch.dataset.d, logScale); }));
+    el("growth-logtoggle").addEventListener("click", function () {
+      logScale = !logScale; this.textContent = `log scale ${logScale ? "✓" : "✗"}`;
+      const cur = el("growth-controls").querySelector(".sel"); plotFrom(cur ? cur.dataset.d : firstDate, logScale);
+    });
+  }
+  plotFrom(firstDate, logScale);
 
   // drawdown overlay (SAA vs DAA)
   if (el("growth-dd")) {
@@ -570,6 +602,145 @@ function renderForwardStress(sf) {
   }
 }
 
+// ================= Attribution (Attribution page) =================
+const BLOCK_OF = CODE_BLOCK;
+function _barH(id, rows, xf, yf, colorf, suffix, extraLayout) {
+  Plotly.newPlot(id, [{ type: "bar", orientation: "h", x: rows.map(xf), y: rows.map(yf),
+    marker: { color: rows.map(colorf) }, text: rows.map(r => { const v = xf(r); return (v >= 0 ? "+" : "") + v.toFixed(0); }),
+    textposition: "auto", textfont: { size: 10 },
+    hovertemplate: "%{y}: %{x:.0f}" + suffix + "<extra></extra>" }],
+    { ...BASE, margin: { l: 150, r: 16, t: 8, b: 28 }, yaxis: { ...BASE.yaxis, autorange: "reversed" },
+      xaxis: { ...BASE.xaxis, ticksuffix: suffix, zeroline: true, zerolinecolor: "#c5cfd9" },
+      ...(extraLayout || {}) }, CFG);
+}
+
+function renderAttribution(a) {
+  if (!el("attr-layer-chart")) return;
+  if (el("attr-window")) el("attr-window").textContent = a.window;
+  const act = a.active_attr;
+
+  // headline tiles
+  if (el("attr-active-stats")) {
+    const net = act.net_active_bp;
+    el("attr-active-stats").innerHTML = `
+      <div class="bigstat"><div class="bigstat-v">${net >= 0 ? "+" : ""}${net}bp</div>
+        <div class="bigstat-l">Net active / yr vs strategic policy</div>
+        <div class="bigstat-h">compound, net of cost</div></div>
+      <div class="bigstat"><div class="bigstat-v">${act.arith_gross_bp >= 0 ? "+" : ""}${act.arith_gross_bp}bp</div>
+        <div class="bigstat-l">From the active bets (arithmetic)</div>
+        <div class="bigstat-h">regime + tilt + risk budget</div></div>
+      <div class="bigstat"><div class="bigstat-v">${(net - act.arith_gross_bp) >= 0 ? "+" : ""}${(net - act.arith_gross_bp).toFixed(0)}bp</div>
+        <div class="bigstat-l">From lower volatility</div>
+        <div class="bigstat-h">compounding + cost, the real lever</div></div>`;
+  }
+
+  // SAA -> DAA active by dynamic layer — waterfall
+  const L = act.layers;
+  Plotly.newPlot("attr-layer-chart", [{
+    type: "waterfall", orientation: "v",
+    x: L.map(l => l.layer).concat(["Net active"]),
+    measure: L.map(() => "relative").concat(["total"]),
+    y: L.map(l => l.contrib_bp).concat([act.net_active_bp]),
+    text: L.map(l => (l.contrib_bp >= 0 ? "+" : "") + l.contrib_bp).concat([(act.net_active_bp >= 0 ? "+" : "") + act.net_active_bp]),
+    textposition: "outside", textfont: { size: 10 },
+    connector: { line: { color: "#c5cfd9" } },
+    increasing: { marker: { color: C.pos } }, decreasing: { marker: { color: C.neg } },
+    totals: { marker: { color: C.navy } },
+    hovertemplate: "%{x}: %{y:+.0f}bp/yr<extra></extra>",
+  }], { ...BASE, margin: { l: 44, r: 12, t: 16, b: 60 },
+    xaxis: { ...BASE.xaxis, tickangle: -25, tickfont: { size: 10 } },
+    yaxis: { ...BASE.yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
+  if (el("attr-layer-read")) el("attr-layer-read").innerHTML = act.narrative;
+
+  // active by sleeve
+  if (el("attr-sleeve-chart"))
+    _barH("attr-sleeve-chart", act.sleeves, r => r.contrib_bp, r => r.sleeve,
+      r => r.contrib_bp >= 0 ? C.pos : C.neg, "bp");
+
+  // return attribution by sleeve (colored by block)
+  const ret = a.return_attr;
+  if (el("attr-return-chart"))
+    _barH("attr-return-chart", ret.sleeves, r => r.contrib_bp, r => r.sleeve,
+      r => codeColor(r.key), "bp");
+  if (el("attr-return-read")) el("attr-return-read").innerHTML = ret.narrative;
+  if (el("attr-block")) el("attr-block").innerHTML = ret.blocks.map(b =>
+    `<div class="bigstat"><div class="bigstat-v" style="color:${BLOCK_COLOR[b.block]}">${(b.contrib_bp/100).toFixed(2)}%</div>
+      <div class="bigstat-l">${b.block} block / yr</div>
+      <div class="bigstat-h">${b.contrib_pct_of_total}% of total return</div></div>`).join("");
+
+  // risk attribution
+  const rk = a.risk_attr;
+  if (el("attr-risk-sleeve-chart"))
+    Plotly.newPlot("attr-risk-sleeve-chart", [
+      { type: "bar", orientation: "h", name: "Capital", x: rk.sleeves.map(s => s.capital), y: rk.sleeves.map(s => s.sleeve),
+        marker: { color: "#c5d4e2" }, hovertemplate: "%{y} capital %{x:.0f}%<extra></extra>" },
+      { type: "bar", orientation: "h", name: "Risk share", x: rk.sleeves.map(s => s.risk_share), y: rk.sleeves.map(s => s.sleeve),
+        marker: { color: rk.sleeves.map(s => codeColor(s.key)) }, hovertemplate: "%{y} risk %{x:.0f}%<extra></extra>" },
+    ], { ...BASE, barmode: "group", margin: { l: 150, r: 14, t: 22, b: 28 },
+      legend: { orientation: "h", y: 1.18, font: { size: 10 } },
+      yaxis: { ...BASE.yaxis, autorange: "reversed" }, xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
+  if (el("attr-risk-factor-chart"))
+    _barH("attr-risk-factor-chart", rk.factors, r => r.risk_share, r => r.factor,
+      r => r.factor === "Equity" ? C.navy : C.accent, "%", { margin: { l: 80, r: 14, t: 8, b: 28 } });
+  if (el("attr-risk-read")) el("attr-risk-read").innerHTML = rk.narrative;
+
+  // regime / market-state aware
+  const rg = a.regime_attr;
+  if (el("attr-regime-chart")) {
+    const buckets = rg.states.concat(rg.macro);
+    Plotly.newPlot("attr-regime-chart", [{
+      type: "bar", x: buckets.map(b => b.regime.replace(/ \(.*\)/, "")), y: buckets.map(b => b.active_bp),
+      marker: { color: buckets.map(b => b.active_bp >= 0 ? C.pos : C.neg) },
+      text: buckets.map(b => (b.active_bp >= 0 ? "+" : "") + b.active_bp), textposition: "outside", textfont: { size: 10 },
+      hovertemplate: "%{x}: %{y:+.0f}bp/yr active (n=%{customdata})<extra></extra>",
+      customdata: buckets.map(b => b.months),
+    }], { ...BASE, margin: { l: 44, r: 12, t: 18, b: 70 },
+      xaxis: { ...BASE.xaxis, tickangle: -25, tickfont: { size: 9 } },
+      yaxis: { ...BASE.yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
+  }
+  if (el("attr-regime-read")) el("attr-regime-read").innerHTML = rg.narrative;
+
+  // benchmark-relative vs 60/40
+  const bm = a.benchmark_attr;
+  if (el("attr-bench-chart"))
+    _barH("attr-bench-chart", bm.factors, r => r.contrib_bp, r => r.factor,
+      r => r.contrib_bp >= 0 ? C.pos : C.neg, "bp", { margin: { l: 130, r: 14, t: 8, b: 28 } });
+  if (el("attr-bench-read")) el("attr-bench-read").innerHTML = bm.narrative;
+}
+
+// ================= 9x9 cross-sectional matrix (Compare page) =================
+function render9x9(m) {
+  if (!el("matrix-scatter")) return;
+  // risk-return scatter; bubble size = |max drawdown|
+  const s = m.scatter;
+  const sizes = s.map(d => Math.abs(d.maxdd));
+  const smax = Math.max(...sizes);
+  Plotly.newPlot("matrix-scatter", [{
+    type: "scatter", mode: "markers+text", x: s.map(d => d.vol), y: s.map(d => d.cagr),
+    text: s.map(d => d.name), textposition: "top center", textfont: { size: 10, color: C.navy },
+    marker: { size: sizes.map(v => 14 + (v / smax) * 34), sizemode: "diameter",
+      color: s.map(d => CMP_COLOR[d.name] || C.accent), opacity: 0.82, line: { color: "#fff", width: 1.5 } },
+    customdata: s.map(d => [d.sharpe, d.maxdd]),
+    hovertemplate: "<b>%{text}</b><br>CAGR %{y:.1f}% · Vol %{x:.1f}%<br>Sharpe %{customdata[0]} · Max DD %{customdata[1]:.1f}%<extra></extra>",
+  }], { ...BASE, margin: { l: 50, r: 18, t: 12, b: 42 },
+    xaxis: { ...BASE.xaxis, title: { text: "Volatility (risk) →", font: { size: 11, color: C.muted } }, ticksuffix: "%" },
+    yaxis: { ...BASE.yaxis, title: { text: "CAGR (return) →", font: { size: 11, color: C.muted } }, ticksuffix: "%" } }, CFG);
+
+  if (el("matrix-grid")) {
+    const shade = (rank) => `rgba(47,125,94,${(0.10 + rank * 0.55).toFixed(2)})`;
+    el("matrix-grid").innerHTML = `<table class="dtbl matrix-tbl"><thead><tr><th>Portfolio / benchmark</th>`
+      + m.columns.map(c => `<th class="num">${c}</th>`).join("") + `</tr></thead><tbody>`
+      + m.grid.map(row => {
+          const hl = row.name === "DAA" ? "hl" : "";
+          const tag = row.kind === "portfolio" ? `<span class="kindtag">${row.name === "DAA" ? "dynamic" : "strategic"}</span>` : "";
+          return `<tr class="${hl}"><td><span class="swatch" style="background:${CMP_COLOR[row.name]}"></span><b>${row.name}</b> ${tag}</td>`
+            + row.cells.map(c => `<td class="num" style="background:${shade(c.rank)}">${c.value == null ? "–" : c.value + c.suffix}</td>`).join("")
+            + `</tr>`;
+        }).join("") + `</tbody></table>`;
+  }
+  if (el("matrix-read")) el("matrix-read").innerHTML = m.narrative;
+}
+
 async function main() {
   try {
     const d = await load();
@@ -586,6 +757,8 @@ async function main() {
     if (d.risk_detail) renderRiskDetail(d.risk_detail);
     if (el("stress-chart") && d.stress) renderStress(d.stress);
     if (d.stress_forward) renderForwardStress(d.stress_forward);
+    if (d.attribution && el("attr-layer-chart")) renderAttribution(d.attribution);
+    if (d.matrix && el("matrix-scatter")) render9x9(d.matrix);
     if (el("scenario-strip")) renderScenarios(d.scenarios);
     if (el("status-footer")) el("status-footer").textContent =
       `Generated ${d.generated} from the live portfolio-construction pipeline and its walk-forward backtest. `
