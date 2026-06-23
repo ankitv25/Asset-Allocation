@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Multi-Asset Portfolio — Monitor</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<!-- Local Plotly + embedded data so the dashboard opens by double-click (file://),
+     with no server and no internet required. -->
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <nav class="appnav">
+    <a href="#allocation">Allocation</a>
+    <a href="#construction">Construction</a>
+    <a href="#risk">Risk</a>
+    <a href="#diversification">Diversification</a>
+    <a href="#performance">Performance</a>
+    <a href="#stress">Stress</a>
+    <a href="#outlook">Outlook</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <!-- ALLOCATION -->
+  <section id="allocation" class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Asset allocation</h2><span class="tile-sub" id="alloc-sub"></span></div>
+      <div id="alloc-donut" class="chart chart-donut"></div>
+      <p class="read" id="alloc-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Positioning</h2><span class="tile-sub" id="pos-sub"></span></div>
+      <div class="posboard" id="pos-board"></div>
+      <div class="blockbar" id="pos-blockbar"></div>
+      <div class="chips" id="pos-bets"></div>
+      <p class="read" id="pos-read"></p>
+    </article>
+  </section>
+
+  <!-- CONSTRUCTION -->
+  <section id="construction" class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>How the portfolio is built</h2>
+        <span class="tile-sub" id="cons-sub"></span></div>
+      <div class="grid grid-3-2">
+        <div id="holdings-treemap" class="chart chart-tree"></div>
+        <div class="sidepanel">
+          <h3 class="mini-head">Sleeve thesis</h3>
+          <div class="thesis-pick" id="thesis-pick"></div>
+          <p class="thesis-text" id="thesis-text"></p>
+          <div class="flags-compact" id="cons-flags"></div>
+        </div>
+      </div>
+      <p class="read">Sized by weight, coloured by block. Click a sleeve chip to read why it is built that way.
+        The hierarchy is <strong>instrument → sleeve → block → portfolio</strong>; every holding traces to a role.</p>
+    </article>
+  </section>
+
+  <!-- RISK -->
+  <section id="risk" class="grid grid-3">
+    <article class="tile">
+      <div class="tile-head"><h2>Volatility vs budget</h2></div>
+      <div id="vol-gauge" class="chart chart-sm"></div>
+      <p class="read" id="vol-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Risk by factor</h2></div>
+      <div id="factor-chart" class="chart chart-sm"></div>
+      <p class="read" id="factor-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Capital vs risk share</h2></div>
+      <div id="riskcontrib-chart" class="chart chart-sm"></div>
+      <p class="read">Sleeves whose risk bar exceeds their capital bar consume risk disproportionately.</p>
+    </article>
+  </section>
+
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Where risk sits — by instrument</h2>
+        <span class="tile-sub">from the 27-instrument covariance (Layer 3)</span></div>
+      <div id="instrument-risk-chart" class="chart chart-md"></div>
+      <p class="read">Contribution to total portfolio risk vs capital weight, per holding — the bottom-up risk view the sleeve chart cannot show.</p>
+    </article>
+  </section>
+
+  <!-- DIVERSIFICATION -->
+  <section id="diversification" class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Correlation &amp; diversification</h2>
+        <span class="tile-sub">sleeve correlation matrix (full-history)</span></div>
+      <div id="corr-heatmap" class="chart chart-md"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Is it actually diversified?</h2></div>
+      <div class="bigstats" id="div-stats"></div>
+      <p class="read" id="div-read"></p>
+    </article>
+  </section>
+
+  <!-- PERFORMANCE -->
+  <section id="performance" class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Growth of $1 — net of cost</h2><span class="tile-sub" id="perf-window"></span></div>
+      <div id="nav-chart" class="chart chart-lg"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Track record</h2></div>
+      <div id="metrics-table" class="metrics-cards"></div>
+      <p class="read" id="perf-read"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Drawdown — Full System</h2></div>
+      <div id="drawdown-chart" class="chart chart-md"></div>
+      <p class="read" id="dd-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Calendar-year returns</h2></div>
+      <div id="annual-chart" class="chart chart-md"></div>
+    </article>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Trailing returns — annualised</h2></div>
+      <div id="trailing-table"></div>
+      <p class="read">Full System vs 60/40 across standard horizons, net of cost.</p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Deepest drawdowns</h2></div>
+      <div id="dd-table"></div>
+    </article>
+  </section>
+
+  <!-- STRESS -->
+  <section id="stress" class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Stress tests — historical episodes</h2>
+        <span class="tile-sub">realised return across recognised crises, net of cost</span></div>
+      <div id="stress-chart" class="chart chart-md"></div>
+      <div id="stress-table"></div>
+      <p class="read" id="stress-read"></p>
+    </article>
+  </section>
+
+  <!-- OUTLOOK -->
+  <section id="outlook" class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>What moves the portfolio</h2>
+        <span class="tile-sub">regime → stance map · positioning is pre-committed</span></div>
+      <div id="scenario-strip" class="scenario-strip"></div>
+      <p class="read" id="scenario-read"></p>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
