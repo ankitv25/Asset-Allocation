@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Construction — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="construction.html" class="active">Construction</a>
+    <a href="performance.html">Performance</a>
+    <a href="index.html#risk">Risk</a>
+    <a href="index.html#diversification">Diversification</a>
+    <a href="index.html#stress">Stress</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <!-- The construction flow -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>How the portfolio is constructed — from the ground up</h2>
+        <span class="tile-sub" id="cons-sub"></span></div>
+      <div class="flowsteps">
+        <span class="flowstep"><b>1</b> Asset universe</span><span class="flowarrow">→</span>
+        <span class="flowstep"><b>2</b> Sleeves &amp; hierarchy</span><span class="flowarrow">→</span>
+        <span class="flowstep"><b>3</b> Strategic allocation</span><span class="flowarrow">→</span>
+        <span class="flowstep"><b>4</b> Constraints</span><span class="flowarrow">→</span>
+        <span class="flowstep"><b>5</b> Dynamic process</span><span class="flowarrow">→</span>
+        <span class="flowstep"><b>6</b> Final portfolio</span>
+      </div>
+      <p class="read">This page walks the full construction chain — every weight is justified by an
+        investment role, not just an optimizer output.</p>
+    </article>
+  </section>
+
+  <!-- 1. Asset universe -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>1 · Asset universe</h2>
+        <span class="tile-sub">governed instruments: core (policy-weighted) vs tilt (available)</span></div>
+      <div class="ustats" id="universe"></div>
+    </article>
+  </section>
+
+  <!-- 2. Hierarchy / sleeves -->
+  <section class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>2 · Portfolio hierarchy</h2>
+        <span class="tile-sub">instrument → sleeve → block → portfolio (sized by weight)</span></div>
+      <div id="holdings-treemap" class="chart chart-tree"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Sleeve structure &amp; thesis</h2></div>
+      <div class="thesis-pick" id="thesis-pick"></div>
+      <p class="thesis-text" id="thesis-text"></p>
+      <div class="flags-compact" id="cons-flags"></div>
+    </article>
+  </section>
+
+  <!-- 3. Strategic allocation -->
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>3 · Strategic allocation — optimization outputs</h2>
+        <span class="tile-sub">Black-Litterman: equilibrium (CAPM-implied) vs posterior (after views)</span></div>
+      <div id="optimization-chart" class="chart chart-md"></div>
+      <p class="read">Views nudge the equilibrium prior; the posterior expected returns feed the strategic weights.</p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>4 · Constraint framework</h2>
+        <span class="tile-sub">floor → ceiling band per sleeve, with the current weight</span></div>
+      <div id="constraint-chart" class="chart chart-md"></div>
+      <p class="read">Every sleeve sits inside governed floors and ceilings; a marker at a band edge is a binding constraint.</p>
+    </article>
+  </section>
+
+  <!-- 5. Strategic -> Dynamic -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>5 · Strategic → dynamic process</h2>
+        <span class="tile-sub">how the live (DAA) weight is built from the strategic (SAA) baseline</span></div>
+      <div id="bridge-table"></div>
+      <p class="read">SAA baseline → regime stance shift → tactical tilt → final dynamic weight. This is the
+        bridge from the strategic policy to today's live portfolio.</p>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Performance — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="construction.html">Construction</a>
+    <a href="performance.html" class="active">Performance</a>
+    <a href="index.html#risk">Risk</a>
+    <a href="index.html#diversification">Diversification</a>
+    <a href="index.html#stress">Stress</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <!-- SAA vs DAA -->
+  <section class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Strategic vs Dynamic — what the dynamic process added</h2>
+        <span class="tile-sub">SAA = static strategic policy · DAA = full dynamic system</span></div>
+      <div class="statrow" id="value-add"></div>
+      <p class="read" id="cmp-narrative"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Performance &amp; risk vs benchmarks</h2></div>
+      <div id="cmp-metrics"></div>
+    </article>
+  </section>
+
+  <!-- Growth of $1 -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Growth of $1 — net of cost</h2>
+        <span class="tile-sub" id="perf-window">use the range buttons / slider to zoom · scroll to zoom · drag to pan</span></div>
+      <div id="growth-chart" class="chart chart-xl"></div>
+      <h3 class="mini-head">Drawdown — strategic vs dynamic</h3>
+      <div id="growth-dd" class="chart chart-md"></div>
+      <p class="read">Faint vertical lines mark annual rebalances. The dynamic portfolio (DAA, dark) trades
+        a little upside for a markedly shallower drawdown path than the static strategic policy (SAA).</p>
+    </article>
+  </section>
+
+  <!-- Rolling metrics -->
+  <section class="grid grid-3">
+    <article class="tile">
+      <div class="tile-head"><h2>Rolling 12m return</h2></div>
+      <div id="rolling-ret" class="chart chart-sm"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Rolling 12m volatility</h2></div>
+      <div id="rolling-vol" class="chart chart-sm"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Rolling 12m Sharpe</h2></div>
+      <div id="rolling-sharpe" class="chart chart-sm"></div>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

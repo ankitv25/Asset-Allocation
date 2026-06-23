@@ -326,25 +326,171 @@ function renderScenarios(s) {
   el("scenario-read").innerHTML = s.narrative;
 }
 
+// ================= SAA vs DAA vs benchmarks (Performance page) =================
+const CMP_COLOR = { "SAA": "#5b8c9f", "DAA": "#0e2233", "S&P 500": "#c0392b",
+  "60/40": "#d68a13", "Equal-Weight": "#5aa6d4", "All-Equity": "#aab6c2" };
+const CMP_WIDTH = { "SAA": 2.4, "DAA": 3, "S&P 500": 1.6 };
+
+function renderComparison(c) {
+  if (el("value-add")) {
+    const v = c.value_added;
+    el("value-add").innerHTML = `
+      <div class="bigstat"><div class="bigstat-v">${v.sharpe_delta >= 0 ? "+" : ""}${v.sharpe_delta}</div>
+        <div class="bigstat-l">Sharpe added by DAA</div><div class="bigstat-h">dynamic vs static strategic</div></div>
+      <div class="bigstat"><div class="bigstat-v">${v.maxdd_delta >= 0 ? "+" : ""}${v.maxdd_delta}pp</div>
+        <div class="bigstat-l">Shallower max drawdown</div><div class="bigstat-h">DAA vs SAA</div></div>
+      <div class="bigstat"><div class="bigstat-v">${v.vol_delta >= 0 ? "+" : ""}${v.vol_delta}pp</div>
+        <div class="bigstat-l">Volatility difference</div><div class="bigstat-h">DAA vs SAA</div></div>`;
+  }
+  if (el("cmp-narrative")) el("cmp-narrative").innerHTML = c.narrative;
+  if (el("cmp-metrics")) {
+    el("cmp-metrics").innerHTML = `<table class="dtbl"><thead><tr><th>Portfolio / benchmark</th>
+      <th class="num">CAGR</th><th class="num">Vol</th><th class="num">Sharpe</th>
+      <th class="num">Sortino</th><th class="num">Max DD</th></tr></thead><tbody>`
+      + c.metrics.map(m => {
+          const hl = m.name === "DAA" ? "hl" : "";
+          const tag = m.kind === "portfolio" ? `<span class="kindtag">${m.name === "DAA" ? "dynamic" : "strategic"}</span>` : "";
+          return `<tr class="${hl}"><td><span class="swatch" style="background:${CMP_COLOR[m.name]}"></span>
+            <b>${m.name}</b> ${tag}</td><td class="num">${m.cagr}%</td><td class="num">${m.vol}%</td>
+            <td class="num">${m.sharpe}</td><td class="num">${m.sortino}</td>
+            <td class="num neg">${m.maxdd}%</td></tr>`;
+        }).join("") + `</tbody></table>`;
+  }
+}
+
+function _lineTraces(c, keys, dateField) {
+  return keys.map(k => {
+    const s = c.series[k];
+    return { type: "scatter", mode: "lines", name: k, x: s.map(p => p.date), y: s.map(p => p.v),
+      line: { width: CMP_WIDTH[k] || 1.3, color: CMP_COLOR[k] },
+      hovertemplate: k + " $%{y:.2f}<extra></extra>" };
+  });
+}
+
+function renderGrowth(c) {
+  if (!el("growth-chart")) return;
+  // annual rebalance markers (faint vertical lines at each January)
+  const dates = c.series["DAA"].map(p => p.date);
+  const years = [...new Set(dates.map(d => d.slice(0, 4)))];
+  const shapes = years.map(y => ({ type: "line", x0: `${y}-01-01`, x1: `${y}-01-01`, yref: "paper",
+    y0: 0, y1: 1, line: { color: "rgba(15,34,51,0.06)", width: 1 } }));
+  Plotly.newPlot("growth-chart", _lineTraces(c, c.order), {
+    ...BASE, margin: { l: 50, r: 14, t: 10, b: 16 }, shapes,
+    legend: { orientation: "h", y: 1.12, font: { size: 10 } },
+    xaxis: { type: "date", rangeslider: { visible: true, thickness: 0.07 },
+      rangeselector: { buttons: [
+        { count: 1, label: "1Y", step: "year", stepmode: "backward" },
+        { count: 3, label: "3Y", step: "year", stepmode: "backward" },
+        { count: 5, label: "5Y", step: "year", stepmode: "backward" },
+        { count: 10, label: "10Y", step: "year", stepmode: "backward" },
+        { step: "all", label: "All" }], font: { size: 10 }, y: 1.12, x: 0 } },
+    yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$" },
+  }, { ...CFG, scrollZoom: true });
+
+  // drawdown overlay (SAA vs DAA)
+  if (el("growth-dd")) {
+    const traces = ["DAA", "SAA"].map(k => {
+      const s = c.dd_series[k];
+      return { type: "scatter", mode: "lines", name: k, x: s.map(p => p.date), y: s.map(p => p.v),
+        fill: k === "DAA" ? "tozeroy" : "none", fillcolor: "rgba(14,34,51,0.08)",
+        line: { width: k === "DAA" ? 1.4 : 1.2, color: CMP_COLOR[k] },
+        hovertemplate: k + " %{y:.1f}%<extra></extra>" };
+    });
+    Plotly.newPlot("growth-dd", traces, { ...BASE, margin: { l: 50, r: 14, t: 8, b: 28 },
+      legend: { orientation: "h", y: 1.2, font: { size: 10 } },
+      xaxis: { type: "date", dtick: "M24", tickformat: "%Y" },
+      yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
+  }
+}
+
+function renderRolling(c) {
+  const specs = [["rolling-ret", "ret", "%"], ["rolling-vol", "vol", "%"], ["rolling-sharpe", "sharpe", ""]];
+  const keys = ["DAA", "SAA", "S&P 500"];
+  specs.forEach(([id, field, suf]) => {
+    if (!el(id)) return;
+    const traces = keys.map(k => {
+      const s = c.rolling[k][field];
+      return { type: "scatter", mode: "lines", name: k, x: s.map(p => p.date), y: s.map(p => p.v),
+        line: { width: CMP_WIDTH[k] || 1.3, color: CMP_COLOR[k] },
+        hovertemplate: k + " %{y:.2f}" + suf + "<extra></extra>" };
+    });
+    Plotly.newPlot(id, traces, { ...BASE, margin: { l: 40, r: 10, t: 22, b: 24 },
+      legend: { orientation: "h", y: 1.22, font: { size: 9 } },
+      xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
+      yaxis: { ...BASE.yaxis, ticksuffix: suf } }, CFG);
+  });
+}
+
+// ================= Construction deep-dive (Construction page) =================
+function renderConstructionDetail(con) {
+  if (el("universe")) {
+    const u = con.universe;
+    el("universe").innerHTML = [
+      [u.total, "instruments in the governed universe"], [u.core, "core (policy-weighted)"],
+      [u.tilt, "tilt (available, not in base)"], [u.sleeves, "asset-class sleeves"],
+    ].map(([v, l]) => `<div class="ustat"><div class="ustat-v">${v}</div><div class="ustat-l">${l}</div></div>`).join("");
+  }
+  // strategic -> dynamic bridge table
+  if (el("bridge-table") && con.bridge) {
+    el("bridge-table").innerHTML = `<table class="dtbl"><thead><tr><th>Sleeve</th>
+      <th class="num">SAA baseline</th><th class="num">+ Regime</th><th class="num">+ Tilt</th>
+      <th class="num">DAA final</th></tr></thead><tbody>`
+      + con.bridge.map(b => {
+          const d = (x) => x === 0 ? '<span class="z">0.0</span>' : `${x > 0 ? "+" : ""}${x}`;
+          return `<tr><td><b>${b.sleeve}</b></td><td class="num">${b.baseline}%</td>
+            <td class="num ${b.stance > 0 ? "pos" : b.stance < 0 ? "neg" : ""}">${d(b.stance)}</td>
+            <td class="num ${b.tilt > 0 ? "pos" : b.tilt < 0 ? "neg" : ""}">${d(b.tilt)}</td>
+            <td class="num strong">${b.final}%</td></tr>`;
+        }).join("") + `</tbody></table>`;
+  }
+  // constraint framework: floor–ceiling band with current marker
+  if (el("constraint-chart") && con.constraints) {
+    const cc = con.constraints, labels = cc.map(x => x.sleeve);
+    Plotly.newPlot("constraint-chart", [
+      { type: "bar", orientation: "h", base: cc.map(x => x.floor), x: cc.map(x => x.ceiling - x.floor),
+        y: labels, marker: { color: "#e3e8ee" }, name: "floor→ceiling band",
+        hovertemplate: "%{y}: band<extra></extra>" },
+      { type: "scatter", mode: "markers", x: cc.map(x => x.current), y: labels, name: "current",
+        marker: { symbol: "diamond", size: 10, color: C.accent, line: { width: 1, color: "#fff" } },
+        hovertemplate: "%{y}: %{x:.1f}%<extra></extra>" },
+    ], { ...BASE, barmode: "overlay", margin: { l: 110, r: 12, t: 8, b: 28 }, showlegend: false,
+      yaxis: { ...BASE.yaxis, autorange: "reversed" }, xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
+  }
+  // optimization outputs: equilibrium vs posterior return
+  if (el("optimization-chart") && con.optimization && con.optimization.length) {
+    const o = con.optimization, labels = o.map(x => x.sleeve);
+    Plotly.newPlot("optimization-chart", [
+      { type: "bar", orientation: "h", name: "Equilibrium (CAPM-implied)", x: o.map(x => x.equilibrium), y: labels,
+        marker: { color: "#c5d4e2" }, hovertemplate: "%{y} equil %{x:.1f}%<extra></extra>" },
+      { type: "bar", orientation: "h", name: "Posterior (after views)", x: o.map(x => x.posterior), y: labels,
+        marker: { color: C.accent }, hovertemplate: "%{y} posterior %{x:.1f}%<extra></extra>" },
+    ], { ...BASE, barmode: "group", margin: { l: 110, r: 12, t: 22, b: 28 },
+      legend: { orientation: "h", y: 1.18, font: { size: 9 } },
+      yaxis: { ...BASE.yaxis, autorange: "reversed" }, xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
+  }
+}
+
 async function main() {
   try {
     const d = await load();
-    el("appbar-status").textContent = `as of ${d.decision_month}`;
-    renderKpis(d.kpis);
-    renderAllocation(d.positioning);
-    renderPositioning(d.positioning, d.construction.blocks);
-    renderConstruction(d.construction);
-    renderRisk(d.risk);
-    if (d.diversification) renderDiversification(d.diversification);
-    renderPerformance(d.track_record);
-    if (d.stress) renderStress(d.stress);
-    renderScenarios(d.scenarios);
-    el("status-footer").textContent =
+    if (el("appbar-status")) el("appbar-status").textContent = `as of ${d.decision_month}`;
+    if (el("kpi-ribbon")) renderKpis(d.kpis);
+    if (el("alloc-donut")) renderAllocation(d.positioning);
+    if (el("pos-board")) renderPositioning(d.positioning, d.construction.blocks);
+    if (el("holdings-treemap")) renderConstruction(d.construction);
+    if (el("universe") || el("constraint-chart")) renderConstructionDetail(d.construction);
+    if (el("vol-gauge")) renderRisk(d.risk);
+    if (el("corr-heatmap") && d.diversification) renderDiversification(d.diversification);
+    if (el("nav-chart")) renderPerformance(d.track_record);
+    if (d.comparison) { renderComparison(d.comparison); renderGrowth(d.comparison); renderRolling(d.comparison); }
+    if (el("stress-chart") && d.stress) renderStress(d.stress);
+    if (el("scenario-strip")) renderScenarios(d.scenarios);
+    if (el("status-footer")) el("status-footer").textContent =
       `Generated ${d.generated} from the live portfolio-construction pipeline and its walk-forward backtest. `
       + `Net of cost; exploratory-tier data (see repo notes).`;
   } catch (e) {
-    el("status-footer").textContent = `Error: ${e.message}`;
-    el("appbar-status").textContent = "load failed";
+    if (el("status-footer")) el("status-footer").textContent = `Error: ${e.message}`;
+    if (el("appbar-status")) el("appbar-status").textContent = "load failed";
     console.error(e);
   }
 }

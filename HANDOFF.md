@@ -53,3 +53,9 @@ In the **private** repo:
   `Macro-Regime-Score` setup.)
 - Data tier: exploratory (Yahoo Finance) — see the private repo's methodology and
   rebuild notes for caveats. Figures are net of cost.
+
+## Pages (multi-page platform — iteration 1)
+- `index.html` — Overview (KPIs, allocation, risk, diversification, stress, outlook)
+- `construction.html` — Construction drill-down (universe → hierarchy → BL optimization → constraints → strategic→dynamic bridge)
+- `performance.html` — SAA vs DAA vs benchmarks, Growth-of-$1 (range/zoom/slider), drawdown, rolling 12m metrics
+All pages share `assets/js/app.js` (page-aware: each renderer no-ops if its container is absent), `assets/css/style.css`, `data/portfolio.js`, and local Plotly.
