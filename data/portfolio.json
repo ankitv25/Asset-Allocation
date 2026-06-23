@@ -942,6 +942,187 @@
       }
     ]
   },
+  "risk_detail": {
+    "SAA": {
+      "vol": 9.9,
+      "sleeves": [
+        {
+          "sleeve": "US Equity",
+          "block": "Growth",
+          "capital": 22.5,
+          "mctr": 14.28,
+          "comp_vol": 3.21,
+          "risk": 32.3
+        },
+        {
+          "sleeve": "Intl Developed",
+          "block": "Growth",
+          "capital": 16.0,
+          "mctr": 15.94,
+          "comp_vol": 2.56,
+          "risk": 25.7
+        },
+        {
+          "sleeve": "EM Equity",
+          "block": "Growth",
+          "capital": 10.9,
+          "mctr": 18.97,
+          "comp_vol": 2.06,
+          "risk": 20.7
+        },
+        {
+          "sleeve": "US Inv. Grade",
+          "block": "Diversifier",
+          "capital": 30.0,
+          "mctr": 4.27,
+          "comp_vol": 1.28,
+          "risk": 12.9
+        },
+        {
+          "sleeve": "High Yield / EM Debt",
+          "block": "Growth",
+          "capital": 2.9,
+          "mctr": 8.83,
+          "comp_vol": 0.25,
+          "risk": 2.6
+        },
+        {
+          "sleeve": "Govt / TIPS",
+          "block": "Diversifier",
+          "capital": 5.1,
+          "mctr": 1.68,
+          "comp_vol": 0.09,
+          "risk": 0.9
+        },
+        {
+          "sleeve": "Real Assets",
+          "block": "Diversifier",
+          "capital": 4.7,
+          "mctr": 10.48,
+          "comp_vol": 0.49,
+          "risk": 4.9
+        },
+        {
+          "sleeve": "Cash & Alts",
+          "block": "Cash",
+          "capital": 7.9,
+          "mctr": 0.03,
+          "comp_vol": 0.0,
+          "risk": 0.0
+        }
+      ],
+      "blocks": [
+        {
+          "block": "Growth",
+          "risk": 81.3,
+          "capital": 52.3
+        },
+        {
+          "block": "Diversifier",
+          "risk": 18.7,
+          "capital": 39.8
+        },
+        {
+          "block": "Cash",
+          "risk": 0.0,
+          "capital": 7.9
+        }
+      ],
+      "effective_bets": 4.3,
+      "top3_risk": 78.8,
+      "herfindahl": 0.233
+    },
+    "DAA": {
+      "vol": 10.6,
+      "sleeves": [
+        {
+          "sleeve": "US Equity",
+          "block": "Growth",
+          "capital": 22.5,
+          "mctr": 14.23,
+          "comp_vol": 3.2,
+          "risk": 30.2
+        },
+        {
+          "sleeve": "Intl Developed",
+          "block": "Growth",
+          "capital": 17.5,
+          "mctr": 15.99,
+          "comp_vol": 2.8,
+          "risk": 26.4
+        },
+        {
+          "sleeve": "EM Equity",
+          "block": "Growth",
+          "capital": 12.4,
+          "mctr": 19.13,
+          "comp_vol": 2.37,
+          "risk": 22.3
+        },
+        {
+          "sleeve": "US Inv. Grade",
+          "block": "Diversifier",
+          "capital": 30.0,
+          "mctr": 4.2,
+          "comp_vol": 1.26,
+          "risk": 11.8
+        },
+        {
+          "sleeve": "High Yield / EM Debt",
+          "block": "Growth",
+          "capital": 2.9,
+          "mctr": 8.81,
+          "comp_vol": 0.25,
+          "risk": 2.4
+        },
+        {
+          "sleeve": "Govt / TIPS",
+          "block": "Diversifier",
+          "capital": 5.1,
+          "mctr": 1.59,
+          "comp_vol": 0.08,
+          "risk": 0.8
+        },
+        {
+          "sleeve": "Real Assets",
+          "block": "Diversifier",
+          "capital": 6.2,
+          "mctr": 10.67,
+          "comp_vol": 0.66,
+          "risk": 6.2
+        },
+        {
+          "sleeve": "Cash & Alts",
+          "block": "Cash",
+          "capital": 3.4,
+          "mctr": 0.03,
+          "comp_vol": 0.0,
+          "risk": 0.0
+        }
+      ],
+      "blocks": [
+        {
+          "block": "Growth",
+          "risk": 81.2,
+          "capital": 55.3
+        },
+        {
+          "block": "Diversifier",
+          "risk": 18.8,
+          "capital": 41.3
+        },
+        {
+          "block": "Cash",
+          "risk": 0.0,
+          "capital": 3.4
+        }
+      ],
+      "effective_bets": 4.4,
+      "top3_risk": 78.8,
+      "herfindahl": 0.229
+    },
+    "narrative": "Risk decomposition for both portfolios on the same covariance. The dynamic portfolio (DAA) runs at <strong>10.6% vol</strong> vs SAA's 9.9%, spread across an effective <strong>4.4 bets</strong>. Growth assets carry 81.2% of risk on 55.3% of capital \u2014 the structural equity tilt of an unlevered multi-asset book. Marginal contribution (MCTR) shows which sleeve a marginal dollar adds the most risk to."
+  },
   "track_record": {
     "metrics": [
       {
@@ -24723,6 +24904,563 @@
       }
     ],
     "narrative": "Across recognised stress episodes the full system consistently cushions the drawdown versus all-equity and usually versus 60/40. In the <strong>2022 rate shock</strong> it returned <strong>-18.0%</strong> vs -24.0% all-equity \u2014 the regime overlay and duration-anchored safe haven doing their job. This is historical realised performance over each window, net of cost \u2014 not a hypothetical."
+  },
+  "stress_forward": {
+    "scenarios": [
+      {
+        "name": "Equity crash \u221225%",
+        "desc": "Broad equity selloff",
+        "shocks": {
+          "Equity": -0.25
+        },
+        "saa": -10.7,
+        "daa": -11.2,
+        "sleeves": [
+          {
+            "sleeve": "US Equity",
+            "block": "Growth",
+            "impact": -24.8,
+            "contrib": -5.6
+          },
+          {
+            "sleeve": "Intl Developed",
+            "block": "Growth",
+            "impact": -18.2,
+            "contrib": -3.2
+          },
+          {
+            "sleeve": "EM Equity",
+            "block": "Growth",
+            "impact": -15.7,
+            "contrib": -1.9
+          },
+          {
+            "sleeve": "US Inv. Grade",
+            "block": "Diversifier",
+            "impact": -1.0,
+            "contrib": -0.3
+          },
+          {
+            "sleeve": "High Yield / EM Debt",
+            "block": "Growth",
+            "impact": -0.9,
+            "contrib": -0.0
+          },
+          {
+            "sleeve": "Govt / TIPS",
+            "block": "Diversifier",
+            "impact": -0.6,
+            "contrib": -0.0
+          },
+          {
+            "sleeve": "Real Assets",
+            "block": "Diversifier",
+            "impact": -2.4,
+            "contrib": -0.1
+          },
+          {
+            "sleeve": "Cash & Alts",
+            "block": "Cash",
+            "impact": 0.0,
+            "contrib": 0.0
+          }
+        ],
+        "blocks": [
+          {
+            "block": "Growth",
+            "impact": -10.7
+          },
+          {
+            "block": "Diversifier",
+            "impact": -0.5
+          },
+          {
+            "block": "Cash",
+            "impact": 0.0
+          }
+        ]
+      },
+      {
+        "name": "GFC replay",
+        "desc": "2008-style: equities crater, flight to quality, credit blows out",
+        "shocks": {
+          "Equity": -0.42,
+          "Duration": 0.12,
+          "Credit": -0.2
+        },
+        "saa": -16.1,
+        "daa": -17.0,
+        "sleeves": [
+          {
+            "sleeve": "US Equity",
+            "block": "Growth",
+            "impact": -42.6,
+            "contrib": -9.6
+          },
+          {
+            "sleeve": "Intl Developed",
+            "block": "Growth",
+            "impact": -31.3,
+            "contrib": -5.5
+          },
+          {
+            "sleeve": "EM Equity",
+            "block": "Growth",
+            "impact": -27.9,
+            "contrib": -3.5
+          },
+          {
+            "sleeve": "US Inv. Grade",
+            "block": "Diversifier",
+            "impact": 3.6,
+            "contrib": 1.1
+          },
+          {
+            "sleeve": "High Yield / EM Debt",
+            "block": "Growth",
+            "impact": -5.7,
+            "contrib": -0.2
+          },
+          {
+            "sleeve": "Govt / TIPS",
+            "block": "Diversifier",
+            "impact": 13.7,
+            "contrib": 0.7
+          },
+          {
+            "sleeve": "Real Assets",
+            "block": "Diversifier",
+            "impact": -1.0,
+            "contrib": -0.1
+          },
+          {
+            "sleeve": "Cash & Alts",
+            "block": "Cash",
+            "impact": 0.0,
+            "contrib": 0.0
+          }
+        ],
+        "blocks": [
+          {
+            "block": "Growth",
+            "impact": -18.7
+          },
+          {
+            "block": "Diversifier",
+            "impact": 1.7
+          },
+          {
+            "block": "Cash",
+            "impact": 0.0
+          }
+        ]
+      },
+      {
+        "name": "COVID crash replay",
+        "desc": "Fast equity shock + bond rally + credit stress",
+        "shocks": {
+          "Equity": -0.2,
+          "Duration": 0.08,
+          "Credit": -0.12
+        },
+        "saa": -7.0,
+        "daa": -7.4,
+        "sleeves": [
+          {
+            "sleeve": "US Equity",
+            "block": "Growth",
+            "impact": -20.4,
+            "contrib": -4.6
+          },
+          {
+            "sleeve": "Intl Developed",
+            "block": "Growth",
+            "impact": -14.8,
+            "contrib": -2.6
+          },
+          {
+            "sleeve": "EM Equity",
+            "block": "Growth",
+            "impact": -13.1,
+            "contrib": -1.6
+          },
+          {
+            "sleeve": "US Inv. Grade",
+            "block": "Diversifier",
+            "impact": 3.1,
+            "contrib": 0.9
+          },
+          {
+            "sleeve": "High Yield / EM Debt",
+            "block": "Growth",
+            "impact": -2.4,
+            "contrib": -0.1
+          },
+          {
+            "sleeve": "Govt / TIPS",
+            "block": "Diversifier",
+            "impact": 9.3,
+            "contrib": 0.5
+          },
+          {
+            "sleeve": "Real Assets",
+            "block": "Diversifier",
+            "impact": 0.4,
+            "contrib": 0.0
+          },
+          {
+            "sleeve": "Cash & Alts",
+            "block": "Cash",
+            "impact": 0.0,
+            "contrib": 0.0
+          }
+        ],
+        "blocks": [
+          {
+            "block": "Growth",
+            "impact": -8.9
+          },
+          {
+            "block": "Diversifier",
+            "impact": 1.4
+          },
+          {
+            "block": "Cash",
+            "impact": 0.0
+          }
+        ]
+      },
+      {
+        "name": "Inflation shock",
+        "desc": "Commodities surge, rates rise, equities wobble",
+        "shocks": {
+          "Inflation": 0.2,
+          "Duration": -0.08,
+          "Equity": -0.05
+        },
+        "saa": -4.9,
+        "daa": -4.9,
+        "sleeves": [
+          {
+            "sleeve": "US Equity",
+            "block": "Growth",
+            "impact": -5.0,
+            "contrib": -1.1
+          },
+          {
+            "sleeve": "Intl Developed",
+            "block": "Growth",
+            "impact": -3.6,
+            "contrib": -0.6
+          },
+          {
+            "sleeve": "EM Equity",
+            "block": "Growth",
+            "impact": -2.4,
+            "contrib": -0.3
+          },
+          {
+            "sleeve": "US Inv. Grade",
+            "block": "Diversifier",
+            "impact": -8.3,
+            "contrib": -2.5
+          },
+          {
+            "sleeve": "High Yield / EM Debt",
+            "block": "Growth",
+            "impact": -8.5,
+            "contrib": -0.2
+          },
+          {
+            "sleeve": "Govt / TIPS",
+            "block": "Diversifier",
+            "impact": -10.1,
+            "contrib": -0.5
+          },
+          {
+            "sleeve": "Real Assets",
+            "block": "Diversifier",
+            "impact": 7.2,
+            "contrib": 0.4
+          },
+          {
+            "sleeve": "Cash & Alts",
+            "block": "Cash",
+            "impact": 0.0,
+            "contrib": 0.0
+          }
+        ],
+        "blocks": [
+          {
+            "block": "Growth",
+            "impact": -2.3
+          },
+          {
+            "block": "Diversifier",
+            "impact": -2.6
+          },
+          {
+            "block": "Cash",
+            "impact": 0.0
+          }
+        ]
+      },
+      {
+        "name": "Rate shock +150bps",
+        "desc": "Hawkish repricing: duration sells off",
+        "shocks": {
+          "Duration": -0.1,
+          "Equity": -0.07,
+          "Credit": -0.05
+        },
+        "saa": -9.2,
+        "daa": -9.6,
+        "sleeves": [
+          {
+            "sleeve": "US Equity",
+            "block": "Growth",
+            "impact": -7.4,
+            "contrib": -1.7
+          },
+          {
+            "sleeve": "Intl Developed",
+            "block": "Growth",
+            "impact": -8.6,
+            "contrib": -1.5
+          },
+          {
+            "sleeve": "EM Equity",
+            "block": "Growth",
+            "impact": -10.8,
+            "contrib": -1.3
+          },
+          {
+            "sleeve": "US Inv. Grade",
+            "block": "Diversifier",
+            "impact": -11.8,
+            "contrib": -3.5
+          },
+          {
+            "sleeve": "High Yield / EM Debt",
+            "block": "Growth",
+            "impact": -15.3,
+            "contrib": -0.4
+          },
+          {
+            "sleeve": "Govt / TIPS",
+            "block": "Diversifier",
+            "impact": -12.7,
+            "contrib": -0.7
+          },
+          {
+            "sleeve": "Real Assets",
+            "block": "Diversifier",
+            "impact": -7.4,
+            "contrib": -0.5
+          },
+          {
+            "sleeve": "Cash & Alts",
+            "block": "Cash",
+            "impact": 0.0,
+            "contrib": 0.0
+          }
+        ],
+        "blocks": [
+          {
+            "block": "Growth",
+            "impact": -5.0
+          },
+          {
+            "block": "Diversifier",
+            "impact": -4.6
+          },
+          {
+            "block": "Cash",
+            "impact": 0.0
+          }
+        ]
+      },
+      {
+        "name": "Credit-spread widening",
+        "desc": "Risk-off in credit, mild equity drawdown",
+        "shocks": {
+          "Credit": -0.12,
+          "Equity": -0.1
+        },
+        "saa": -6.9,
+        "daa": -7.2,
+        "sleeves": [
+          {
+            "sleeve": "US Equity",
+            "block": "Growth",
+            "impact": -10.7,
+            "contrib": -2.4
+          },
+          {
+            "sleeve": "Intl Developed",
+            "block": "Growth",
+            "impact": -9.6,
+            "contrib": -1.7
+          },
+          {
+            "sleeve": "EM Equity",
+            "block": "Growth",
+            "impact": -10.6,
+            "contrib": -1.3
+          },
+          {
+            "sleeve": "US Inv. Grade",
+            "block": "Diversifier",
+            "impact": -4.3,
+            "contrib": -1.3
+          },
+          {
+            "sleeve": "High Yield / EM Debt",
+            "block": "Growth",
+            "impact": -10.6,
+            "contrib": -0.3
+          },
+          {
+            "sleeve": "Govt / TIPS",
+            "block": "Diversifier",
+            "impact": -0.4,
+            "contrib": -0.0
+          },
+          {
+            "sleeve": "Real Assets",
+            "block": "Diversifier",
+            "impact": -3.3,
+            "contrib": -0.2
+          },
+          {
+            "sleeve": "Cash & Alts",
+            "block": "Cash",
+            "impact": 0.0,
+            "contrib": 0.0
+          }
+        ],
+        "blocks": [
+          {
+            "block": "Growth",
+            "impact": -5.7
+          },
+          {
+            "block": "Diversifier",
+            "impact": -1.5
+          },
+          {
+            "block": "Cash",
+            "impact": 0.0
+          }
+        ]
+      }
+    ],
+    "factors": [
+      "Equity",
+      "Duration",
+      "Credit",
+      "Inflation",
+      "Dollar"
+    ],
+    "betas": {
+      "USEq": {
+        "Equity": 0.992,
+        "Duration": 0.02,
+        "Credit": 0.061,
+        "Inflation": 0.007,
+        "Dollar": 0.009
+      },
+      "IntlDM": {
+        "Equity": 0.728,
+        "Duration": 0.257,
+        "Credit": 0.19,
+        "Inflation": 0.104,
+        "Dollar": -0.46
+      },
+      "EM": {
+        "Equity": 0.627,
+        "Duration": 0.465,
+        "Credit": 0.358,
+        "Inflation": 0.222,
+        "Dollar": -0.544
+      },
+      "IG": {
+        "Equity": 0.04,
+        "Duration": 0.984,
+        "Credit": 0.327,
+        "Inflation": -0.013,
+        "Dollar": -0.018
+      },
+      "HY": {
+        "Equity": 0.038,
+        "Duration": 1.078,
+        "Credit": 0.853,
+        "Inflation": 0.016,
+        "Dollar": -0.066
+      },
+      "Govt": {
+        "Equity": 0.023,
+        "Duration": 1.248,
+        "Credit": 0.015,
+        "Inflation": 0.0,
+        "Dollar": 0.011
+      },
+      "RealA": {
+        "Equity": 0.094,
+        "Duration": 0.572,
+        "Credit": 0.195,
+        "Inflation": 0.613,
+        "Dollar": -0.184
+      },
+      "Cash": {
+        "Equity": 0.0,
+        "Duration": 0.0,
+        "Credit": 0.0,
+        "Inflation": 0.0,
+        "Dollar": 0.0
+      }
+    },
+    "saa_weights": {
+      "USEq": 0.2251,
+      "IntlDM": 0.1603,
+      "EM": 0.1087,
+      "IG": 0.3,
+      "HY": 0.0288,
+      "Govt": 0.0514,
+      "RealA": 0.0467,
+      "Cash": 0.079
+    },
+    "daa_weights": {
+      "USEq": 0.2251,
+      "IntlDM": 0.1753,
+      "EM": 0.1237,
+      "IG": 0.3,
+      "HY": 0.0288,
+      "Govt": 0.0514,
+      "RealA": 0.0617,
+      "Cash": 0.034
+    },
+    "sleeve_labels": {
+      "USEq": "US Equity",
+      "IntlDM": "Intl Developed",
+      "EM": "EM Equity",
+      "IG": "US Inv. Grade",
+      "HY": "High Yield / EM Debt",
+      "Govt": "Govt / TIPS",
+      "RealA": "Real Assets",
+      "Cash": "Cash & Alts"
+    },
+    "sleeve_blocks": {
+      "USEq": "Growth",
+      "IntlDM": "Growth",
+      "EM": "Growth",
+      "IG": "Diversifier",
+      "HY": "Growth",
+      "Govt": "Diversifier",
+      "RealA": "Diversifier",
+      "Cash": "Cash"
+    },
+    "narrative": "Forward-looking stress: each scenario is a set of factor shocks applied through each sleeve's estimated factor betas \u2014 an <em>ex-ante</em> estimate on <strong>today's weights</strong>, not a historical replay. Use the custom panel to set your own shocks. Important: this holds weights fixed, so SAA and DAA differ only by the current tactical tilt (the dynamic book is mildly risk-on now, so it can read marginally worse here). It does <strong>not</strong> capture the regime overlay's de-risking, which triggers as a crisis unfolds \u2014 that dynamic cushioning is what the historical stress tests (Overview) actually show (e.g. GFC: DAA \u221217.7% vs 60/40 \u221229.1%)."
   },
   "scenarios": {
     "map": [

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stress — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="construction.html">Construction</a>
+    <a href="performance.html">Performance</a>
+    <a href="risk.html">Risk</a>
+    <a href="stress.html" class="active">Stress</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <!-- Historical -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Historical stress — what actually happened</h2>
+        <span class="tile-sub">realised return across recognised crises, net of cost</span></div>
+      <div id="stress-chart" class="chart chart-md"></div>
+      <div id="stress-table"></div>
+      <p class="read" id="stress-read"></p>
+    </article>
+  </section>
+
+  <!-- Forward-looking -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Forward-looking stress — ex-ante factor shocks</h2>
+        <span class="tile-sub">estimated impact on today's weights via sleeve factor betas</span></div>
+      <p class="read" id="fwd-narrative" style="border-top:none;padding-top:0"></p>
+      <div id="fwd-scenario-chart" class="chart chart-md"></div>
+      <div class="thesis-pick" id="fwd-pick" style="margin:0.6rem 0"></div>
+      <p class="read" id="fwd-detail-head" style="border-top:none;padding-top:0"></p>
+      <div id="fwd-detail-chart" class="chart chart-md"></div>
+    </article>
+  </section>
+
+  <!-- Custom -->
+  <section class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Custom scenario — set your own shocks</h2>
+        <span class="tile-sub">move a factor; impact recomputes live</span></div>
+      <div class="sliders" id="custom-sliders"></div>
+      <div class="bigstats" id="custom-out" style="margin-top:0.8rem"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Sleeve impact (custom)</h2></div>
+      <div id="custom-chart" class="chart chart-md"></div>
+      <p class="read">Per-sleeve contribution to the portfolio's estimated return under your custom factor shocks.</p>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

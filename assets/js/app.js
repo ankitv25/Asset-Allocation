@@ -470,6 +470,106 @@ function renderConstructionDetail(con) {
   }
 }
 
+// ================= Deep risk decomposition (Risk page) =================
+function renderRiskDetail(rd) {
+  if (!el("risk-detail-stats")) return;
+  const daa = rd.DAA, saa = rd.SAA;
+  el("risk-detail-stats").innerHTML = `
+    <div class="bigstat"><div class="bigstat-v">${daa.vol}%</div><div class="bigstat-l">DAA portfolio vol</div><div class="bigstat-h">SAA ${saa.vol}%</div></div>
+    <div class="bigstat"><div class="bigstat-v">${daa.effective_bets}</div><div class="bigstat-l">Effective risk bets</div><div class="bigstat-h">1 / Σ risk-share²</div></div>
+    <div class="bigstat"><div class="bigstat-v">${daa.top3_risk}%</div><div class="bigstat-l">Top-3 sleeve risk share</div><div class="bigstat-h">concentration check</div></div>`;
+  if (el("risk-detail-narrative")) el("risk-detail-narrative").innerHTML = rd.narrative;
+
+  // block risk: capital vs risk
+  if (el("block-risk-chart")) {
+    const b = daa.blocks;
+    Plotly.newPlot("block-risk-chart", [
+      { type: "bar", name: "Capital", x: b.map(x => x.block), y: b.map(x => x.capital), marker: { color: "#c5d4e2" } },
+      { type: "bar", name: "Risk", x: b.map(x => x.block), y: b.map(x => x.risk), marker: { color: C.accent } },
+    ], { ...BASE, barmode: "group", margin: { l: 40, r: 10, t: 22, b: 26 },
+      legend: { orientation: "h", y: 1.2, font: { size: 10 } }, yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
+  }
+  // sleeve table: capital / MCTR / component vol / risk %
+  if (el("sleeve-risk-table")) {
+    el("sleeve-risk-table").innerHTML = `<table class="dtbl"><thead><tr><th>Sleeve</th>
+      <th class="num">Capital</th><th class="num">MCTR</th><th class="num">Comp vol</th><th class="num">Risk share</th></tr></thead><tbody>`
+      + daa.sleeves.map(s => `<tr><td><b>${s.sleeve}</b></td><td class="num">${s.capital}%</td>
+        <td class="num">${s.mctr}</td><td class="num">${s.comp_vol}%</td>
+        <td class="num strong">${s.risk}%</td></tr>`).join("") + `</tbody></table>`;
+  }
+  // SAA vs DAA risk-share by sleeve
+  if (el("saa-daa-risk-chart")) {
+    const labels = daa.sleeves.map(s => s.sleeve);
+    Plotly.newPlot("saa-daa-risk-chart", [
+      { type: "bar", orientation: "h", name: "SAA", x: saa.sleeves.map(s => s.risk), y: labels, marker: { color: "#5b8c9f" } },
+      { type: "bar", orientation: "h", name: "DAA", x: daa.sleeves.map(s => s.risk), y: labels, marker: { color: C.navy } },
+    ], { ...BASE, barmode: "group", margin: { l: 110, r: 10, t: 22, b: 26 },
+      legend: { orientation: "h", y: 1.16, font: { size: 10 } },
+      yaxis: { ...BASE.yaxis, autorange: "reversed" }, xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
+  }
+}
+
+// ================= Forward / custom stress (Stress page) =================
+function renderForwardStress(sf) {
+  if (!el("fwd-scenario-chart")) return;
+  if (el("fwd-narrative")) el("fwd-narrative").innerHTML = sf.narrative;
+  const sc = sf.scenarios;
+  Plotly.newPlot("fwd-scenario-chart", [
+    { type: "bar", name: "SAA", x: sc.map(s => s.name), y: sc.map(s => s.saa), marker: { color: "#5b8c9f" },
+      hovertemplate: "SAA %{y:.1f}%<extra></extra>" },
+    { type: "bar", name: "DAA", x: sc.map(s => s.name), y: sc.map(s => s.daa), marker: { color: C.navy },
+      hovertemplate: "DAA %{y:.1f}%<extra></extra>" },
+  ], { ...BASE, barmode: "group", margin: { l: 44, r: 10, t: 24, b: 60 },
+    legend: { orientation: "h", y: 1.16, font: { size: 10 } }, yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
+
+  // scenario detail selector -> sleeve impact
+  if (el("fwd-pick")) {
+    el("fwd-pick").innerHTML = sc.map((s, i) =>
+      `<span class="chip clickable ${i === 0 ? "sel" : ""}" data-i="${i}">${s.name}</span>`).join("");
+    const showScn = (i) => {
+      const s = sc[i];
+      [...el("fwd-pick").children].forEach(ch => ch.classList.toggle("sel", +ch.dataset.i === i));
+      const shockTxt = Object.entries(s.shocks).map(([f, v]) => `${f} ${v > 0 ? "+" : ""}${(v * 100).toFixed(0)}%`).join(" · ");
+      el("fwd-detail-head").innerHTML = `<strong>${s.name}</strong> — ${s.desc}. Shocks: ${shockTxt}.
+        Portfolio impact: SAA <b>${s.saa}%</b> · DAA <b>${s.daa}%</b>.`;
+      const rows = s.sleeves;
+      Plotly.newPlot("fwd-detail-chart", [{ type: "bar", orientation: "h",
+        x: rows.map(r => r.contrib), y: rows.map(r => r.sleeve),
+        marker: { color: rows.map(r => r.contrib >= 0 ? C.pos : C.neg) },
+        hovertemplate: "%{y}: %{x:.2f}% contribution<extra></extra>" }],
+        { ...BASE, margin: { l: 110, r: 10, t: 6, b: 26 }, yaxis: { ...BASE.yaxis, autorange: "reversed" },
+          xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
+    };
+    [...el("fwd-pick").children].forEach(ch => ch.addEventListener("click", () => showScn(+ch.dataset.i)));
+    showScn(0);
+  }
+
+  // custom scenario: sliders per factor -> live portfolio impact
+  if (el("custom-sliders")) {
+    const factors = sf.factors;
+    el("custom-sliders").innerHTML = factors.map(f =>
+      `<div class="sld"><label>${f}<span id="sld-v-${f}">0%</span></label>
+        <input type="range" min="-40" max="40" value="0" step="1" id="sld-${f}"></div>`).join("");
+    const compute = () => {
+      const shock = {}; factors.forEach(f => shock[f] = (+el(`sld-${f}`).value) / 100);
+      factors.forEach(f => el(`sld-v-${f}`).textContent = `${(+el(`sld-${f}`).value)}%`);
+      const sleeves = Object.keys(sf.daa_weights);
+      const sl = {}; sleeves.forEach(s => sl[s] = factors.reduce((a, f) => a + sf.betas[s][f] * shock[f], 0));
+      const port = (w) => sleeves.reduce((a, s) => a + w[s] * sl[s], 0) * 100;
+      const pd = port(sf.daa_weights), ps = port(sf.saa_weights);
+      el("custom-out").innerHTML = `<div class="bigstat"><div class="bigstat-v">${pd.toFixed(1)}%</div>
+        <div class="bigstat-l">DAA impact</div><div class="bigstat-h">SAA ${ps.toFixed(1)}%</div></div>`;
+      const rows = sleeves.map(s => ({ y: sf.sleeve_labels[s], x: +(sf.daa_weights[s] * sl[s] * 100).toFixed(2) }));
+      Plotly.newPlot("custom-chart", [{ type: "bar", orientation: "h", x: rows.map(r => r.x), y: rows.map(r => r.y),
+        marker: { color: rows.map(r => r.x >= 0 ? C.pos : C.neg) }, hovertemplate: "%{y}: %{x:.2f}%<extra></extra>" }],
+        { ...BASE, margin: { l: 110, r: 10, t: 6, b: 24 }, yaxis: { ...BASE.yaxis, autorange: "reversed" },
+          xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
+    };
+    factors.forEach(f => el(`sld-${f}`).addEventListener("input", compute));
+    compute();
+  }
+}
+
 async function main() {
   try {
     const d = await load();
@@ -483,7 +583,9 @@ async function main() {
     if (el("corr-heatmap") && d.diversification) renderDiversification(d.diversification);
     if (el("nav-chart")) renderPerformance(d.track_record);
     if (d.comparison) { renderComparison(d.comparison); renderGrowth(d.comparison); renderRolling(d.comparison); }
+    if (d.risk_detail) renderRiskDetail(d.risk_detail);
     if (el("stress-chart") && d.stress) renderStress(d.stress);
+    if (d.stress_forward) renderForwardStress(d.stress_forward);
     if (el("scenario-strip")) renderScenarios(d.scenarios);
     if (el("status-footer")) el("status-footer").textContent =
       `Generated ${d.generated} from the live portfolio-construction pipeline and its walk-forward backtest. `

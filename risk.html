@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Risk — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="construction.html">Construction</a>
+    <a href="performance.html">Performance</a>
+    <a href="risk.html" class="active">Risk</a>
+    <a href="stress.html">Stress</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <section class="grid grid-3">
+    <article class="tile"><div class="tile-head"><h2>Volatility vs budget</h2></div>
+      <div id="vol-gauge" class="chart chart-sm"></div><p class="read" id="vol-read"></p></article>
+    <article class="tile"><div class="tile-head"><h2>Risk by factor</h2></div>
+      <div id="factor-chart" class="chart chart-sm"></div><p class="read" id="factor-read"></p></article>
+    <article class="tile"><div class="tile-head"><h2>Capital vs risk share</h2></div>
+      <div id="riskcontrib-chart" class="chart chart-sm"></div>
+      <p class="read">Sleeves whose risk bar exceeds their capital bar consume risk disproportionately.</p></article>
+  </section>
+
+  <!-- Deep decomposition -->
+  <section class="grid grid-3-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Risk decomposition</h2><span class="tile-sub">marginal &amp; component contribution, per sleeve (DAA)</span></div>
+      <div id="sleeve-risk-table"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Concentration</h2></div>
+      <div class="bigstats" id="risk-detail-stats"></div>
+      <p class="read" id="risk-detail-narrative"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile"><div class="tile-head"><h2>Risk by block — capital vs risk</h2></div>
+      <div id="block-risk-chart" class="chart chart-md"></div>
+      <p class="read">Growth assets carry far more risk than capital — the structural equity tilt of an unlevered book.</p></article>
+    <article class="tile"><div class="tile-head"><h2>Risk share — SAA vs DAA</h2></div>
+      <div id="saa-daa-risk-chart" class="chart chart-md"></div>
+      <p class="read">Where the dynamic tilt has shifted risk relative to the strategic policy.</p></article>
+  </section>
+
+  <!-- Instrument-level -->
+  <section class="grid grid-1">
+    <article class="tile"><div class="tile-head"><h2>Where risk sits — by instrument</h2>
+      <span class="tile-sub">from the 27-instrument covariance (Layer 3)</span></div>
+      <div id="instrument-risk-chart" class="chart chart-md"></div>
+      <p class="read">Contribution to total portfolio risk vs capital weight, per holding.</p></article>
+  </section>
+
+  <!-- Correlation / diversification -->
+  <section class="grid grid-3-2">
+    <article class="tile"><div class="tile-head"><h2>Correlation &amp; diversification</h2>
+      <span class="tile-sub">sleeve correlation matrix (full-history)</span></div>
+      <div id="corr-heatmap" class="chart chart-md"></div></article>
+    <article class="tile"><div class="tile-head"><h2>Is it actually diversified?</h2></div>
+      <div class="bigstats" id="div-stats"></div><p class="read" id="div-read"></p></article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

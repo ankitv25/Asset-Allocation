@@ -171,6 +171,13 @@ table.dtbl .z { color: var(--muted); }
 .flowstep b { color: var(--navy); }
 .flowarrow { color: var(--muted); align-self: center; }
 
+/* Custom stress sliders */
+.sliders { display: flex; flex-direction: column; gap: 0.55rem; }
+.sld label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--ink);
+  font-weight: 600; margin-bottom: 0.2rem; }
+.sld label span { font-family: var(--mono); color: var(--accent); }
+.sld input[type=range] { width: 100%; accent-color: var(--accent); }
+
 footer.status { max-width: 1320px; margin: 0 auto; padding: 1rem 1.5rem 2rem; font-size: 0.74rem;
   color: var(--muted); }
 
