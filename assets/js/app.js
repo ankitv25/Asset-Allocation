@@ -22,13 +22,52 @@ const LABEL2CODE = {
 };
 const codeColor = (k) => SLEEVE_COLOR[k] || SLEEVE_COLOR[LABEL2CODE[k]] || C.accent;
 
-const FONT = { family: "-apple-system, Segoe UI, Roboto, sans-serif", size: 11, color: "#34424f" };
+const FONT = { family: "-apple-system, Segoe UI, Roboto, sans-serif", size: 11, color: "#46535f" };
+// One institutional chart style for the whole platform — light gridlines, no chart
+// junk, and a styled hover card (white, bordered) so tooltips read consistently.
 const BASE = { font: FONT, margin: { l: 40, r: 12, t: 8, b: 30 }, paper_bgcolor: "transparent",
-  plot_bgcolor: "transparent", xaxis: { gridcolor: "#eef1f4", zeroline: false },
-  yaxis: { gridcolor: "#eef1f4", zeroline: false } };
+  plot_bgcolor: "transparent", separators: ".,",
+  hoverlabel: { bgcolor: "#ffffff", bordercolor: "#dbe2ea", font: { size: 11, color: "#1b2733" }, align: "left" },
+  xaxis: { gridcolor: "#eff2f6", zeroline: false, linecolor: "#e3e8ee", ticks: "", tickfont: { size: 10 } },
+  yaxis: { gridcolor: "#eff2f6", zeroline: false, linecolor: "#e3e8ee", ticks: "", tickfont: { size: 10 } } };
 const CFG = { displayModeBar: false, responsive: true };
 const el = (id) => document.getElementById(id);
 const hexToRgb = (h) => { const n = parseInt(h.replace("#", ""), 16); return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`; };
+
+// ---------------- Number formatting (one standard) ----------------
+const fmtPct = (x, d = 1) => (x >= 0 ? "" : "−") + Math.abs(x).toFixed(d) + "%";
+const fmtSignPct = (x, d = 1) => (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(d) + "%";
+const fmtUsd = (x, d = 2) => "$" + x.toFixed(d);
+
+// ---------------- Donut (one standard component) ----------------
+// items: [{label, value, color}]. Many-slice "composition" donuts use a clean side
+// legend (no leader-line clutter); small drill donuts use tidy outside labels.
+function donut(id, items, opts = {}) {
+  const node = el(id); if (!node) return;
+  const legend = !!opts.legend;
+  const trace = {
+    type: "pie", hole: 0.62, sort: false, direction: "clockwise",
+    labels: items.map(i => legend ? `${i.label}  ${i.value.toFixed(1)}%` : i.label),
+    values: items.map(i => i.value),
+    marker: { colors: items.map(i => i.color), line: { color: "#fff", width: 2 } },
+    textposition: legend ? "none" : "outside",
+    texttemplate: legend ? "" : "%{label}<br>%{value:.1f}%",
+    textfont: { size: 10 }, automargin: true,
+    hovertemplate: (opts.hover || "<b>%{label}</b>: %{value:.1f}%") + "<extra></extra>",
+  };
+  const layout = {
+    ...BASE, showlegend: legend,
+    margin: legend ? { l: 6, r: 6, t: 10, b: 10 } : { l: 58, r: 58, t: 16, b: 16 },
+    legend: legend ? { orientation: "v", x: 1.0, xanchor: "right", y: 0.5, yanchor: "middle",
+      font: { size: 10.5 }, itemclick: false, itemdoubleclick: false } : undefined,
+    annotations: opts.centerVal ? [{ text: `<b>${opts.centerVal}</b><br><span style="font-size:10px;color:#6b7783">${opts.centerSub || ""}</span>`,
+      showarrow: false, font: { size: 18, color: C.navy } }] : [],
+  };
+  Plotly.newPlot(id, [trace], layout, CFG);
+  if (opts.onClick) { node.removeAllListeners && node.removeAllListeners("plotly_click");
+    node.on("plotly_click", (e) => opts.onClick(items[e.points[0].pointNumber].label, e)); }
+  return node;
+}
 
 // ---------------- Mobile navigation ----------------
 // Wires the hamburger toggle. Runs immediately (outside main) so navigation
@@ -66,16 +105,9 @@ function renderKpis(kpis) {
 function renderAllocation(p) {
   el("alloc-sub").textContent = `decision month ${p.decision_month}`;
   const w = p.weights.filter(x => x.weight > 0.05);
-  Plotly.newPlot("alloc-donut", [{
-    type: "pie", hole: 0.62, sort: false, direction: "clockwise",
-    labels: w.map(x => x.label), values: w.map(x => x.weight),
-    marker: { colors: w.map(x => codeColor(x.sleeve)), line: { color: "#fff", width: 2 } },
-    textposition: "outside", texttemplate: "%{label}<br>%{value:.1f}%", automargin: true,
-    textfont: { size: 10 }, insidetextorientation: "horizontal",
-    hovertemplate: "%{label}: %{value:.1f}%<extra></extra>",
-  }], { ...BASE, margin: { l: 70, r: 70, t: 24, b: 24 }, showlegend: false,
-    annotations: [{ text: `<b>${p.growth_weight}%</b><br><span style="font-size:10px;color:#6b7783">growth</span>`,
-      showarrow: false, font: { size: 22, color: C.navy } }] }, CFG);
+  donut("alloc-donut", w.map(x => ({ label: x.label, value: x.weight, color: codeColor(x.sleeve) })),
+    { legend: true, centerVal: `${p.growth_weight}%`, centerSub: "growth",
+      hover: "<b>%{label}</b>: %{value:.1f}% of book" });
   const top = [...p.weights].sort((a, b) => b.weight - a.weight).slice(0, 2);
   el("alloc-read").innerHTML = `Largest sleeves: <strong>${top[0].label} ${top[0].weight}%</strong> and `
     + `${top[1].label} ${top[1].weight}%. Built bottom-up from individual instruments, grouped by role.`;
@@ -1162,17 +1194,10 @@ function renderHoldings(d) {
     const bySleeve = {};
     held.forEach(r => { bySleeve[r.sleeve] = bySleeve[r.sleeve] || { w: 0, code: r.sleeveCode }; bySleeve[r.sleeve].w += r.holding; });
     const labels = Object.keys(bySleeve).sort((a, b) => bySleeve[b].w - bySleeve[a].w);
-    Plotly.newPlot("holdings-donut", [{
-      type: "pie", hole: 0.58, sort: false, labels, values: labels.map(l => bySleeve[l].w),
-      marker: { colors: labels.map(l => codeColor(bySleeve[l].code)), line: { color: "#fff", width: 2 } },
-      textposition: "outside", texttemplate: "%{label}<br>%{value:.1f}%", automargin: true, textfont: { size: 10 },
-      hovertemplate: "<b>%{label}</b>: %{value:.1f}% · click to filter<extra></extra>",
-    }], { ...BASE, margin: { l: 60, r: 60, t: 16, b: 16 }, showlegend: false,
-      annotations: [{ text: `<b>${held.length}</b><br><span style="font-size:10px;color:#6b7783">holdings</span>`,
-        showarrow: false, font: { size: 18, color: C.navy } }] }, CFG);
-    el("holdings-donut").on("plotly_click", (e) => {
-      const lab = e.points[0].label; sleeveFilter = (sleeveFilter === lab) ? null : lab; draw();
-    });
+    donut("holdings-donut", labels.map(l => ({ label: l, value: bySleeve[l].w, color: codeColor(bySleeve[l].code) })),
+      { legend: true, centerVal: held.length, centerSub: "holdings",
+        hover: "<b>%{label}</b>: %{value:.1f}% · click to filter",
+        onClick: (lab) => { sleeveFilter = (sleeveFilter === lab) ? null : lab; draw(); } });
   }
 
   if (el("holdings-search"))
