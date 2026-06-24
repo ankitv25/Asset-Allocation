@@ -12,16 +12,18 @@ Plotly is vendored locally; no fetch / CDN / ES-modules.
 
 ---
 
-## The platform (6 pages)
+## The platform (8 pages)
 
 | Page | Answers | Highlights |
 |---|---|---|
-| **Overview** | What is the book doing, and why? | KPIs, allocation, positioning, construction snapshot, risk lens, diversification, stress |
-| **Construction** | How is it built, bottom-up? | universe → sleeve hierarchy → BL optimization → constraint bands → strategic→dynamic bridge |
-| **Performance** | Has it worked? | SAA vs DAA + benchmarks, **rebased Growth-of-$1**, drawdown, rolling 12m metrics |
-| **Attribution** | Where did return/risk come from? **What did the dynamic process add?** | layer waterfall, sleeve/asset-class/risk/regime/benchmark attribution, **9×9 matrix** |
-| **Risk** | What risk am I taking? | vol gauge, MCTR, concentration, block & SAA-vs-DAA risk, correlation/diversification |
+| **Overview** | What is the book doing, and why? | lead **insight banner** (generated), allocation, positioning, **enlarged construction view + sleeve-thesis evidence cards**, vol-budget component, diversification, **date-picker Growth-of-$1**, stress |
+| **Construction** | How is it built, bottom-up? | universe → **full-width sleeve hierarchy → evidence-card thesis** → BL optimization → constraint bands → strategic→dynamic bridge |
+| **Holdings** | What exactly do I own? | **sortable / searchable / CSV-exportable instrument blotter** with per-line rationale + a **data-vintage panel** |
+| **Performance** | Has it worked? | SAA vs DAA + benchmarks, **true date-picker Growth-of-$1 rebase**, drawdown, rolling 12m metrics |
+| **Attribution** | Where did return/risk come from? **What did the dynamic process add?** | layer waterfall, **attribution over time** (cumulative active + growth-tilt decision log), market-state/sleeve/risk/benchmark attribution, **9×9 matrix** |
+| **Risk** | What risk am I taking? | **vol-budget thermometer**, MCTR, concentration, block & SAA-vs-DAA risk, **enlarged correlation/diversification** |
 | **Stress** | How does it behave in crises? | historical episodes, forward factor-shock scenarios, interactive custom builder |
+| **Monte Carlo** | What is the *range* of outcomes? | 10k block-bootstrap paths (DAA/SAA/60-40), **probability bands**, terminal-value & drawdown **distributions**, **target-outcome probabilities** |
 
 SAA = static strategic policy. DAA = full dynamic system (regime overlay +
 tactical tilts + risk budget). The platform's central question, answered on the
@@ -30,7 +32,68 @@ strategic policy?**
 
 ---
 
-## Current status / session handoff (2026-06-23, iteration 3)
+## Current status / session handoff (2026-06-23, iteration 5)
+
+**Built this session (iteration 5)** — completing the documented roadmap:
+- **Monte Carlo page** (new `montecarlo.html`, 8th page) + engine
+  `Src/portfolio_monte_carlo.py`: 10,000-path **stationary block bootstrap**
+  (6-month blocks) of the realised monthly returns, **paired** across DAA/SAA/60-40
+  so cross-strategy probabilities are coherent. Surfaces **probability bands**
+  (5–95% / 25–75% fan, strategy toggle), terminal-value & worst-drawdown
+  **distributions**, and **target-outcome probabilities** (P(2x), P(loss),
+  P(DD>20%)). Honest result, consistent with the rest of the platform: DAA's
+  median outcome ≈ SAA's, but it **halves the probability of a >20% drawdown
+  (31% vs 59%)** — the edge is the left tail, not the median.
+- **Attribution over time** (Attribution page): cumulative active value-add and
+  a **growth-tilt decision log** (DAA−SAA growth weight, month by month, with
+  adverse-regime shading) — shows the stance cutting growth −25/−30pp into 2008,
+  2020, 2022. From a new `timeline` block in the attribution engine (reconciliation
+  still PASS).
+
+**Still open (future):** deeper per-episode stress narratives + scenario libraries ·
+fixed-income analytics (duration/curve/credit) · CRSP/WRDS data-tier · owner gates
+G-2 (CMA sign-off + valuation feed) / G-4 (real cash series).
+
+---
+
+## Prior status / session handoff (2026-06-23, iteration 4)
+
+**Built this session (iteration 4)** — continuing the documented roadmap + a UX/quality pass:
+- **Working mobile navigation** — a hamburger toggle opens a full-width dropdown nav
+  (previously `.appnav` was simply hidden ≤1000px, leaving no way to switch pages).
+  KPI ribbon drops to 2 columns and the appbar de-clutters on narrow screens.
+- **True date-picker Growth-of-$1** — a real `<input type=date>` (plus quick chips)
+  **rebases every series to $1 from the chosen date**; refactored into one reusable
+  `mountRebaseGrowth` used on both Performance and the Overview (the Overview chart
+  was previously raw, non-rebasing NAV).
+- **Holdings blotter** (new `holdings.html`) — sortable / searchable / **CSV-export**
+  instrument-level book with per-line rationale + a **data-vintage panel**. Built
+  from data already in `portfolio.json` (no pipeline rerun).
+- **Insight-first pass** — every page now opens with a `page-intro` (the question it
+  answers) and, on Overview/Construction/Holdings, a generated **insight banner**
+  (interpretation before charts). Charts sized up (`chart-md` 250→290, etc.).
+- **Sleeve thesis redesigned as evidence cards** (MRS Pillar-Evidence style): two rows
+  of weight · live-tilt · key-holdings · rationale, moved **below** an **enlarged
+  full-width construction treemap** (`chart-tree-xl`, 560px) on Overview + Construction.
+- **Volatility-vs-budget redesigned** — a purpose-built thermometer component
+  (forecast vs budget zones, utilisation %, headroom, binding flag) replacing the
+  placeholder Plotly gauge.
+- **Correlation/diversification given more weight** — enlarged feature tile on Risk + Overview.
+- **Data-consistency fix (correctness):** `growth_weight` now derives from the governed
+  `SLEEVE_BLOCK` (registry) source of truth — Real Assets is a *Diversifier*, so the
+  headline "growth assets %" reconciles exactly with the block bar (**61.5% → 55.3%**).
+  Fixed in `Src/build_portfolio_dashboard_data.py`; data regenerated.
+
+**Still open (roadmap, not done this session):** attribution *over time* (decision-log
+time series / per-month drill-down) · deeper per-episode stress narratives + scenario
+libraries · fixed-income analytics (duration/curve/credit) · **Monte Carlo** (10k paths,
+SAA & DAA, probability bands, drawdown & target-probability — future enhancement) ·
+**push iteration 4 to the public `ankitv25/Asset-Allocation` Pages repo** (needs a local
+clone + auth — see "Refresh + deploy").
+
+---
+
+## Prior status / session handoff (2026-06-23, iteration 3)
 
 **Built this session**
 - **Attribution Engine 3** (`Src/portfolio_attribution.py`) — return, risk,

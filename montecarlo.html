@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Monte Carlo — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="construction.html">Construction</a>
+    <a href="holdings.html">Holdings</a>
+    <a href="performance.html">Performance</a>
+    <a href="attribution.html">Attribution</a>
+    <a href="risk.html">Risk</a>
+    <a href="stress.html">Stress</a>
+    <a href="montecarlo.html" class="active">Monte Carlo</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <div class="page-intro">
+    <h1>Monte Carlo — forward outcomes</h1>
+    <p>Not "what did it do" but <strong>"what is the range of what it could do"</strong>. Ten thousand
+      simulated 10-year futures, <strong>block-bootstrapped from the realised return history</strong> so the
+      fat left tail and crisis clustering survive — for the dynamic book (DAA), the static policy (SAA), and
+      60/40. <span class="tile-sub" id="mc-window"></span></p>
+  </div>
+
+  <div class="insight">
+    <div class="ic">🎲</div>
+    <div>
+      <h3>The distribution of outcomes</h3>
+      <p id="mc-narrative">Running the simulation…</p>
+    </div>
+  </div>
+
+  <!-- Headline target probabilities (DAA) -->
+  <section class="grid grid-1">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Probability of reaching target outcomes — dynamic book</h2>
+        <span class="tile-sub">per $1 invested over the 10-year horizon</span></div>
+      <div class="statrow" id="mc-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+    </article>
+  </section>
+
+  <!-- Fan chart -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Probability bands — growth of $1</h2>
+        <span class="tile-sub">median (line) with 25–75% and 5–95% cones · log scale</span></div>
+      <div class="thesis-pick" id="mc-fan-pick" style="margin:0 0 .6rem"></div>
+      <div id="mc-fan" class="chart chart-tall"></div>
+      <p class="read">Each path is a contiguous block-resample of history, so the cone widens with horizon and
+        keeps the historical tail shape. The shaded cones are the 25–75% (inner) and 5–95% (outer) ranges.</p>
+    </article>
+  </section>
+
+  <!-- Outcome distributions -->
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Terminal-value distribution</h2>
+        <span class="tile-sub">DAA vs SAA · dotted line = median</span></div>
+      <div id="mc-terminal" class="chart chart-md"></div>
+      <p class="read">Where the 10-year outcome lands. SAA's distribution has a slightly higher median but a
+        heavier left shoulder — more paths finish poorly.</p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Worst-drawdown distribution</h2>
+        <span class="tile-sub">DAA vs SAA · deepest peak-to-trough per path</span></div>
+      <div id="mc-drawdown" class="chart chart-md"></div>
+      <p class="read">The dynamic book's mass sits at shallower drawdowns — the regime overlay truncates the
+        left tail, which is the entire case for running it.</p>
+    </article>
+  </section>
+
+  <!-- Comparison table -->
+  <section class="grid grid-1">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Outcome summary — DAA vs SAA vs 60/40</h2>
+        <span class="tile-sub">simulated distribution statistics</span></div>
+      <div id="mc-table"></div>
+      <p class="read" id="mc-table-read"></p>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

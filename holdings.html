@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Holdings — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="construction.html">Construction</a>
+    <a href="holdings.html" class="active">Holdings</a>
+    <a href="performance.html">Performance</a>
+    <a href="attribution.html">Attribution</a>
+    <a href="risk.html">Risk</a>
+    <a href="stress.html">Stress</a>
+    <a href="montecarlo.html">Monte Carlo</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <div class="page-intro">
+    <h1>Holdings blotter</h1>
+    <p>The full instrument-level book, every line justified by an investment role.
+      <strong>Each holding traces to a sleeve, a block, and a written rationale</strong> — the construction
+      logic is on the page, not hidden behind a click. Sort any column, search, or export to CSV.</p>
+  </div>
+
+  <!-- Insight-first: lead with the read, then the evidence -->
+  <div class="insight">
+    <div class="ic">📋</div>
+    <div>
+      <h3>What you are looking at</h3>
+      <p id="holdings-insight">The book is built bottom-up: instruments are grouped into role-anchored sleeves,
+        sleeves into Growth / Diversifier / Cash blocks. <strong>Core</strong> instruments carry the strategic
+        policy weight; <strong>tilt</strong> instruments are governed but only held when the dynamic process
+        calls for them. Weight % is today's live (DAA) holding.</p>
+    </div>
+  </div>
+
+  <!-- Data vintage -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Data vintage</h2>
+        <span class="tile-sub">provenance &amp; caveats for this book</span></div>
+      <div class="vintage" id="holdings-vintage"></div>
+    </article>
+  </section>
+
+  <!-- The blotter -->
+  <section class="grid grid-1">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Instrument-level book</h2>
+        <span class="tile-sub">click a column header to sort · click a ticker row to read its rationale</span></div>
+      <div class="blotter-toolbar">
+        <input type="search" id="holdings-search" placeholder="Search ticker, role, sleeve…" />
+        <button class="btn" id="holdings-export">⤓ Export CSV</button>
+        <span class="blotter-count" id="holdings-count"></span>
+      </div>
+      <div class="blotter-wrap"><div id="holdings-table"></div></div>
+      <p class="read">Policy % is the within-universe strategic weight a core instrument carries inside its
+        sleeve; Weight % is its share of the total live portfolio. Tilt lines show a dash for policy — they
+        are not part of the strategic base.</p>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/portfolio.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

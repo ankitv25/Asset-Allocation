@@ -13,13 +13,16 @@
 
 <header class="appbar">
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
     <a href="index.html" class="active">Overview</a>
     <a href="construction.html">Construction</a>
+    <a href="holdings.html">Holdings</a>
     <a href="performance.html">Performance</a>
     <a href="attribution.html">Attribution</a>
     <a href="risk.html">Risk</a>
     <a href="stress.html">Stress</a>
+    <a href="montecarlo.html">Monte Carlo</a>
   </nav>
   <div class="appbar-status" id="appbar-status">Loading…</div>
 </header>
@@ -27,6 +30,21 @@
 <div class="kpi-ribbon" id="kpi-ribbon"></div>
 
 <main class="db">
+
+  <div class="page-intro">
+    <h1>Portfolio overview</h1>
+    <p>What the book is doing today, and why. A regime-aware, multi-asset strategy built
+      <strong>bottom-up from investable instruments</strong> — read top to bottom: positioning →
+      construction logic → risk → diversification → track record → stress.</p>
+  </div>
+
+  <div class="insight">
+    <div class="ic">🧭</div>
+    <div>
+      <h3>Today's read</h3>
+      <p id="overview-insight">Loading the current stance…</p>
+    </div>
+  </div>
 
   <!-- ALLOCATION -->
   <section id="allocation" class="grid grid-2">
@@ -44,22 +62,25 @@
     </article>
   </section>
 
-  <!-- CONSTRUCTION -->
+  <!-- CONSTRUCTION — the most valuable view, given full width + height -->
   <section id="construction" class="grid grid-1">
-    <article class="tile">
+    <article class="tile tile-feature">
       <div class="tile-head"><h2>How the portfolio is built</h2>
         <span class="tile-sub" id="cons-sub"></span></div>
-      <div class="grid grid-3-2">
-        <div id="holdings-treemap" class="chart chart-tree"></div>
-        <div class="sidepanel">
-          <h3 class="mini-head">Sleeve thesis</h3>
-          <div class="thesis-pick" id="thesis-pick"></div>
-          <p class="thesis-text" id="thesis-text"></p>
-          <div class="flags-compact" id="cons-flags"></div>
-        </div>
-      </div>
-      <p class="read">Sized by weight, coloured by block. Click a sleeve chip to read why it is built that way.
-        The hierarchy is <strong>instrument → sleeve → block → portfolio</strong>; every holding traces to a role.</p>
+      <p class="eyebrow">instrument → sleeve → block → portfolio</p>
+      <div id="holdings-treemap" class="chart chart-tree-xl"></div>
+      <p class="read">Sized by weight, coloured by block; click a block to zoom in. Every holding traces to a
+        role — the construction is <strong>bottom-up from investable instruments</strong>, not abstract sleeve labels.</p>
+    </article>
+  </section>
+
+  <!-- SLEEVE THESIS — evidence cards, sitting below the construction view -->
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Sleeve thesis — the evidence</h2>
+        <span class="tile-sub">why each sleeve earns its place · weight · live tilt · key holdings · rationale</span></div>
+      <div class="ev-grid" id="sleeve-evidence"></div>
+      <div class="flags-compact" id="cons-flags" style="margin-top:1rem"></div>
     </article>
   </section>
 
@@ -67,7 +88,7 @@
   <section id="risk" class="grid grid-3">
     <article class="tile">
       <div class="tile-head"><h2>Volatility vs budget</h2></div>
-      <div id="vol-gauge" class="chart chart-sm"></div>
+      <div id="vol-gauge" class="volbudget-host"></div>
       <p class="read" id="vol-read"></p>
     </article>
     <article class="tile">
@@ -93,10 +114,10 @@
 
   <!-- DIVERSIFICATION -->
   <section id="diversification" class="grid grid-3-2">
-    <article class="tile">
+    <article class="tile tile-feature">
       <div class="tile-head"><h2>Correlation &amp; diversification</h2>
-        <span class="tile-sub">sleeve correlation matrix (full-history)</span></div>
-      <div id="corr-heatmap" class="chart chart-md"></div>
+        <span class="tile-sub">sleeve correlation matrix (full-history) — the core of construction</span></div>
+      <div id="corr-heatmap" class="chart chart-tall"></div>
     </article>
     <article class="tile">
       <div class="tile-head"><h2>Is it actually diversified?</h2></div>
@@ -107,8 +128,12 @@
 
   <!-- PERFORMANCE -->
   <section id="performance" class="grid grid-3-2">
-    <article class="tile">
-      <div class="tile-head"><h2>Growth of $1 — net of cost</h2><span class="tile-sub" id="perf-window"></span></div>
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Growth of $1 — net of cost</h2>
+        <span class="tile-sub" id="nav-rebase-label">rebased to $1 at inception</span></div>
+      <div class="muted-note">Pick any start date to <strong>rebase every series to $1</strong> from that
+        point. <span class="tile-sub" id="perf-window"></span></div>
+      <div class="chips growth-controls" id="nav-controls" style="margin:.5rem 0 .7rem"></div>
       <div id="nav-chart" class="chart chart-lg"></div>
     </article>
     <article class="tile">

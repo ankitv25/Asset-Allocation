@@ -11,13 +11,16 @@
 
 <header class="appbar">
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
     <a href="index.html">Overview</a>
     <a href="construction.html" class="active">Construction</a>
+    <a href="holdings.html">Holdings</a>
     <a href="performance.html">Performance</a>
     <a href="attribution.html">Attribution</a>
     <a href="risk.html">Risk</a>
     <a href="stress.html">Stress</a>
+    <a href="montecarlo.html">Monte Carlo</a>
   </nav>
   <div class="appbar-status" id="appbar-status">Loading…</div>
 </header>
@@ -25,6 +28,24 @@
 <div class="kpi-ribbon" id="kpi-ribbon"></div>
 
 <main class="db">
+
+  <div class="page-intro">
+    <h1>Construction</h1>
+    <p>How the portfolio is built, bottom-up — <strong>every weight justified by an investment role,
+      not just an optimizer output</strong>. Universe → sleeves → strategic allocation → constraints →
+      the dynamic process that turns policy into today's live book.</p>
+  </div>
+
+  <div class="insight">
+    <div class="ic">🏗️</div>
+    <div>
+      <h3>The construction principle</h3>
+      <p>Nothing is held because a mean-variance optimizer pointed at it. Each instrument enters through a
+        <strong>role</strong> (core return engine, diversifier, safe-haven anchor, or tilt), is grouped into a
+        role-anchored sleeve, and is sized inside governed floors and ceilings. The optimizer informs the
+        weights; the <strong>investment thesis justifies the position</strong>.</p>
+    </div>
+  </div>
 
   <!-- The construction flow -->
   <section class="grid grid-1">
@@ -53,18 +74,22 @@
     </article>
   </section>
 
-  <!-- 2. Hierarchy / sleeves -->
-  <section class="grid grid-3-2">
-    <article class="tile">
+  <!-- 2. Hierarchy / sleeves — enlarged, full width -->
+  <section class="grid grid-1">
+    <article class="tile tile-feature">
       <div class="tile-head"><h2>2 · Portfolio hierarchy</h2>
-        <span class="tile-sub">instrument → sleeve → block → portfolio (sized by weight)</span></div>
-      <div id="holdings-treemap" class="chart chart-tree"></div>
+        <span class="tile-sub">instrument → sleeve → block → portfolio (sized by weight) · click a block to zoom</span></div>
+      <div id="holdings-treemap" class="chart chart-tree-xl"></div>
     </article>
+  </section>
+
+  <!-- Sleeve thesis as evidence cards (below the hierarchy) -->
+  <section class="grid grid-1">
     <article class="tile">
-      <div class="tile-head"><h2>Sleeve structure &amp; thesis</h2></div>
-      <div class="thesis-pick" id="thesis-pick"></div>
-      <p class="thesis-text" id="thesis-text"></p>
-      <div class="flags-compact" id="cons-flags"></div>
+      <div class="tile-head"><h2>Sleeve structure &amp; thesis — the evidence</h2>
+        <span class="tile-sub">two rows of evidence-backed rationale: weight · live tilt · key holdings · why it's held</span></div>
+      <div class="ev-grid" id="sleeve-evidence"></div>
+      <div class="flags-compact" id="cons-flags" style="margin-top:1rem"></div>
     </article>
   </section>
 

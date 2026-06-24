@@ -11,13 +11,16 @@
 
 <header class="appbar">
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
     <a href="index.html">Overview</a>
     <a href="construction.html">Construction</a>
+    <a href="holdings.html">Holdings</a>
     <a href="performance.html">Performance</a>
     <a href="attribution.html">Attribution</a>
     <a href="risk.html" class="active">Risk</a>
     <a href="stress.html">Stress</a>
+    <a href="montecarlo.html">Monte Carlo</a>
   </nav>
   <div class="appbar-status" id="appbar-status">Loading…</div>
 </header>
@@ -26,9 +29,16 @@
 
 <main class="db">
 
+  <div class="page-intro">
+    <h1>Risk</h1>
+    <p>What risk am I actually taking — and is it deliberate? Volatility against budget, where risk
+      concentrates (sleeve, block, instrument, factor), and <strong>whether diversification is real or
+      just an average of correlated bets</strong>.</p>
+  </div>
+
   <section class="grid grid-3">
     <article class="tile"><div class="tile-head"><h2>Volatility vs budget</h2></div>
-      <div id="vol-gauge" class="chart chart-sm"></div><p class="read" id="vol-read"></p></article>
+      <div id="vol-gauge" class="volbudget-host"></div><p class="read" id="vol-read"></p></article>
     <article class="tile"><div class="tile-head"><h2>Risk by factor</h2></div>
       <div id="factor-chart" class="chart chart-sm"></div><p class="read" id="factor-read"></p></article>
     <article class="tile"><div class="tile-head"><h2>Capital vs risk share</h2></div>
@@ -66,11 +76,11 @@
       <p class="read">Contribution to total portfolio risk vs capital weight, per holding.</p></article>
   </section>
 
-  <!-- Correlation / diversification -->
+  <!-- Correlation / diversification — a core construction concept, given full weight -->
   <section class="grid grid-3-2">
-    <article class="tile"><div class="tile-head"><h2>Correlation &amp; diversification</h2>
-      <span class="tile-sub">sleeve correlation matrix (full-history)</span></div>
-      <div id="corr-heatmap" class="chart chart-md"></div></article>
+    <article class="tile tile-feature"><div class="tile-head"><h2>Correlation &amp; diversification</h2>
+      <span class="tile-sub">sleeve correlation matrix (full-history) — what the whole construction rests on</span></div>
+      <div id="corr-heatmap" class="chart chart-tall"></div></article>
     <article class="tile"><div class="tile-head"><h2>Is it actually diversified?</h2></div>
       <div class="bigstats" id="div-stats"></div><p class="read" id="div-read"></p></article>
   </section>

@@ -11,13 +11,16 @@
 
 <header class="appbar">
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
     <a href="index.html">Overview</a>
     <a href="construction.html">Construction</a>
+    <a href="holdings.html">Holdings</a>
     <a href="performance.html">Performance</a>
     <a href="attribution.html" class="active">Attribution</a>
     <a href="risk.html">Risk</a>
     <a href="stress.html">Stress</a>
+    <a href="montecarlo.html">Monte Carlo</a>
   </nav>
   <div class="appbar-status" id="appbar-status">Loading…</div>
 </header>
@@ -48,6 +51,22 @@
       <div id="attr-sleeve-chart" class="chart chart-lg"></div>
       <p class="read">Which active over/under-weights paid. The dynamic process holds the same sleeves as the
         policy; only the weights differ, so this is pure allocation timing.</p>
+    </article>
+  </section>
+
+  <!-- 1b. Attribution over time — the decision log -->
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Value-add over time — cumulative active</h2>
+        <span class="tile-sub">cumulative active return, DAA vs SAA (%, walk-forward)</span></div>
+      <div id="attr-cum-chart" class="chart chart-md"></div>
+      <p class="read" id="attr-cum-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>How the stance moved — growth tilt vs policy</h2>
+        <span class="tile-sub">DAA minus SAA growth weight, month by month · red = adverse regime</span></div>
+      <div id="attr-tilt-chart" class="chart chart-md"></div>
+      <p class="read" id="attr-tilt-read"></p>
     </article>
   </section>
 

@@ -1,7 +1,9 @@
 # Dashboard handoff — see README.md
 
-This file is superseded. The dashboard is now a **6-page analytics platform**
-(iteration 3), not the original single page.
+This file is superseded. The dashboard is now an **8-page analytics platform**
+(iteration 5: + Monte Carlo simulation page & attribution-over-time; iteration 4
+added the Holdings blotter, mobile nav, date-picker Growth-of-$1, evidence-card
+sleeve thesis), not the original single page.
 
 - **Front door / current status / next build:** [`README.md`](README.md) (this folder).
 - **Technical handoff (architecture, data layer, how to extend):**

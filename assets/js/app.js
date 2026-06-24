@@ -29,6 +29,22 @@ const BASE = { font: FONT, margin: { l: 40, r: 12, t: 8, b: 30 }, paper_bgcolor:
 const CFG = { displayModeBar: false, responsive: true };
 const el = (id) => document.getElementById(id);
 
+// ---------------- Mobile navigation ----------------
+// Wires the hamburger toggle. Runs immediately (outside main) so navigation
+// works on mobile even if the data payload fails to load.
+function initNav() {
+  const btn = document.querySelector(".navtoggle");
+  const nav = document.querySelector(".appnav");
+  if (!btn || !nav) return;
+  btn.addEventListener("click", (e) => { e.stopPropagation(); nav.classList.toggle("open"); });
+  // Tap outside the open menu closes it.
+  document.addEventListener("click", (e) => {
+    if (nav.classList.contains("open") && !nav.contains(e.target) && !btn.contains(e.target))
+      nav.classList.remove("open");
+  });
+}
+initNav();
+
 async function load() {
   // Prefer the embedded global (data/portfolio.js) so the page works by
   // double-click (file://). Fall back to fetch when served over http.
@@ -53,9 +69,10 @@ function renderAllocation(p) {
     type: "pie", hole: 0.62, sort: false, direction: "clockwise",
     labels: w.map(x => x.label), values: w.map(x => x.weight),
     marker: { colors: w.map(x => codeColor(x.sleeve)), line: { color: "#fff", width: 2 } },
-    textposition: "outside", texttemplate: "%{label}<br>%{value:.1f}%",
+    textposition: "outside", texttemplate: "%{label}<br>%{value:.1f}%", automargin: true,
+    textfont: { size: 10 }, insidetextorientation: "horizontal",
     hovertemplate: "%{label}: %{value:.1f}%<extra></extra>",
-  }], { ...BASE, margin: { l: 10, r: 10, t: 10, b: 10 }, showlegend: false,
+  }], { ...BASE, margin: { l: 70, r: 70, t: 24, b: 24 }, showlegend: false,
     annotations: [{ text: `<b>${p.growth_weight}%</b><br><span style="font-size:10px;color:#6b7783">growth</span>`,
       showarrow: false, font: { size: 22, color: C.navy } }] }, CFG);
   const top = [...p.weights].sort((a, b) => b.weight - a.weight).slice(0, 2);
@@ -87,7 +104,7 @@ function renderPositioning(p, blocks) {
 
 // ---------------- Construction treemap + thesis ----------------
 function renderConstruction(c) {
-  el("cons-sub").textContent = `${c.n_instruments} instruments · role-anchored`;
+  if (el("cons-sub")) el("cons-sub").textContent = `${c.n_instruments} instruments · role-anchored`;
   const ids = ["root"], labels = ["Portfolio"], parents = [""], values = [0], colors = ["#ffffff"];
   const blockSum = {};
   c.sleeves.forEach(s => {
@@ -118,33 +135,51 @@ function renderConstruction(c) {
     pathbar: { visible: true, thickness: 18 },
   }], { ...BASE, margin: { l: 4, r: 4, t: 4, b: 4 }, font: { ...FONT, size: 11 } }, CFG);
 
-  // Thesis picker chips
+  // Legacy thesis-picker (only present if a page still uses the old side panel).
   const pick = el("thesis-pick"), text = el("thesis-text");
-  const show = (s) => { text.textContent = s.thesis;
-    [...pick.children].forEach(ch => ch.classList.toggle("sel", ch.dataset.s === s.sleeve)); };
-  pick.innerHTML = c.sleeves.map(s =>
-    `<span class="chip clickable" data-s="${s.sleeve}" style="border-left:3px solid ${codeColor(s.sleeve)}">${s.label} <b>${s.weight}%</b></span>`).join("");
-  c.sleeves.forEach(s => { const ch = [...pick.children].find(x => x.dataset.s === s.sleeve);
-    if (ch) ch.addEventListener("click", () => show(s)); });
-  show(c.sleeves[0]);
+  if (pick && text) {
+    const show = (s) => { text.textContent = s.thesis;
+      [...pick.children].forEach(ch => ch.classList.toggle("sel", ch.dataset.s === s.sleeve)); };
+    pick.innerHTML = c.sleeves.map(s =>
+      `<span class="chip clickable" data-s="${s.sleeve}" style="border-left:3px solid ${codeColor(s.sleeve)}">${s.label} <b>${s.weight}%</b></span>`).join("");
+    c.sleeves.forEach(s => { const ch = [...pick.children].find(x => x.dataset.s === s.sleeve);
+      if (ch) ch.addEventListener("click", () => show(s)); });
+    show(c.sleeves[0]);
+  }
 
-  el("cons-flags").innerHTML = c.flags.slice(0, 3).map(f =>
+  if (el("cons-flags")) el("cons-flags").innerHTML = c.flags.slice(0, 3).map(f =>
     `<div class="flagc"><span><b>${f.title}.</b> ${f.detail}</span></div>`).join("");
+}
+
+// ---------------- Sleeve thesis as evidence cards (MRS Pillar-Evidence style) ----------------
+function renderSleeveEvidence(c, positioning) {
+  const host = el("sleeve-evidence"); if (!host) return;
+  const activeOf = {};
+  (positioning && positioning.weights || []).forEach(w => { activeOf[w.sleeve] = w.active; });
+  host.innerHTML = c.sleeves.filter(s => s.weight > 0.05).map(s => {
+    const held = (s.instruments || []).filter(i => i.holding > 0).sort((a, b) => b.holding - a.holding);
+    const topTxt = held.slice(0, 3).map(i => `${i.ticker} <span class="mono">${i.holding.toFixed(1)}%</span>`).join(" · ") || "–";
+    const a = activeOf[s.sleeve];
+    const deltaHtml = (a == null || Math.abs(a) < 0.1) ? `<span class="ev-delta flat">at policy</span>`
+      : `<span class="ev-delta ${a > 0 ? "pos" : "neg"}">${a > 0 ? "+" : ""}${a}pp tilt</span>`;
+    return `<article class="ev-card" style="--pc:${codeColor(s.sleeve)}">
+      <div class="ev-head"><span class="ev-name">${s.label}</span>
+        <span class="ev-block" style="--bc:${BLOCK_COLOR[s.block]}">${s.block}</span></div>
+      <div class="ev-metric"><span class="ev-w">${s.weight}%</span>${deltaHtml}</div>
+      <dl class="ev-evidence">
+        <div><dt>Holdings</dt><dd>${topTxt}</dd></div>
+        <div><dt>Roster</dt><dd>${s.n_core} core${held.length > s.n_core ? ` · ${held.length} held` : ""}</dd></div>
+      </dl>
+      <p class="ev-note">${s.thesis}</p>
+    </article>`;
+  }).join("");
 }
 
 // ---------------- Risk ----------------
 function renderRisk(r) {
-  // Vol gauge
-  const budget = r.vol_budget, fc = r.forecast_vol;
-  Plotly.newPlot("vol-gauge", [{
-    type: "indicator", mode: "gauge+number", value: fc, number: { suffix: "%", font: { size: 26 } },
-    gauge: { axis: { range: [0, Math.ceil(budget * 1.4)], ticksuffix: "%" },
-      bar: { color: fc > budget ? C.neg : C.accent, thickness: 0.7 },
-      steps: [{ range: [0, budget], color: "#eef5fb" }, { range: [budget, budget * 1.4], color: "#fbecec" }],
-      threshold: { line: { color: C.navy, width: 3 }, value: budget } },
-  }], { ...BASE, margin: { l: 24, r: 24, t: 10, b: 6 } }, CFG);
-  el("vol-read").innerHTML = `Forecast <strong>${fc}%</strong> vs ${budget}% budget — `
-    + (fc > budget ? "binding; envelope trimming risk." : `${r.vol_util}% of budget used, comfortably within.`);
+  renderVolBudget(r);
+  if (el("vol-read")) el("vol-read").innerHTML = `Forecast <strong>${r.forecast_vol}%</strong> vs ${r.vol_budget}% budget — `
+    + (r.forecast_vol > r.vol_budget ? "binding; the envelope is trimming risk." : `${r.vol_util}% of budget used, comfortably within.`);
 
   // Factor bars
   const f = r.factors;
@@ -182,6 +217,38 @@ function renderRisk(r) {
       legend: { orientation: "h", y: 1.18, font: { size: 10 } },
       yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
   } else { el("instrument-risk-chart").closest("section").style.display = "none"; }
+}
+
+// Volatility-vs-budget thermometer — a purpose-built analytics component.
+function renderVolBudget(r) {
+  const host = el("vol-gauge"); if (!host) return;
+  const fc = r.forecast_vol, budget = r.vol_budget;
+  const max = Math.max(budget * 1.45, fc * 1.1);
+  const pct = (v) => Math.max(0, Math.min(100, (v / max) * 100));
+  const over = fc > budget;
+  const util = r.vol_util != null ? r.vol_util : Math.round((fc / budget) * 100);
+  const headroom = (budget - fc);
+  host.classList.add("volbudget-host");
+  host.style.height = "auto";
+  host.innerHTML = `
+    <div class="vb">
+      <div class="vb-top">
+        <div class="vb-now"><span class="vb-val">${fc}%</span><span class="vb-lab">forecast 36-month volatility</span></div>
+        <div class="vb-util ${over ? "warn" : "ok"}"><span class="pct">${util}%</span><small>of budget</small></div>
+      </div>
+      <div class="vb-track">
+        <div class="vb-zone-ok" style="width:${pct(budget)}%"></div>
+        <div class="vb-zone-over" style="width:${100 - pct(budget)}%"></div>
+        <div class="vb-fill ${over ? "warn" : "ok"}" style="width:${pct(fc)}%"></div>
+        <div class="vb-budget" style="left:${pct(budget)}%"></div>
+      </div>
+      <div class="vb-scale"><span>0%</span><span>${max.toFixed(0)}%</span></div>
+      <div class="vb-stats">
+        <div class="vb-stat"><b>${budget}%</b><span>Stance budget</span></div>
+        <div class="vb-stat"><b>${headroom >= 0 ? "+" : ""}${headroom.toFixed(1)}pp</b><span>${headroom >= 0 ? "Headroom" : "Over budget"}</span></div>
+        <div class="vb-stat"><b>${over ? "Binding" : "Within"}</b><span>Envelope</span></div>
+      </div>
+    </div>`;
 }
 
 // ---------------- Diversification ----------------
@@ -244,19 +311,16 @@ const NAV_META = {
 };
 
 function renderPerformance(t) {
-  el("perf-window").textContent = t.window;
-  // NAV
+  if (el("perf-window")) el("perf-window").textContent = t.window;
+  // Growth of $1 — now a TRUE date-picker rebase (was a static raw-NAV chart).
   const order = ["FullSystem", "b6040", "FullSystem_BL", "SAA_static", "all_equity"];
-  const traces = order.filter(k => t.nav[k]).map(k => {
-    const m = NAV_META[k] || { label: k, color: C.muted, width: 1.3 };
-    const s = t.nav[k];
-    return { type: "scatter", mode: "lines", name: m.label, x: s.map(p => p.date), y: s.map(p => p.v),
-      line: { width: m.width, color: m.color }, hovertemplate: m.label + " $%{y:.2f}<extra></extra>" };
+  if (el("nav-chart")) mountRebaseGrowth({
+    chartId: "nav-chart", controlsId: "nav-controls", labelId: "nav-rebase-label",
+    seriesMap: t.nav, order: order.filter(k => t.nav[k]),
+    colorOf: (k) => (NAV_META[k] || {}).color || C.muted,
+    widthOf: (k) => (NAV_META[k] || {}).width || 1.3,
+    labelOf: (k) => (NAV_META[k] || {}).label || k, defaultLog: true,
   });
-  Plotly.newPlot("nav-chart", traces, { ...BASE, margin: { l: 44, r: 10, t: 8, b: 40 },
-    legend: { orientation: "h", y: -0.22, font: { size: 10 } },
-    xaxis: { ...BASE.xaxis, type: "date", dtick: "M24", tickformat: "%Y", tickangle: 0 },
-    yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$" } }, CFG);
 
   // Metrics cards
   el("metrics-table").innerHTML = t.metrics.map(m => {
@@ -367,72 +431,96 @@ function _lineTraces(c, keys, dateField) {
   });
 }
 
-function renderGrowth(c) {
-  if (!el("growth-chart")) return;
-  const dates = c.series["DAA"].map(p => p.date);
-  const firstDate = dates[0];
+// Reusable Growth-of-$1 with TRUE rebasing: pick any start date (real date
+// picker, not just preset years) and every series is restated to $1 from that
+// point — panning the range slider does NOT reset the $1 base. Used on both the
+// Performance page (SAA/DAA/benchmarks) and the Overview page (track-record NAV).
+function mountRebaseGrowth(o) {
+  const chart = el(o.chartId), controls = el(o.controlsId);
+  if (!chart) return;
+  const primary = o.order.find(k => o.seriesMap[k] && o.seriesMap[k].length);
+  if (!primary) return;
+  const dates = o.seriesMap[primary].map(p => p.date);
+  const firstDate = dates[0], lastDate = dates[dates.length - 1];
   const years = [...new Set(dates.map(d => +d.slice(0, 4)))];
+  const colorOf = o.colorOf || (() => C.accent);
+  const widthOf = o.widthOf || (() => 1.3);
+  const labelOf = o.labelOf || ((k) => k);
 
-  // Rebase: pick any start date and restate every series to $1 from THAT point
-  // (this is the whole point — panning a slider does not reset the $1 base).
-  // Preset starts: inception + the start of each crisis/cycle the user cares about.
+  // Snap an arbitrary calendar date to the first available observation >= it.
+  const snap = (val) => dates.find(d => d >= val) || lastDate;
+  // Quick presets: inception + cycle/crisis starts that fall inside the window.
   const presetYears = [+firstDate.slice(0, 4), 2010, 2013, 2016, 2018, 2020, 2022, 2024];
   const presets = [...new Set(presetYears)].sort((a, b) => a - b)
     .map(y => dates.find(d => +d.slice(0, 4) >= y)).filter(Boolean);
 
-  const plotFrom = (startDate, logScale) => {
-    const traces = c.order.map(k => {
-      const s = c.series[k].filter(p => p.date >= startDate);
-      if (!s.length) return null;
+  let logScale = o.defaultLog !== false;
+  let startDate = firstDate;
+
+  const plot = () => {
+    const traces = o.order.map(k => {
+      const arr = o.seriesMap[k]; if (!arr || !arr.length) return null;
+      const s = arr.filter(p => p.date >= startDate); if (!s.length) return null;
       const base = s[0].v;
-      return { type: "scatter", mode: "lines", name: k, x: s.map(p => p.date), y: s.map(p => p.v / base),
-        line: { width: CMP_WIDTH[k] || 1.3, color: CMP_COLOR[k] },
-        hovertemplate: k + " $%{y:.2f}<extra></extra>" };
+      return { type: "scatter", mode: "lines", name: labelOf(k), x: s.map(p => p.date), y: s.map(p => p.v / base),
+        line: { width: widthOf(k), color: colorOf(k) }, hovertemplate: labelOf(k) + " $%{y:.2f}<extra></extra>" };
     }).filter(Boolean);
     const shapes = years.filter(y => `${y}-01-01` >= startDate).map(y => ({
       type: "line", x0: `${y}-01-01`, x1: `${y}-01-01`, yref: "paper", y0: 0, y1: 1,
       line: { color: "rgba(15,34,51,0.05)", width: 1 } }));
-    Plotly.react("growth-chart", traces, {
+    Plotly.react(o.chartId, traces, {
       ...BASE, margin: { l: 54, r: 16, t: 10, b: 18 }, shapes,
       legend: { orientation: "h", y: 1.1, font: { size: 10 } },
       xaxis: { type: "date", rangeslider: { visible: true, thickness: 0.06 } },
       yaxis: { ...BASE.yaxis, type: logScale ? "log" : "linear", tickprefix: "$",
         title: { text: `$1 at ${startDate.slice(0, 7)}`, font: { size: 10, color: C.muted } } },
     }, { ...CFG, scrollZoom: true });
-    if (el("growth-rebase-label"))
-      el("growth-rebase-label").textContent = `rebased to $1 at ${startDate.slice(0, 7)}`;
+    if (o.labelId && el(o.labelId)) el(o.labelId).textContent = `rebased to $1 at ${startDate.slice(0, 7)}`;
+    const dinput = controls && controls.querySelector("input[type=date]");
+    if (dinput) dinput.value = startDate;
+    if (controls) [...controls.querySelectorAll("[data-d]")].forEach(ch =>
+      ch.classList.toggle("sel", ch.dataset.d === startDate));
   };
 
-  let logScale = true;
-  if (el("growth-controls")) {
-    el("growth-controls").innerHTML =
-      presets.map((d, i) => `<span class="chip clickable ${i === 0 ? "sel" : ""}" data-d="${d}">${d.slice(0, 7)}</span>`).join("")
-      + `<span class="chip clickable" id="growth-logtoggle" style="margin-left:.6rem">log scale ✓</span>`;
-    const setSel = (node) => [...el("growth-controls").querySelectorAll("[data-d]")]
-      .forEach(ch => ch.classList.toggle("sel", ch === node));
-    [...el("growth-controls").querySelectorAll("[data-d]")].forEach(ch =>
-      ch.addEventListener("click", () => { setSel(ch); plotFrom(ch.dataset.d, logScale); }));
-    el("growth-logtoggle").addEventListener("click", function () {
-      logScale = !logScale; this.textContent = `log scale ${logScale ? "✓" : "✗"}`;
-      const cur = el("growth-controls").querySelector(".sel"); plotFrom(cur ? cur.dataset.d : firstDate, logScale);
-    });
+  if (controls) {
+    controls.innerHTML =
+      `<label class="daterebase">Rebase from
+        <input type="date" min="${firstDate}" max="${lastDate}" value="${firstDate}"></label>`
+      + `<span class="lbl">quick:</span>`
+      + presets.map(d => `<span class="chip clickable" data-d="${d}">${d.slice(0, 7)}</span>`).join("")
+      + `<span class="chip clickable" data-log="1" style="margin-left:.5rem">log scale ✓</span>`;
+    const dinput = controls.querySelector("input[type=date]");
+    dinput.addEventListener("change", () => { startDate = snap(dinput.value); plot(); });
+    [...controls.querySelectorAll("[data-d]")].forEach(ch =>
+      ch.addEventListener("click", () => { startDate = ch.dataset.d; plot(); }));
+    const lt = controls.querySelector("[data-log]");
+    lt.addEventListener("click", () => { logScale = !logScale; lt.textContent = `log scale ${logScale ? "✓" : "✗"}`; plot(); });
   }
-  plotFrom(firstDate, logScale);
+  plot();
 
-  // drawdown overlay (SAA vs DAA)
-  if (el("growth-dd")) {
-    const traces = ["DAA", "SAA"].map(k => {
-      const s = c.dd_series[k];
-      return { type: "scatter", mode: "lines", name: k, x: s.map(p => p.date), y: s.map(p => p.v),
-        fill: k === "DAA" ? "tozeroy" : "none", fillcolor: "rgba(14,34,51,0.08)",
-        line: { width: k === "DAA" ? 1.4 : 1.2, color: CMP_COLOR[k] },
-        hovertemplate: k + " %{y:.1f}%<extra></extra>" };
+  // Optional drawdown overlay paired with the growth chart.
+  if (o.ddId && el(o.ddId) && o.ddSeries) {
+    const traces = (o.ddKeys || Object.keys(o.ddSeries)).map(k => {
+      const s = o.ddSeries[k];
+      return { type: "scatter", mode: "lines", name: labelOf(k), x: s.map(p => p.date), y: s.map(p => p.v),
+        fill: k === o.ddKeys[0] ? "tozeroy" : "none", fillcolor: "rgba(14,34,51,0.08)",
+        line: { width: 1.3, color: colorOf(k) }, hovertemplate: labelOf(k) + " %{y:.1f}%<extra></extra>" };
     });
-    Plotly.newPlot("growth-dd", traces, { ...BASE, margin: { l: 50, r: 14, t: 8, b: 28 },
+    Plotly.newPlot(o.ddId, traces, { ...BASE, margin: { l: 50, r: 14, t: 8, b: 28 },
       legend: { orientation: "h", y: 1.2, font: { size: 10 } },
       xaxis: { type: "date", dtick: "M24", tickformat: "%Y" },
       yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
   }
+}
+
+// Performance page Growth-of-$1 (SAA / DAA / benchmarks).
+function renderGrowth(c) {
+  mountRebaseGrowth({
+    chartId: "growth-chart", controlsId: "growth-controls", labelId: "growth-rebase-label",
+    ddId: "growth-dd", seriesMap: c.series, order: c.order,
+    colorOf: (k) => CMP_COLOR[k], widthOf: (k) => CMP_WIDTH[k] || 1.3,
+    ddSeries: c.dd_series, ddKeys: ["DAA", "SAA"], defaultLog: true,
+  });
 }
 
 function renderRolling(c) {
@@ -741,6 +829,258 @@ function render9x9(m) {
   if (el("matrix-read")) el("matrix-read").innerHTML = m.narrative;
 }
 
+// ---------------- Overview lead insight (generated, not hardcoded) ----------------
+function renderOverviewInsight(d) {
+  if (!el("overview-insight")) return;
+  const p = d.positioning;
+  const tilt = p.bets && p.bets.length
+    ? `tilted ${p.bets.map(b => `${b.sleeve} ${b.active >= 0 ? "+" : ""}${b.active}pp`).slice(0, 3).join(", ")}`
+    : "running at strategic policy weights with no active tilt";
+  let valueAdd = "";
+  if (d.comparison && d.comparison.value_added) {
+    const v = d.comparison.value_added;
+    valueAdd = ` Versus its own static policy, the dynamic process has added <strong>${v.sharpe_delta >= 0 ? "+" : ""}${v.sharpe_delta} Sharpe</strong> `
+      + `and a <strong>${Math.abs(v.maxdd_delta)}pp shallower</strong> worst drawdown — its value is risk control, not extra return.`;
+  }
+  const r = d.risk;
+  const volTxt = r ? ` Forecast volatility is <strong>${r.forecast_vol}%</strong> against a ${r.vol_budget}% budget.` : "";
+  el("overview-insight").innerHTML =
+    `The book reads <strong>${p.regime}</strong> regime → <strong>${p.stance}</strong> stance `
+    + `(${p.risk_posture}), with <strong>${p.growth_weight}% in growth assets</strong> and ${tilt}.`
+    + volTxt + valueAdd;
+}
+
+// ================= Holdings blotter (Holdings page) =================
+const BLOCK_LABEL = { Growth: "Growth", Diversifier: "Diversifier", Cash: "Cash" };
+function renderHoldings(d) {
+  if (!el("holdings-table")) return;
+  const con = d.construction;
+  // Flatten the governed hierarchy to an instrument-level book.
+  const rows = [];
+  con.sleeves.forEach(s => (s.instruments || []).forEach(i => {
+    rows.push({ ticker: i.ticker, role: i.role, sleeve: s.label, sleeveCode: s.sleeve,
+      block: s.block, kind: i.policy > 0 ? "core" : "tilt", policy: i.policy || 0,
+      holding: i.holding || 0, rationale: i.rationale || "" });
+  }));
+  const held = rows.filter(r => r.holding > 0);
+
+  // Data-vintage panel
+  if (el("holdings-vintage")) {
+    const totalW = held.reduce((a, r) => a + r.holding, 0);
+    el("holdings-vintage").innerHTML = [
+      ["As of (decision month)", d.decision_month], ["Data generated", d.generated],
+      ["Instruments held", `${held.length} of ${rows.length}`],
+      ["Total weight", `${totalW.toFixed(1)}%`], ["Data tier", "Exploratory (Yahoo)"],
+      ["Cash sleeve", "FRED T-bill proxy (G-4)"],
+    ].map(([l, v]) => `<div class="vi"><div class="vi-l">${l}</div><div class="vi-v">${v}</div></div>`).join("");
+  }
+
+  const cols = [
+    { k: "ticker", t: "Ticker", num: false }, { k: "role", t: "Role", num: false },
+    { k: "sleeve", t: "Sleeve", num: false }, { k: "block", t: "Block", num: false },
+    { k: "kind", t: "Type", num: false }, { k: "policy", t: "Policy %", num: true },
+    { k: "holding", t: "Weight %", num: true },
+  ];
+  let sortK = "holding", sortDir = -1, query = "";
+
+  const draw = () => {
+    const q = query.trim().toLowerCase();
+    let view = held.filter(r => !q ||
+      [r.ticker, r.role, r.sleeve, r.block, r.kind].join(" ").toLowerCase().includes(q));
+    view.sort((a, b) => {
+      const av = a[sortK], bv = b[sortK];
+      const c = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
+      return c * sortDir;
+    });
+    el("holdings-table").innerHTML = `<table class="blotter"><thead><tr>`
+      + cols.map(c => `<th class="${c.num ? "num" : ""}" data-k="${c.k}">${c.t}`
+          + (sortK === c.k ? `<span class="arr">${sortDir < 0 ? "▼" : "▲"}</span>` : "") + `</th>`).join("")
+      + `</tr></thead><tbody>`
+      + view.map(r => `<tr>
+          <td><span class="tk">${r.ticker}</span></td>
+          <td>${r.role}<span class="rat">${r.rationale}</span></td>
+          <td><span class="swatch" style="background:${codeColor(r.sleeveCode)}"></span>${r.sleeve}</td>
+          <td>${BLOCK_LABEL[r.block] || r.block}</td>
+          <td><span class="kindpill ${r.kind}">${r.kind}</span></td>
+          <td class="num">${r.policy ? r.policy.toFixed(1) : "–"}</td>
+          <td class="num"><b>${r.holding.toFixed(2)}</b></td></tr>`).join("")
+      + `</tbody></table>`;
+    if (el("holdings-count")) el("holdings-count").textContent = `${view.length} holdings shown`;
+    [...el("holdings-table").querySelectorAll("th[data-k]")].forEach(th =>
+      th.addEventListener("click", () => {
+        const k = th.dataset.k;
+        if (sortK === k) sortDir *= -1; else { sortK = k; sortDir = (k === "policy" || k === "holding") ? -1 : 1; }
+        draw();
+      }));
+  };
+  draw();
+
+  if (el("holdings-search"))
+    el("holdings-search").addEventListener("input", (e) => { query = e.target.value; draw(); });
+  if (el("holdings-export"))
+    el("holdings-export").addEventListener("click", () => {
+      const head = ["Ticker", "Role", "Sleeve", "Block", "Type", "Policy%", "Weight%", "Rationale"];
+      const csv = [head.join(",")].concat(held.map(r => [r.ticker, r.role, r.sleeve, r.block, r.kind,
+        r.policy, r.holding.toFixed(2), `"${(r.rationale || "").replace(/"/g, '""')}"`].join(","))).join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      a.download = `holdings_${d.decision_month}.csv`; a.click();
+    });
+}
+
+// ================= Monte Carlo (Monte Carlo page) =================
+const MC_COLOR = { DAA: "#0e2233", SAA: "#5b8c9f", "60/40": "#d68a13" };
+function renderMonteCarlo(mc) {
+  if (!el("mc-fan")) return;
+  const byName = {}; mc.summary.forEach(r => byName[r.name = r.strategy] = r);
+  const P = mc.params;
+
+  if (el("mc-narrative")) el("mc-narrative").innerHTML = mc.narrative;
+  if (el("mc-window")) el("mc-window").textContent =
+    `${P.n_paths.toLocaleString()} paths · ${P.horizon_years}-yr · block bootstrap (${P.block_months}m) of ${P.n_history_months} months`;
+
+  // headline target-probability cards (DAA)
+  const d = byName.DAA;
+  if (el("mc-stats") && d) {
+    el("mc-stats").innerHTML = `
+      <div class="bigstat"><div class="bigstat-v">$${d.terminal_median.toFixed(2)}</div>
+        <div class="bigstat-l">Median outcome / $1 · ${P.horizon_years}y</div>
+        <div class="bigstat-h">5–95%: $${d.terminal_p5.toFixed(2)}–$${d.terminal_p95.toFixed(2)}</div></div>
+      <div class="bigstat"><div class="bigstat-v">${d.prob_ge_2x.toFixed(0)}%</div>
+        <div class="bigstat-l">Probability of doubling</div><div class="bigstat-h">P(≥ $2.00)</div></div>
+      <div class="bigstat"><div class="bigstat-v">${d.prob_dd_gt_threshold.toFixed(0)}%</div>
+        <div class="bigstat-l">P(drawdown worse than ${P.dd_threshold_pct}%)</div>
+        <div class="bigstat-h">median worst DD ${d.maxdd_median.toFixed(0)}%</div></div>
+      <div class="bigstat"><div class="bigstat-v">${d.prob_loss.toFixed(0)}%</div>
+        <div class="bigstat-l">Probability of a nominal loss</div><div class="bigstat-h">P(end &lt; $1.00)</div></div>`;
+  }
+
+  // ---- percentile fan, with a strategy toggle
+  let cur = "DAA";
+  const drawFan = () => {
+    const f = mc.fan[cur], col = MC_COLOR[cur];
+    const band = (y, fill, fc) => ({ type: "scatter", mode: "lines", x: f.years, y,
+      line: { width: 0 }, hoverinfo: "skip", showlegend: false, fill: fill || "none", fillcolor: fc || "transparent" });
+    Plotly.react("mc-fan", [
+      band(f.p5),
+      band(f.p95, "tonexty", "rgba(47,111,159,0.12)"),
+      band(f.p25),
+      band(f.p75, "tonexty", "rgba(47,111,159,0.22)"),
+      { type: "scatter", mode: "lines", name: "median", x: f.years, y: f.p50,
+        line: { width: 2.6, color: col },
+        hovertemplate: "yr %{x:.0f}: median $%{y:.2f}<extra></extra>" },
+    ], { ...BASE, margin: { l: 50, r: 14, t: 10, b: 36 }, showlegend: false,
+      xaxis: { ...BASE.xaxis, title: { text: "years forward", font: { size: 11, color: C.muted } }, dtick: 1 },
+      yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$", title: { text: `growth of $1 (${cur})`, font: { size: 10, color: C.muted } } },
+    }, CFG);
+  };
+  if (el("mc-fan-pick")) {
+    el("mc-fan-pick").innerHTML = mc.labels.map((k, i) =>
+      `<span class="chip clickable ${k === cur ? "sel" : ""}" data-k="${k}">${k}</span>`).join("");
+    [...el("mc-fan-pick").children].forEach(ch => ch.addEventListener("click", () => {
+      cur = ch.dataset.k;
+      [...el("mc-fan-pick").children].forEach(c => c.classList.toggle("sel", c.dataset.k === cur));
+      drawFan();
+    }));
+  }
+  drawFan();
+
+  // ---- terminal-value distribution (DAA vs SAA), shared bins
+  const te = mc.hist.terminal_edges, tc = (te.slice(0, -1)).map((e, i) => (e + te[i + 1]) / 2);
+  if (el("mc-terminal")) {
+    const bar = (lab) => ({ type: "bar", name: lab, x: tc, y: mc.hist[lab].terminal_counts,
+      marker: { color: MC_COLOR[lab], opacity: 0.55 }, hovertemplate: lab + " $%{x:.2f}: %{y} paths<extra></extra>" });
+    Plotly.newPlot("mc-terminal", ["DAA", "SAA"].filter(l => mc.hist[l]).map(bar),
+      { ...BASE, barmode: "overlay", margin: { l: 44, r: 12, t: 10, b: 36 },
+        legend: { orientation: "h", y: 1.16, font: { size: 10 } },
+        shapes: ["DAA", "SAA"].filter(l => byName[l]).map(l => ({ type: "line", yref: "paper", y0: 0, y1: 1,
+          x0: byName[l].terminal_median, x1: byName[l].terminal_median,
+          line: { color: MC_COLOR[l], width: 1.5, dash: "dot" } })),
+        xaxis: { ...BASE.xaxis, tickprefix: "$", title: { text: "terminal value per $1", font: { size: 10, color: C.muted } } },
+        yaxis: { ...BASE.yaxis, title: { text: "paths", font: { size: 10, color: C.muted } } } }, CFG);
+  }
+
+  // ---- worst-drawdown distribution (DAA vs SAA)
+  const de = mc.hist.dd_edges, dc = (de.slice(0, -1)).map((e, i) => (e + de[i + 1]) / 2);
+  if (el("mc-drawdown")) {
+    const bar = (lab) => ({ type: "bar", name: lab, x: dc, y: mc.hist[lab].dd_counts,
+      marker: { color: MC_COLOR[lab], opacity: 0.55 }, hovertemplate: lab + " −%{x:.0f}%: %{y} paths<extra></extra>" });
+    Plotly.newPlot("mc-drawdown", ["DAA", "SAA"].filter(l => mc.hist[l]).map(bar),
+      { ...BASE, barmode: "overlay", margin: { l: 44, r: 12, t: 10, b: 36 },
+        legend: { orientation: "h", y: 1.16, font: { size: 10 } },
+        xaxis: { ...BASE.xaxis, ticksuffix: "%", title: { text: "worst peak-to-trough drawdown", font: { size: 10, color: C.muted } } },
+        yaxis: { ...BASE.yaxis, title: { text: "paths", font: { size: 10, color: C.muted } } } }, CFG);
+  }
+
+  // ---- comparison table
+  if (el("mc-table")) {
+    el("mc-table").innerHTML = `<table class="dtbl"><thead><tr><th>Strategy</th>
+      <th class="num">Median</th><th class="num">5–95%</th><th class="num">Median CAGR</th>
+      <th class="num">P(2x)</th><th class="num">P(loss)</th><th class="num">P(DD&gt;${P.dd_threshold_pct}%)</th>
+      <th class="num">Median worst DD</th></tr></thead><tbody>`
+      + mc.summary.map(r => { const hl = r.strategy === "DAA" ? "hl" : "";
+          return `<tr class="${hl}"><td><span class="swatch" style="background:${MC_COLOR[r.strategy]}"></span><b>${r.strategy}</b></td>
+            <td class="num">$${r.terminal_median.toFixed(2)}</td>
+            <td class="num">$${r.terminal_p5.toFixed(2)}–$${r.terminal_p95.toFixed(2)}</td>
+            <td class="num">${r.cagr_median.toFixed(1)}%</td>
+            <td class="num">${r.prob_ge_2x.toFixed(0)}%</td>
+            <td class="num">${r.prob_loss.toFixed(0)}%</td>
+            <td class="num">${r.prob_dd_gt_threshold.toFixed(0)}%</td>
+            <td class="num neg">${r.maxdd_median.toFixed(0)}%</td></tr>`; }).join("")
+      + `</tbody></table>`;
+  }
+  if (el("mc-table-read") && mc.prob_daa_beats_saa != null)
+    el("mc-table-read").innerHTML = `On paired draws, <strong>DAA finishes ahead of SAA in `
+      + `${mc.prob_daa_beats_saa.toFixed(0)}% of paths</strong> — its edge is the far shallower drawdown `
+      + `distribution (P(DD&gt;${P.dd_threshold_pct}%) ${byName.DAA.prob_dd_gt_threshold.toFixed(0)}% vs `
+      + `${byName.SAA.prob_dd_gt_threshold.toFixed(0)}%), not a higher median. All distributions are `
+      + `block-bootstrapped from realised returns, so they inherit the historical fat tail rather than a Normal assumption.`;
+}
+
+// ================= Attribution over time (Attribution page) =================
+function renderAttributionTimeline(a) {
+  if (!el("attr-cum-chart") && !el("attr-tilt-chart")) return;
+  const act = a.active_attr, tl = a.timeline;
+
+  // cumulative net active value-add (bp) — the headline "is it adding up over time?"
+  if (el("attr-cum-chart") && act.cumulative) {
+    const s = act.cumulative;
+    Plotly.newPlot("attr-cum-chart", [{
+      type: "scatter", mode: "lines", x: s.map(p => p.date), y: s.map(p => p.v),
+      line: { width: 2.2, color: C.navy }, fill: "tozeroy", fillcolor: "rgba(14,34,51,0.07)",
+      hovertemplate: "%{x}: %{y:+.1f}% cumulative active<extra></extra>" }],
+      { ...BASE, margin: { l: 48, r: 14, t: 10, b: 30 },
+        xaxis: { type: "date", dtick: "M24", tickformat: "%Y" },
+        yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
+  }
+  if (el("attr-cum-read"))
+    el("attr-cum-read").innerHTML = `Cumulative active return of the dynamic process versus the static policy. `
+      + `The line is built monthly from the same sleeve returns — only the weights differ — so it is pure `
+      + `allocation timing. It steps <strong>up in stress and flat-to-down in calm markets</strong>: the value is paid out as crisis protection.`;
+
+  // active growth-asset tilt (DAA − SAA, pp) with regime shading — the decision log
+  if (el("attr-tilt-chart") && tl) {
+    const s = tl.series;
+    const shapes = (tl.spans || []).filter(sp => sp.tag === "bad").map(sp => ({
+      type: "rect", xref: "x", yref: "paper", x0: sp.start, x1: sp.end, y0: 0, y1: 1,
+      fillcolor: "rgba(192,57,43,0.07)", line: { width: 0 }, layer: "below" }));
+    Plotly.newPlot("attr-tilt-chart", [{
+      type: "scatter", mode: "lines", x: s.map(p => p.date), y: s.map(p => +(p.daa_growth - p.saa_growth).toFixed(1)),
+      line: { width: 1.8, color: C.accent }, fill: "tozeroy", fillcolor: "rgba(47,111,159,0.10)",
+      customdata: s.map(p => [p.daa_growth, p.regime]),
+      hovertemplate: "%{x}: %{y:+.1f}pp tilt<br>DAA growth %{customdata[0]}%% · %{customdata[1]}<extra></extra>" }],
+      { ...BASE, margin: { l: 48, r: 14, t: 10, b: 30 }, shapes,
+        xaxis: { type: "date", dtick: "M24", tickformat: "%Y" },
+        yaxis: { ...BASE.yaxis, ticksuffix: "pp", zeroline: true, zerolinecolor: "#c5cfd9",
+          title: { text: "growth tilt vs policy", font: { size: 10, color: C.muted } } } }, CFG);
+  }
+  if (el("attr-tilt-read"))
+    el("attr-tilt-read").innerHTML = `How the stance actually moved: the dynamic book's growth-asset weight minus the `
+      + `static policy's, month by month (red bands = adverse regime). It <strong>cuts growth hard going into and `
+      + `through downturns</strong> (−25 to −30pp in 2008, 2020, 2022) and returns to policy in calm regimes — the `
+      + `mechanism behind the drawdown reduction. Weights are from the walk-forward backtest.`;
+}
+
 async function main() {
   try {
     const d = await load();
@@ -749,6 +1089,7 @@ async function main() {
     if (el("alloc-donut")) renderAllocation(d.positioning);
     if (el("pos-board")) renderPositioning(d.positioning, d.construction.blocks);
     if (el("holdings-treemap")) renderConstruction(d.construction);
+    if (el("sleeve-evidence")) renderSleeveEvidence(d.construction, d.positioning);
     if (el("universe") || el("constraint-chart")) renderConstructionDetail(d.construction);
     if (el("vol-gauge")) renderRisk(d.risk);
     if (el("corr-heatmap") && d.diversification) renderDiversification(d.diversification);
@@ -758,7 +1099,11 @@ async function main() {
     if (el("stress-chart") && d.stress) renderStress(d.stress);
     if (d.stress_forward) renderForwardStress(d.stress_forward);
     if (d.attribution && el("attr-layer-chart")) renderAttribution(d.attribution);
+    if (d.attribution && (el("attr-cum-chart") || el("attr-tilt-chart"))) renderAttributionTimeline(d.attribution);
     if (d.matrix && el("matrix-scatter")) render9x9(d.matrix);
+    if (d.monte_carlo && el("mc-fan")) renderMonteCarlo(d.monte_carlo);
+    if (el("holdings-table")) renderHoldings(d);
+    if (el("overview-insight")) renderOverviewInsight(d);
     if (el("scenario-strip")) renderScenarios(d.scenarios);
     if (el("status-footer")) el("status-footer").textContent =
       `Generated ${d.generated} from the live portfolio-construction pipeline and its walk-forward backtest. `
