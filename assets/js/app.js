@@ -35,9 +35,50 @@ const el = (id) => document.getElementById(id);
 const hexToRgb = (h) => { const n = parseInt(h.replace("#", ""), 16); return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`; };
 
 // ---------------- Number formatting (one standard) ----------------
+// One number voice across the platform: a real minus glyph (−, not -), an explicit +
+// on signed deltas, and a single place that decides decimals + unit (%, pp, bp, $).
 const fmtPct = (x, d = 1) => (x >= 0 ? "" : "−") + Math.abs(x).toFixed(d) + "%";
-const fmtSignPct = (x, d = 1) => (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(d) + "%";
+const fmtSign = (x, suf = "%", d = 1) => (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(d) + suf;
+const fmtSignPct = (x, d = 1) => fmtSign(x, "%", d);
+const fmtBp = (x) => fmtSign(x, "bp", 0);
 const fmtUsd = (x, d = 2) => "$" + x.toFixed(d);
+
+// ---------------- On-chart annotations (one standard) ----------------
+// The punchline belongs ON the chart, not only in the read below. Crisis bands mark the
+// episodes the book is built to survive, so every time-axis line is read against the
+// moments that matter; endpoint callouts label where each series finished.
+const CRISES = [
+  { start: "2007-10-01", end: "2009-03-01", label: "GFC" },
+  { start: "2020-02-01", end: "2020-04-01", label: "COVID" },
+  { start: "2022-01-01", end: "2022-10-01", label: "2022" },
+];
+// {shapes, annotations} for crisis bands, clipped to the visible [from,to] window.
+function crisisOverlay({ from, to, label = true } = {}) {
+  const shapes = [], annotations = [];
+  for (const c of CRISES) {
+    if ((to && c.start > to) || (from && c.end < from)) continue;
+    const x0 = from && c.start < from ? from : c.start;
+    shapes.push({ type: "rect", xref: "x", yref: "paper", x0, x1: c.end, y0: 0, y1: 1,
+      fillcolor: "rgba(192,57,43,0.055)", line: { width: 0 }, layer: "below" });
+    if (label) annotations.push({ xref: "x", yref: "paper", x: x0, xanchor: "left", y: 1, yanchor: "top",
+      text: c.label, showarrow: false, font: { size: 8.5, color: "rgba(160,45,33,0.8)" }, bgcolor: "rgba(255,255,255,0.55)" });
+  }
+  return { shapes, annotations };
+}
+// Endpoint callout at a series' last point ("DAA $2.34"): the read, on the line.
+function endpointLabel(x, y, text, color) {
+  return { xref: "x", yref: "y", x, y, xanchor: "left", xshift: 7, text: `<b>${text}</b>`, showarrow: false,
+    font: { size: 9.5, color }, bgcolor: "rgba(255,255,255,0.82)", bordercolor: color, borderpad: 2, borderwidth: 1 };
+}
+// Horizontal reference line + right-anchored label (e.g. a risk budget on a vol chart).
+function refLine(y, text, color = C.muted) {
+  return {
+    shape: { type: "line", xref: "paper", x0: 0, x1: 1, yref: "y", y0: y, y1: y,
+      line: { color, width: 1, dash: "dot" } },
+    annotation: { xref: "paper", yref: "y", x: 1, xanchor: "right", y, yanchor: "bottom",
+      text, showarrow: false, font: { size: 9, color }, bgcolor: "rgba(255,255,255,0.7)" },
+  };
+}
 
 // ---------------- Donut (one standard component) ----------------
 // items: [{label, value, color}]. Many-slice "composition" donuts use a clean side
@@ -45,27 +86,71 @@ const fmtUsd = (x, d = 2) => "$" + x.toFixed(d);
 function donut(id, items, opts = {}) {
   const node = el(id); if (!node) return;
   const legend = !!opts.legend;
-  const trace = {
-    type: "pie", hole: 0.62, sort: false, direction: "clockwise",
-    labels: items.map(i => legend ? `${i.label}  ${i.value.toFixed(1)}%` : i.label),
-    values: items.map(i => i.value),
-    marker: { colors: items.map(i => i.color), line: { color: "#fff", width: 2 } },
-    textposition: legend ? "none" : "outside",
-    texttemplate: legend ? "" : "%{label}<br>%{value:.1f}%",
-    textfont: { size: 10 }, automargin: true,
-    hovertemplate: (opts.hover || "<b>%{label}</b>: %{value:.1f}%") + "<extra></extra>",
+  let mode = "donut";  // composition donuts can flip to a ranked bar (reads order better)
+
+  const drawDonut = () => {
+    const trace = {
+      type: "pie", hole: 0.62, sort: false, direction: "clockwise",
+      labels: items.map(i => legend ? `${i.label}  ${i.value.toFixed(1)}%` : i.label),
+      values: items.map(i => i.value),
+      marker: { colors: items.map(i => i.color), line: { color: "#fff", width: 2 } },
+      textposition: legend ? "none" : "outside",
+      texttemplate: legend ? "" : "%{label}<br>%{value:.1f}%",
+      textfont: { size: 10 }, automargin: true,
+      hovertemplate: (opts.hover || "<b>%{label}</b>: %{value:.1f}%") + "<extra></extra>",
+    };
+    Plotly.react(id, [trace], {
+      ...BASE, showlegend: legend,
+      margin: legend ? { l: 6, r: 6, t: 10, b: 10 } : { l: 58, r: 58, t: 16, b: 16 },
+      legend: legend ? { orientation: "v", x: 1.0, xanchor: "right", y: 0.5, yanchor: "middle",
+        font: { size: 10.5 }, itemclick: false, itemdoubleclick: false } : undefined,
+      annotations: opts.centerVal ? [{ text: `<b>${opts.centerVal}</b><br><span style="font-size:10px;color:#6b7783">${opts.centerSub || ""}</span>`,
+        showarrow: false, font: { size: 18, color: C.navy } }] : [],
+    }, CFG);
   };
-  const layout = {
-    ...BASE, showlegend: legend,
-    margin: legend ? { l: 6, r: 6, t: 10, b: 10 } : { l: 58, r: 58, t: 16, b: 16 },
-    legend: legend ? { orientation: "v", x: 1.0, xanchor: "right", y: 0.5, yanchor: "middle",
-      font: { size: 10.5 }, itemclick: false, itemdoubleclick: false } : undefined,
-    annotations: opts.centerVal ? [{ text: `<b>${opts.centerVal}</b><br><span style="font-size:10px;color:#6b7783">${opts.centerSub || ""}</span>`,
-      showarrow: false, font: { size: 18, color: C.navy } }] : [],
+
+  // Ranked horizontal bar — the same composition, ordered largest→smallest so ranking
+  // and gaps read at a glance (a donut blurs order across 8 similar slices).
+  const drawBar = () => {
+    const s = [...items].sort((a, b) => b.value - a.value);
+    Plotly.react(id, [{
+      type: "bar", orientation: "h", x: s.map(i => i.value), y: s.map(i => i.label),
+      marker: { color: s.map(i => i.color), line: { color: "#fff", width: 1 } },
+      text: s.map(i => i.value.toFixed(1) + "%"), textposition: "auto", textfont: { size: 10 },
+      hovertemplate: (opts.hover ? opts.hover.replace(/%\{label\}/g, "%{y}").replace(/%\{value/g, "%{x") : "<b>%{y}</b>: %{x:.1f}%") + "<extra></extra>",
+    }], { ...BASE, margin: { l: 104, r: 30, t: 10, b: 24 },
+      yaxis: { ...BASE.yaxis, autorange: "reversed", automargin: true }, xaxis: { ...BASE.xaxis, ticksuffix: "%" },
+      annotations: opts.centerVal ? [{ xref: "paper", yref: "paper", x: 1, y: 1, xanchor: "right", yanchor: "top",
+        text: `<b>${opts.centerVal}</b> ${opts.centerSub || ""}`, showarrow: false, font: { size: 12, color: C.navy } }] : [],
+    }, CFG);
   };
-  Plotly.newPlot(id, [trace], layout, CFG);
-  if (opts.onClick) { node.removeAllListeners && node.removeAllListeners("plotly_click");
-    node.on("plotly_click", (e) => opts.onClick(items[e.points[0].pointNumber].label, e)); }
+
+  const render = () => (mode === "donut" ? drawDonut() : drawBar());
+  render();
+
+  // Click handler works in both modes (pie → pointNumber, bar → category on y).
+  if (opts.onClick) {
+    node.removeAllListeners && node.removeAllListeners("plotly_click");
+    node.on("plotly_click", (e) => {
+      const pt = e.points[0];
+      opts.onClick(mode === "donut" ? items[pt.pointNumber].label : pt.y, e);
+    });
+  }
+
+  // Optional donut/ranked-bar toggle, injected above the chart (no per-page HTML needed).
+  if (opts.rankBar && node.parentNode && !node.parentNode.querySelector(`.charttoggle[data-for="${id}"]`)) {
+    const tog = document.createElement("div");
+    tog.className = "charttoggle"; tog.dataset.for = id;
+    tog.innerHTML = `<span class="chip clickable sel" data-m="donut">donut</span>`
+      + `<span class="chip clickable" data-m="bar">ranked bar</span>`;
+    node.parentNode.insertBefore(tog, node);
+    tog.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-m]"); if (!t) return;
+      mode = t.dataset.m;
+      [...tog.querySelectorAll("[data-m]")].forEach(c => c.classList.toggle("sel", c.dataset.m === mode));
+      render();
+    });
+  }
   return node;
 }
 
@@ -106,11 +191,11 @@ function renderAllocation(p) {
   el("alloc-sub").textContent = `decision month ${p.decision_month}`;
   const w = p.weights.filter(x => x.weight > 0.05);
   donut("alloc-donut", w.map(x => ({ label: x.label, value: x.weight, color: codeColor(x.sleeve) })),
-    { legend: true, centerVal: `${p.growth_weight}%`, centerSub: "growth",
+    { legend: true, rankBar: true, centerVal: `${p.growth_weight}%`, centerSub: "growth",
       hover: "<b>%{label}</b>: %{value:.1f}% of book" });
   const top = [...p.weights].sort((a, b) => b.weight - a.weight).slice(0, 2);
-  el("alloc-read").innerHTML = `Largest sleeves: <strong>${top[0].label} ${top[0].weight}%</strong> and `
-    + `${top[1].label} ${top[1].weight}%. Built bottom-up from individual instruments, grouped by role.`;
+  el("alloc-read").innerHTML = `Anchored by <strong>${top[0].label} ${top[0].weight}%</strong> and `
+    + `${top[1].label} ${top[1].weight}% — built bottom-up from instruments, grouped by the role each plays.`;
 }
 
 // ---------------- Positioning ----------------
@@ -328,7 +413,7 @@ function renderStress(s) {
     + eps.map(e => `<tr><td><b>${e.episode}</b><br><span class="sub">${e.desc}</span></td>`
         + `<td class="sub">${e.start} → ${e.end}</td>`
         + keys.map(k => { const v = e.returns[k]; const cls = v >= 0 ? "pos" : "neg";
-            return `<td class="num ${cls}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</td>`; }).join("") + `</tr>`).join("")
+            return `<td class="num ${cls}">${fmtSign(v, "%", 1)}</td>`; }).join("") + `</tr>`).join("")
     + `</tbody></table>`;
   el("stress-read").innerHTML = s.narrative;
   renderStressDetail(s);
@@ -351,14 +436,13 @@ function renderStressDetail(s) {
       hovertemplate: "%{y}: %{x:.1f}%<extra></extra>",
     }], { ...BASE, margin: { l: 130, r: 16, t: 8, b: 28 }, yaxis: { ...BASE.yaxis, autorange: "reversed" },
       xaxis: { ...BASE.xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
-    const fs = cur.returns.FullSystem_BL, ae = cur.returns.all_equity, b64 = cur.returns.b6040;
+    const fs = cur.returns.FullSystem_BL, ae = cur.returns.all_equity;
     const best = cur.sleeves[cur.sleeves.length - 1], worst = cur.sleeves[0];
     if (el("stress-ep-read")) el("stress-ep-read").innerHTML =
-      `<strong>${cur.episode}</strong> (${cur.start} → ${cur.end}, ${cur.desc}). The full system returned `
-      + `<strong>${fs >= 0 ? "+" : ""}${fs}%</strong> vs ${ae}% all-equity and ${b64}% 60/40 — a `
-      + `<strong>${cur.protection >= 0 ? "+" : ""}${cur.protection}pp</strong> cushion over all-equity. `
-      + `Inside the book, <strong>${best.sleeve}</strong> protected most (${best.ret >= 0 ? "+" : ""}${best.ret}%) `
-      + `while <strong>${worst.sleeve}</strong> lost most (${worst.ret}%) — the safe-haven sleeves doing their job.`;
+      `In <strong>${cur.episode}</strong> (${cur.start} → ${cur.end}) the full system held to `
+      + `<strong>${fs >= 0 ? "+" : "−"}${Math.abs(fs)}%</strong> vs ${ae}% all-equity — a `
+      + `<strong>${cur.protection >= 0 ? "+" : "−"}${Math.abs(cur.protection)}pp cushion</strong>, with `
+      + `${best.sleeve} protecting most and ${worst.sleeve} the main drag.`;
     [...el("stress-ep-pick").children].forEach(ch => ch.classList.toggle("sel", ch.dataset.ep === cur.episode));
   };
 
@@ -406,18 +490,26 @@ function renderPerformance(t) {
   el("perf-read").innerHTML = `Full system Sharpe <strong>${fs.sharpe}</strong>, max drawdown `
     + `<strong>${fs.maxdd}%</strong> — best tail of any option (60/40 ${bm.maxdd}%). Risk-managed compounding, not return-maximisation.`;
 
-  // Drawdown (underwater) for the live Full System (BL)
+  // Drawdown (underwater) for the live Full System (BL), with a faint 60/40 ghost
+  // so the comparison is visual, plus crisis bands behind both.
+  const underwater = (series) => { let peak = -Infinity;
+    return series.map(p => { peak = Math.max(peak, p.v); return { date: p.date, dd: (p.v / peak - 1) * 100 }; }); };
   const nav = t.nav["FullSystem_BL"] || t.nav["FullSystem"] || Object.values(t.nav)[0];
-  let peak = -Infinity; const dd = nav.map(p => { peak = Math.max(peak, p.v); return { date: p.date, dd: (p.v / peak - 1) * 100 }; });
-  Plotly.newPlot("drawdown-chart", [{
-    type: "scatter", mode: "lines", x: dd.map(d => d.date), y: dd.map(d => d.dd),
-    fill: "tozeroy", line: { color: C.neg, width: 1 }, fillcolor: "rgba(192,57,43,0.12)",
-    hovertemplate: "%{x}: %{y:.1f}%<extra></extra>",
-  }], { ...BASE, margin: { l: 44, r: 10, t: 8, b: 34 },
+  const dd = underwater(nav);
+  const ddTraces = [];
+  if (t.nav["b6040"]) { const g = underwater(t.nav["b6040"]);
+    ddTraces.push({ type: "scatter", mode: "lines", name: "60/40", x: g.map(d => d.date), y: g.map(d => d.dd),
+      line: { color: "rgba(214,138,19,0.55)", width: 1, dash: "dot" }, hovertemplate: "60/40 %{y:.1f}%<extra></extra>" }); }
+  ddTraces.push({ type: "scatter", mode: "lines", name: "Full System", x: dd.map(d => d.date), y: dd.map(d => d.dd),
+    fill: "tozeroy", line: { color: C.neg, width: 1.4 }, fillcolor: "rgba(192,57,43,0.12)",
+    hovertemplate: "Full System %{y:.1f}%<extra></extra>" });
+  const ddCr = crisisOverlay({ from: dd[0].date, to: dd[dd.length - 1].date, label: false });
+  Plotly.newPlot("drawdown-chart", ddTraces, { ...BASE, margin: { l: 44, r: 10, t: 8, b: 34 },
+    shapes: ddCr.shapes, showlegend: true, legend: { orientation: "h", y: 1.18, font: { size: 9 } },
     xaxis: { ...BASE.xaxis, type: "date", dtick: "M36", tickformat: "%Y", tickangle: 0 },
     yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
   const trough = Math.min(...dd.map(d => d.dd));
-  el("dd-read").innerHTML = `Deepest drawdown <strong>${trough.toFixed(1)}%</strong> (2008 GFC). The regime overlay de-risks in confirmed downturns.`;
+  el("dd-read").innerHTML = `Deepest drawdown <strong>${trough.toFixed(1)}%</strong> (2008 GFC) — shallower than 60/40 (faint), the regime overlay de-risking in confirmed downturns.`;
 
   // Annual returns
   const a = t.annual;
@@ -513,7 +605,6 @@ function mountRebaseGrowth(o) {
   if (!primary) return;
   const dates = o.seriesMap[primary].map(p => p.date);
   const firstDate = dates[0], lastDate = dates[dates.length - 1];
-  const years = [...new Set(dates.map(d => +d.slice(0, 4)))];
   const colorOf = o.colorOf || (() => C.accent);
   const widthOf = o.widthOf || (() => 1.3);
   const labelOf = o.labelOf || ((k) => k);
@@ -529,18 +620,23 @@ function mountRebaseGrowth(o) {
   let startDate = firstDate;
 
   const plot = () => {
+    const ends = [];
     const traces = o.order.map(k => {
       const arr = o.seriesMap[k]; if (!arr || !arr.length) return null;
       const s = arr.filter(p => p.date >= startDate); if (!s.length) return null;
-      const base = s[0].v;
+      const base = s[0].v, last = s[s.length - 1];
+      ends.push({ k, x: last.date, y: last.v / base, color: colorOf(k) });
       return { type: "scatter", mode: "lines", name: labelOf(k), x: s.map(p => p.date), y: s.map(p => p.v / base),
         line: { width: widthOf(k), color: colorOf(k) }, hovertemplate: labelOf(k) + " $%{y:.2f}<extra></extra>" };
     }).filter(Boolean);
-    const shapes = years.filter(y => `${y}-01-01` >= startDate).map(y => ({
-      type: "line", x0: `${y}-01-01`, x1: `${y}-01-01`, yref: "paper", y0: 0, y1: 1,
-      line: { color: "rgba(15,34,51,0.05)", width: 1 } }));
+    // Crisis bands so each line is read against the episodes it's built to survive,
+    // plus an endpoint callout per series ("DAA $2.34") — the read, on the chart.
+    const crisis = crisisOverlay({ from: startDate, to: lastDate });
+    const ends2 = ends.slice().sort((a, b) => b.y - a.y);  // de-clutter overlapping labels
+    const callouts = ends2.map((e, i) => endpointLabel(e.x, e.y, `${labelOf(e.k)} ${fmtUsd(e.y)}`, e.color));
     Plotly.react(o.chartId, traces, {
-      ...BASE, margin: { l: 54, r: 16, t: 10, b: 18 }, shapes,
+      ...BASE, margin: { l: 54, r: 64, t: 10, b: 18 },
+      shapes: crisis.shapes, annotations: [...crisis.annotations, ...callouts],
       legend: { orientation: "h", y: 1.1, font: { size: 10 } },
       xaxis: { type: "date", rangeslider: { visible: true, thickness: 0.06 } },
       yaxis: { ...BASE.yaxis, type: logScale ? "log" : "linear", tickprefix: "$",
@@ -577,7 +673,10 @@ function mountRebaseGrowth(o) {
         fill: k === o.ddKeys[0] ? "tozeroy" : "none", fillcolor: "rgba(14,34,51,0.08)",
         line: { width: 1.3, color: colorOf(k) }, hovertemplate: labelOf(k) + " %{y:.1f}%<extra></extra>" };
     });
+    const ddFrom = traces[0] && traces[0].x[0], ddTo = traces[0] && traces[0].x[traces[0].x.length - 1];
+    const ddCrisis = crisisOverlay({ from: ddFrom, to: ddTo });
     Plotly.newPlot(o.ddId, traces, { ...BASE, margin: { l: 50, r: 14, t: 8, b: 28 },
+      shapes: ddCrisis.shapes, annotations: ddCrisis.annotations,
       legend: { orientation: "h", y: 1.2, font: { size: 10 } },
       xaxis: { type: "date", dtick: "M24", tickformat: "%Y" },
       yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
@@ -605,7 +704,17 @@ function renderRolling(c) {
         line: { width: CMP_WIDTH[k] || 1.3, color: CMP_COLOR[k] },
         hovertemplate: k + " %{y:.2f}" + suf + "<extra></extra>" };
     });
+    const cr = crisisOverlay({ label: id === "rolling-ret" });  // label once across the 3-up
+    const shapes = [...cr.shapes], annotations = [...cr.annotations];
+    // Long-run reference on the vol panel: DAA's own through-cycle average, so the eye
+    // reads each window as hot or calm vs normal (the "budget line" pattern).
+    if (id === "rolling-vol") {
+      const daa = c.rolling.DAA.vol, avg = daa.reduce((a, p) => a + p.v, 0) / daa.length;
+      const rl = refLine(avg, `DAA avg ${avg.toFixed(1)}%`, C.navy);
+      shapes.push(rl.shape); annotations.push(rl.annotation);
+    }
     Plotly.newPlot(id, traces, { ...BASE, margin: { l: 40, r: 10, t: 22, b: 24 },
+      shapes, annotations,
       legend: { orientation: "h", y: 1.22, font: { size: 9 } },
       xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
       yaxis: { ...BASE.yaxis, ticksuffix: suf } }, CFG);
@@ -658,7 +767,9 @@ function renderPerformanceAttribution(d) {
       return { type: "scatter", mode: "lines", name: lab, x: s.map(p => p.date), y: s.map(p => p.v),
         line: { width: 1.6, color: codeColor(k) }, hovertemplate: lab + " %{y:.1f}%<extra></extra>" };
     });
+    const cr = crisisOverlay({});
     Plotly.newPlot("perf-attr-cum-chart", traces, { ...BASE, margin: { l: 44, r: 12, t: 10, b: 30 },
+      shapes: cr.shapes, annotations: cr.annotations,
       legend: { orientation: "h", y: 1.14, font: { size: 9 } },
       xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
       yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
@@ -667,11 +778,15 @@ function renderPerformanceAttribution(d) {
   // 4) cumulative active value-add (DAA vs SAA) over time
   if (el("perf-attr-active-chart") && a.active_attr && a.active_attr.cumulative) {
     const s = a.active_attr.cumulative;
+    const cr = crisisOverlay({ from: s[0].date, to: s[s.length - 1].date });
+    const last = s[s.length - 1];
     Plotly.newPlot("perf-attr-active-chart", [{
       type: "scatter", mode: "lines", x: s.map(p => p.date), y: s.map(p => p.v),
       line: { width: 2.2, color: C.navy }, fill: "tozeroy", fillcolor: "rgba(14,34,51,0.07)",
       hovertemplate: "%{x}: %{y:+.1f}% cumulative active<extra></extra>" }],
-      { ...BASE, margin: { l: 46, r: 12, t: 10, b: 30 },
+      { ...BASE, margin: { l: 46, r: 58, t: 10, b: 30 },
+        shapes: cr.shapes,
+        annotations: [...cr.annotations, endpointLabel(last.date, last.v, fmtSignPct(last.v), C.navy)],
         xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
         yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
   }
@@ -787,10 +902,9 @@ function renderRiskDrill(rbs) {
     if (el("risk-drill-read")) {
       const top = insts[0], hot = s.risk > s.capital;
       el("risk-drill-read").innerHTML =
-        `<strong>${cur}</strong> consumes <strong>${s.risk}% of total portfolio risk</strong> on ${s.capital}% of capital `
-        + (hot ? `— it punches <strong>above</strong> its weight. ` : `— risk-efficient vs its weight. `)
-        + `Within it, <strong>${top.ticker}</strong> alone is ${top.risk}% of portfolio risk`
-        + (top.role ? ` (${top.role})` : "") + `. Click another sleeve to drill in.`;
+        `<strong>${cur}</strong> takes <strong>${s.risk}% of portfolio risk</strong> on ${s.capital}% of capital`
+        + (hot ? ` — it punches above its weight` : ` — risk-efficient vs its weight`)
+        + `, with <strong>${top.ticker}</strong> its single largest source (${top.risk}%).`;
     }
     [...el("risk-drill-pick").children].forEach(ch => ch.classList.toggle("sel", ch.dataset.s === cur));
   };
@@ -908,7 +1022,7 @@ function renderForwardStress(sf) {
 const BLOCK_OF = CODE_BLOCK;
 function _barH(id, rows, xf, yf, colorf, suffix, extraLayout) {
   Plotly.newPlot(id, [{ type: "bar", orientation: "h", x: rows.map(xf), y: rows.map(yf),
-    marker: { color: rows.map(colorf) }, text: rows.map(r => { const v = xf(r); return (v >= 0 ? "+" : "") + v.toFixed(0); }),
+    marker: { color: rows.map(colorf) }, text: rows.map(r => fmtSign(xf(r), "", 0)),
     textposition: "auto", textfont: { size: 10 },
     hovertemplate: "%{y}: %{x:.0f}" + suffix + "<extra></extra>" }],
     { ...BASE, margin: { l: 150, r: 16, t: 8, b: 28 }, yaxis: { ...BASE.yaxis, autorange: "reversed" },
@@ -925,13 +1039,13 @@ function renderAttribution(a) {
   if (el("attr-active-stats")) {
     const net = act.net_active_bp;
     el("attr-active-stats").innerHTML = `
-      <div class="bigstat"><div class="bigstat-v">${net >= 0 ? "+" : ""}${net}bp</div>
+      <div class="bigstat"><div class="bigstat-v">${fmtBp(net)}</div>
         <div class="bigstat-l">Net active / yr vs strategic policy</div>
         <div class="bigstat-h">compound, net of cost</div></div>
-      <div class="bigstat"><div class="bigstat-v">${act.arith_gross_bp >= 0 ? "+" : ""}${act.arith_gross_bp}bp</div>
+      <div class="bigstat"><div class="bigstat-v">${fmtBp(act.arith_gross_bp)}</div>
         <div class="bigstat-l">From the active bets (arithmetic)</div>
         <div class="bigstat-h">regime + tilt + risk budget</div></div>
-      <div class="bigstat"><div class="bigstat-v">${(net - act.arith_gross_bp) >= 0 ? "+" : ""}${(net - act.arith_gross_bp).toFixed(0)}bp</div>
+      <div class="bigstat"><div class="bigstat-v">${fmtBp(net - act.arith_gross_bp)}</div>
         <div class="bigstat-l">From lower volatility</div>
         <div class="bigstat-h">compounding + cost, the real lever</div></div>`;
   }
@@ -943,7 +1057,7 @@ function renderAttribution(a) {
     x: L.map(l => l.layer).concat(["Net active"]),
     measure: L.map(() => "relative").concat(["total"]),
     y: L.map(l => l.contrib_bp).concat([act.net_active_bp]),
-    text: L.map(l => (l.contrib_bp >= 0 ? "+" : "") + l.contrib_bp).concat([(act.net_active_bp >= 0 ? "+" : "") + act.net_active_bp]),
+    text: L.map(l => fmtSign(l.contrib_bp, "", 0)).concat([fmtSign(act.net_active_bp, "", 0)]),
     textposition: "outside", textfont: { size: 10 },
     connector: { line: { color: "#c5cfd9" } },
     increasing: { marker: { color: C.pos } }, decreasing: { marker: { color: C.neg } },
@@ -993,7 +1107,7 @@ function renderAttribution(a) {
     Plotly.newPlot("attr-regime-chart", [{
       type: "bar", x: buckets.map(b => b.regime.replace(/ \(.*\)/, "")), y: buckets.map(b => b.active_bp),
       marker: { color: buckets.map(b => b.active_bp >= 0 ? C.pos : C.neg) },
-      text: buckets.map(b => (b.active_bp >= 0 ? "+" : "") + b.active_bp), textposition: "outside", textfont: { size: 10 },
+      text: buckets.map(b => fmtSign(b.active_bp, "", 0)), textposition: "outside", textfont: { size: 10 },
       hovertemplate: "%{x}: %{y:+.0f}bp/yr active (n=%{customdata})<extra></extra>",
       customdata: buckets.map(b => b.months),
     }], { ...BASE, margin: { l: 44, r: 12, t: 18, b: 70 },
@@ -1029,10 +1143,9 @@ function renderAttributionDrill(a) {
       xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
       yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
     if (el("attr-drill-read"))
-      el("attr-drill-read").innerHTML = `<strong>${s.sleeve}</strong> contributed `
-        + `<strong>${(s.contrib_bp / 100).toFixed(2)}%/yr</strong> (${s.contrib_pct_of_total}% of the book's total return) `
-        + `on an average weight of ${s.avg_weight}%. The line is its cumulative additive contribution — `
-        + `where and when this sleeve actually paid off. Click another sleeve to compare.`;
+      el("attr-drill-read").innerHTML = `<strong>${s.sleeve}</strong> added `
+        + `<strong>${(s.contrib_bp / 100).toFixed(2)}%/yr</strong> (${s.contrib_pct_of_total}% of total return) `
+        + `on ${s.avg_weight}% average weight — the line shows when it actually paid off.`;
     [...el("attr-drill-pick").children].forEach(ch => ch.classList.toggle("sel", ch.dataset.k === cur));
   };
 
@@ -1090,8 +1203,8 @@ function renderHero(d) {
     ? d.track_record.metrics.find(m => m.strategy.startsWith("Full System")) : null;
   const cards = [
     { v: `${p.growth_weight}%`, l: "Growth assets", t: "" },
-    { v: `${v.sharpe_delta >= 0 ? "+" : ""}${v.sharpe_delta}`, l: "Sharpe added by DAA", t: v.sharpe_delta >= 0 ? "pos" : "neg" },
-    { v: `${v.maxdd_delta >= 0 ? "+" : ""}${v.maxdd_delta}pp`, l: "Shallower max drawdown", t: v.maxdd_delta >= 0 ? "pos" : "neg" },
+    { v: fmtSign(v.sharpe_delta, "", 2), l: "Sharpe added by DAA", t: v.sharpe_delta >= 0 ? "pos" : "neg" },
+    { v: fmtSign(v.maxdd_delta, "pp", 0), l: "Shallower max drawdown", t: v.maxdd_delta >= 0 ? "pos" : "neg" },
     fs ? { v: `${fs.cagr}%`, l: "CAGR since 2008 · net", t: "" } : null,
   ].filter(Boolean);
   if (el("hero-highlights")) el("hero-highlights").innerHTML = cards.map(c =>
@@ -1108,7 +1221,7 @@ function renderOverviewInsight(d) {
   let valueAdd = "";
   if (d.comparison && d.comparison.value_added) {
     const v = d.comparison.value_added;
-    valueAdd = ` Versus its own static policy, the dynamic process has added <strong>${v.sharpe_delta >= 0 ? "+" : ""}${v.sharpe_delta} Sharpe</strong> `
+    valueAdd = ` Versus its own static policy, the dynamic process has added <strong>${fmtSign(v.sharpe_delta, "", 2)} Sharpe</strong> `
       + `and a <strong>${Math.abs(v.maxdd_delta)}pp shallower</strong> worst drawdown — its value is risk control, not extra return.`;
   }
   const r = d.risk;
@@ -1195,7 +1308,7 @@ function renderHoldings(d) {
     held.forEach(r => { bySleeve[r.sleeve] = bySleeve[r.sleeve] || { w: 0, code: r.sleeveCode }; bySleeve[r.sleeve].w += r.holding; });
     const labels = Object.keys(bySleeve).sort((a, b) => bySleeve[b].w - bySleeve[a].w);
     donut("holdings-donut", labels.map(l => ({ label: l, value: bySleeve[l].w, color: codeColor(bySleeve[l].code) })),
-      { legend: true, centerVal: held.length, centerSub: "holdings",
+      { legend: true, rankBar: true, centerVal: held.length, centerSub: "holdings",
         hover: "<b>%{label}</b>: %{value:.1f}% · click to filter",
         onClick: (lab) => { sleeveFilter = (sleeveFilter === lab) ? null : lab; draw(); } });
   }
@@ -1339,12 +1452,22 @@ function renderMonteCarlo(mc) {
   if (el("mc-terminal")) {
     const bar = (lab) => ({ type: "bar", name: lab, x: tc, y: mc.hist[lab].terminal_counts,
       marker: { color: MC_COLOR[lab], opacity: 0.55 }, hovertemplate: lab + " $%{x:.2f}: %{y} paths<extra></extra>" });
-    Plotly.newPlot("mc-terminal", ["DAA", "SAA"].filter(l => mc.hist[l]).map(bar),
+    const liveLabels = ["DAA", "SAA"].filter(l => byName[l]);
+    const medShapes = liveLabels.map(l => ({ type: "line", yref: "paper", y0: 0, y1: 1,
+      x0: byName[l].terminal_median, x1: byName[l].terminal_median,
+      line: { color: MC_COLOR[l], width: 1.5, dash: "dot" } }));
+    const medAnn = liveLabels.map(l => ({ xref: "x", yref: "paper", x: byName[l].terminal_median, xanchor: "left",
+      xshift: 3, y: 1, yanchor: "top", text: `${l} median ${fmtUsd(byName[l].terminal_median)}`,
+      showarrow: false, font: { size: 9, color: MC_COLOR[l] } }));
+    // Breakeven marker ($1 in = $1 out): everything left of it is a real-terms loss.
+    const breakeven = { type: "line", yref: "paper", y0: 0, y1: 1, x0: 1, x1: 1,
+      line: { color: C.neg, width: 1, dash: "dash" } };
+    const beAnn = { xref: "x", yref: "paper", x: 1, xanchor: "right", xshift: -3, y: 0.08, yanchor: "bottom",
+      text: "breakeven $1", showarrow: false, font: { size: 9, color: C.neg } };
+    Plotly.newPlot("mc-terminal", liveLabels.map(bar),
       { ...BASE, barmode: "overlay", margin: { l: 44, r: 12, t: 10, b: 36 },
         legend: { orientation: "h", y: 1.16, font: { size: 10 } },
-        shapes: ["DAA", "SAA"].filter(l => byName[l]).map(l => ({ type: "line", yref: "paper", y0: 0, y1: 1,
-          x0: byName[l].terminal_median, x1: byName[l].terminal_median,
-          line: { color: MC_COLOR[l], width: 1.5, dash: "dot" } })),
+        shapes: [breakeven, ...medShapes], annotations: [beAnn, ...medAnn],
         xaxis: { ...BASE.xaxis, tickprefix: "$", title: { text: "terminal value per $1", font: { size: 10, color: C.muted } } },
         yaxis: { ...BASE.yaxis, title: { text: "paths", font: { size: 10, color: C.muted } } } }, CFG);
   }
@@ -1369,8 +1492,8 @@ function renderMonteCarlo(mc) {
       <th class="num">Median worst DD</th></tr></thead><tbody>`
       + mc.summary.map(r => { const hl = r.strategy === "DAA" ? "hl" : "";
           return `<tr class="${hl}"><td><span class="swatch" style="background:${MC_COLOR[r.strategy]}"></span><b>${r.strategy}</b></td>
-            <td class="num">$${r.terminal_median.toFixed(2)}</td>
-            <td class="num">$${r.terminal_p5.toFixed(2)}–$${r.terminal_p95.toFixed(2)}</td>
+            <td class="num">${fmtUsd(r.terminal_median)}</td>
+            <td class="num">${fmtUsd(r.terminal_p5)}–${fmtUsd(r.terminal_p95)}</td>
             <td class="num">${r.cagr_median.toFixed(1)}%</td>
             <td class="num">${r.prob_ge_2x.toFixed(0)}%</td>
             <td class="num">${r.prob_loss.toFixed(0)}%</td>
@@ -1394,11 +1517,15 @@ function renderAttributionTimeline(a) {
   // cumulative net active value-add (bp) — the headline "is it adding up over time?"
   if (el("attr-cum-chart") && act.cumulative) {
     const s = act.cumulative;
+    const cr = crisisOverlay({ from: s[0].date, to: s[s.length - 1].date });
+    const last = s[s.length - 1];
     Plotly.newPlot("attr-cum-chart", [{
       type: "scatter", mode: "lines", x: s.map(p => p.date), y: s.map(p => p.v),
       line: { width: 2.2, color: C.navy }, fill: "tozeroy", fillcolor: "rgba(14,34,51,0.07)",
       hovertemplate: "%{x}: %{y:+.1f}% cumulative active<extra></extra>" }],
-      { ...BASE, margin: { l: 48, r: 14, t: 10, b: 30 },
+      { ...BASE, margin: { l: 48, r: 58, t: 10, b: 30 },
+        shapes: cr.shapes,
+        annotations: [...cr.annotations, endpointLabel(last.date, last.v, fmtSignPct(last.v), C.navy)],
         xaxis: { type: "date", dtick: "M24", tickformat: "%Y" },
         yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
   }

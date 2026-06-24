@@ -32,7 +32,35 @@ strategic policy?**
 
 ---
 
-## Current status / session handoff (2026-06-24, iteration 6 — experience elevation)
+## Current status / session handoff (2026-06-24, graph storytelling — on-chart annotations)
+
+Following the storytelling/graph audit (`../docs/audits/Dashboard_Storytelling_Graph_Audit_2026-06-24.md`),
+the audit's #1 lift — **put the punchline on the chart** — is now a reusable `app.js` standard:
+
+- **Crisis bands** (`crisisOverlay`) — faint red GFC / COVID / 2022 bands, clipped to the
+  visible window and labelled once, on every time-axis line: Growth-of-$1 (+ drawdown),
+  rolling 12m, cumulative active value-add (Performance + Attribution), cumulative
+  contribution by sleeve. Each line now reads against the episodes the book is built to survive.
+- **Endpoint callouts** (`endpointLabel`) — a bordered "DAA $2.34" marker at each series'
+  last point (rank-sorted to avoid overlap) on Growth-of-$1 and the cumulative-active charts.
+- **Reference lines** (`refLine`) — the "budget line" pattern: a dotted DAA through-cycle
+  average on the rolling-vol panel, and a **breakeven $1** marker + labelled medians on the
+  Monte Carlo terminal-value histogram.
+
+The rest of the audit is now **fully discharged**:
+- **One number voice** — `fmtSign` / `fmtBp` / `fmtUsd` (real − glyph, explicit +, one
+  place for unit + decimals) route the signed chart text, stat tiles, stress table, hero,
+  Overview insight and Monte-Carlo dollar columns; precision unchanged.
+- **Tighter reads** — Allocation / stress / risk-drill / attribution-drill reads cut to a
+  single claim → number → so-what sentence.
+- **Ranked-bar toggle** — `donut()` flips between donut and a ranked horizontal bar
+  (Allocation, Holdings); click-to-drill works in both modes.
+- **Benchmark ghost** — Performance underwater chart draws a faint 60/40 drawdown behind
+  the book (+ crisis bands) so the shallower-tail claim is visual.
+
+---
+
+## Prior status / session handoff (2026-06-24, iteration 6 — experience elevation)
 
 A presentation-layer pass to match the depth of the analytics, plus a depth pass on
 the two pages that were thinnest.
