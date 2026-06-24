@@ -57,11 +57,17 @@
     </article>
   </section>
 
-  <!-- The blotter -->
-  <section class="grid grid-1">
+  <!-- Composition + blotter, linked: click a donut slice to filter -->
+  <section class="grid grid-1-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Composition — weight by sleeve</h2>
+        <span class="tile-sub">click a slice to filter the blotter to that sleeve</span></div>
+      <div id="holdings-donut" class="chart chart-lg"></div>
+      <p class="read" id="holdings-filter">Click a donut slice to filter by sleeve.</p>
+    </article>
     <article class="tile tile-feature">
       <div class="tile-head"><h2>Instrument-level book</h2>
-        <span class="tile-sub">click a column header to sort · click a ticker row to read its rationale</span></div>
+        <span class="tile-sub">click a column header to sort · search · export</span></div>
       <div class="blotter-toolbar">
         <input type="search" id="holdings-search" placeholder="Search ticker, role, sleeve…" />
         <button class="btn" id="holdings-export">⤓ Export CSV</button>

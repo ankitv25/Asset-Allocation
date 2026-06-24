@@ -35,6 +35,10 @@
       <strong>judged on risk-adjusted compounding and tail behaviour, not headline return</strong>.</p>
   </div>
 
+  <div class="section-head"><span class="section-num">01</span>
+    <span class="section-title">Headline — strategic vs dynamic vs market</span>
+    <span class="section-q">Did the dynamic process earn its keep?</span></div>
+
   <!-- SAA vs DAA -->
   <section class="grid grid-3-2">
     <article class="tile">
@@ -49,9 +53,13 @@
     </article>
   </section>
 
+  <div class="section-head"><span class="section-num">02</span>
+    <span class="section-title">The compounding path</span>
+    <span class="section-q">How did $1 grow, and how deep were the holes?</span></div>
+
   <!-- Growth of $1 -->
   <section class="grid grid-1">
-    <article class="tile">
+    <article class="tile tile-feature">
       <div class="tile-head"><h2>Growth of $1 — net of cost</h2>
         <span class="tile-sub" id="growth-rebase-label">rebased to $1 at inception</span></div>
       <div class="muted-note">Pick a start date to <strong>rebase every series to $1</strong> from that
@@ -78,6 +86,45 @@
     <article class="tile">
       <div class="tile-head"><h2>Rolling 12m Sharpe</h2></div>
       <div id="rolling-sharpe" class="chart chart-sm"></div>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">03</span>
+    <span class="section-title">Where the return came from</span>
+    <span class="section-q">Which sleeves and asset classes built the outcome?</span></div>
+
+  <!-- Contribution: sleeve table + asset-class -->
+  <section class="grid grid-3-2">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Return contribution — by sleeve</h2>
+        <span class="tile-sub">average weight × return, annualised (additive, reconciles to total)</span></div>
+      <div id="perf-attr-sleeve-table"></div>
+      <p class="read" id="perf-attr-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>By asset class</h2>
+        <span class="tile-sub">Equity · Fixed Income · Real Assets · Cash (%/yr)</span></div>
+      <div id="perf-attr-class-chart" class="chart chart-md"></div>
+      <p class="read">Equity is the dominant engine; fixed income and real assets contribute the
+        diversifying ballast. This is the contribution, not the weight — risk-adjusted in the Risk page.</p>
+    </article>
+  </section>
+
+  <!-- Contribution over time -->
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Cumulative contribution — by sleeve</h2>
+        <span class="tile-sub">how each sleeve's contribution compounded over the window</span></div>
+      <div id="perf-attr-cum-chart" class="chart chart-md"></div>
+      <p class="read">Each line is a sleeve's cumulative additive contribution to the dynamic book's return —
+        where the compounding actually came from, and when.</p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Cumulative active value-add — DAA vs SAA</h2>
+        <span class="tile-sub">dynamic process minus static policy, over time</span></div>
+      <div id="perf-attr-active-chart" class="chart chart-md"></div>
+      <p class="read">The dynamic process's running edge over its own static policy — it accrues in stress and
+        is flat-to-negative in calm markets: the value is paid out as crisis protection, not steady alpha.</p>
     </article>
   </section>
 

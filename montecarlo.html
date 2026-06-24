@@ -45,14 +45,50 @@
     </div>
   </div>
 
-  <!-- Headline target probabilities (DAA) -->
-  <section class="grid grid-1">
+  <div class="section-head"><span class="section-num">01</span>
+    <span class="section-title">Outcomes</span>
+    <span class="section-q">What is the range, and what are the up/down cases?</span></div>
+
+  <!-- Headline target probabilities (DAA) + scenario cases -->
+  <section class="grid grid-2-1">
     <article class="tile tile-feature">
       <div class="tile-head"><h2>Probability of reaching target outcomes — dynamic book</h2>
         <span class="tile-sub">per $1 invested over the 10-year horizon</span></div>
-      <div class="statrow" id="mc-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="statrow" id="mc-stats" style="grid-template-columns:repeat(2,1fr)"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Bull · base · bear cases</h2>
+        <span class="tile-sub">terminal value (CAGR) by percentile</span></div>
+      <div id="mc-scenarios"></div>
+      <p class="read" id="mc-scenarios-read"></p>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">02</span>
+    <span class="section-title">Paths</span>
+    <span class="section-q">How do outcomes disperse, and where do strategies diverge?</span></div>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Sample paths — dispersion</h2>
+        <span class="tile-sub">28 representative simulated futures · median in bold</span></div>
+      <div class="thesis-pick" id="mc-paths-pick" style="margin:0 0 .6rem"></div>
+      <div id="mc-paths" class="chart chart-tall"></div>
+      <p class="read">Each thin line is one simulated 10-year future for the selected strategy; the spread is the
+        outcome uncertainty. The same underlying draws are used across strategies so they are comparable.</p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Strategy comparison — median &amp; cone</h2>
+        <span class="tile-sub">median (line) + 5–95% cone for DAA / SAA / 60-40</span></div>
+      <div id="mc-compare" class="chart chart-tall"></div>
+      <p class="read">Where the strategies' outcome distributions diverge: 60/40 carries the highest median in
+        this US-led sample; DAA's cone is the tightest on the downside — its value is a narrower left tail.</p>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">03</span>
+    <span class="section-title">Distributions &amp; tail risk</span>
+    <span class="section-q">What do the outcome and drawdown distributions look like?</span></div>
 
   <!-- Fan chart -->
   <section class="grid grid-1">
@@ -83,6 +119,10 @@
         left tail, which is the entire case for running it.</p>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">04</span>
+    <span class="section-title">Strategy comparison</span>
+    <span class="section-q">Side by side, which book wins on what?</span></div>
 
   <!-- Comparison table -->
   <section class="grid grid-1">

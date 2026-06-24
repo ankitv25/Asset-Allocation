@@ -28,6 +28,7 @@ const BASE = { font: FONT, margin: { l: 40, r: 12, t: 8, b: 30 }, paper_bgcolor:
   yaxis: { gridcolor: "#eef1f4", zeroline: false } };
 const CFG = { displayModeBar: false, responsive: true };
 const el = (id) => document.getElementById(id);
+const hexToRgb = (h) => { const n = parseInt(h.replace("#", ""), 16); return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`; };
 
 // ---------------- Mobile navigation ----------------
 // Wires the hamburger toggle. Runs immediately (outside main) so navigation
@@ -282,7 +283,7 @@ function renderDiversification(d) {
 // ---------------- Stress tests ----------------
 function renderStress(s) {
   const eps = s.episodes, keys = s.strategy_keys, names = s.strategies;
-  const colors = { FullSystem: C.navy, b6040: C.warn, all_equity: "#b0bcc8" };
+  const colors = { FullSystem_BL: C.navy, FullSystem: "#9aa7b3", b6040: C.warn, all_equity: "#b0bcc8" };
   const traces = keys.map((k, i) => ({
     type: "bar", name: names[i], x: eps.map(e => e.episode), y: eps.map(e => e.returns[k]),
     marker: { color: colors[k] || C.muted }, hovertemplate: names[i] + " %{y:.1f}%<extra></extra>",
@@ -298,22 +299,60 @@ function renderStress(s) {
             return `<td class="num ${cls}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</td>`; }).join("") + `</tr>`).join("")
     + `</tbody></table>`;
   el("stress-read").innerHTML = s.narrative;
+  renderStressDetail(s);
+}
+
+// Stress drill-down: click an episode -> which sleeves lost / which protected.
+function renderStressDetail(s) {
+  if (!el("stress-ep-chart")) return;
+  const eps = s.episodes.filter(e => e.sleeves && e.sleeves.length);
+  if (!eps.length) return;
+  // default to the deepest episode for the Full System
+  let cur = eps.reduce((a, b) => (b.returns.FullSystem_BL < a.returns.FullSystem_BL ? b : a), eps[0]);
+
+  const draw = () => {
+    const rows = cur.sleeves;
+    Plotly.react("stress-ep-chart", [{
+      type: "bar", orientation: "h", x: rows.map(r => r.ret), y: rows.map(r => r.sleeve),
+      marker: { color: rows.map(r => r.ret >= 0 ? C.pos : C.neg) },
+      text: rows.map(r => `${r.ret >= 0 ? "+" : ""}${r.ret}%`), textposition: "auto", textfont: { size: 10 },
+      hovertemplate: "%{y}: %{x:.1f}%<extra></extra>",
+    }], { ...BASE, margin: { l: 130, r: 16, t: 8, b: 28 }, yaxis: { ...BASE.yaxis, autorange: "reversed" },
+      xaxis: { ...BASE.xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
+    const fs = cur.returns.FullSystem_BL, ae = cur.returns.all_equity, b64 = cur.returns.b6040;
+    const best = cur.sleeves[cur.sleeves.length - 1], worst = cur.sleeves[0];
+    if (el("stress-ep-read")) el("stress-ep-read").innerHTML =
+      `<strong>${cur.episode}</strong> (${cur.start} → ${cur.end}, ${cur.desc}). The full system returned `
+      + `<strong>${fs >= 0 ? "+" : ""}${fs}%</strong> vs ${ae}% all-equity and ${b64}% 60/40 — a `
+      + `<strong>${cur.protection >= 0 ? "+" : ""}${cur.protection}pp</strong> cushion over all-equity. `
+      + `Inside the book, <strong>${best.sleeve}</strong> protected most (${best.ret >= 0 ? "+" : ""}${best.ret}%) `
+      + `while <strong>${worst.sleeve}</strong> lost most (${worst.ret}%) — the safe-haven sleeves doing their job.`;
+    [...el("stress-ep-pick").children].forEach(ch => ch.classList.toggle("sel", ch.dataset.ep === cur.episode));
+  };
+
+  if (el("stress-ep-pick")) {
+    el("stress-ep-pick").innerHTML = eps.map(e =>
+      `<span class="chip clickable" data-ep="${e.episode}">${e.episode}</span>`).join("");
+    [...el("stress-ep-pick").children].forEach(ch =>
+      ch.addEventListener("click", () => { cur = eps.find(e => e.episode === ch.dataset.ep); draw(); }));
+  }
+  draw();
 }
 
 // ---------------- Performance ----------------
 // Keyed on the raw nav.csv column names.
 const NAV_META = {
-  FullSystem:    { label: "Full System",   color: C.navy,    width: 2.6 },
-  FullSystem_BL: { label: "BL anchor",      color: C.accent,  width: 1.6 },
-  SAA_static:    { label: "Static policy",  color: "#b0bcc8", width: 1.3 },
-  b6040:         { label: "60/40",          color: C.warn,    width: 1.6 },
-  all_equity:    { label: "All-equity",     color: "#9aa7b3", width: 1.3 },
+  FullSystem_BL: { label: "Full System (live)", color: C.navy,    width: 2.6 },
+  SAA_static_BL: { label: "Static policy",      color: C.accent,  width: 1.4 },
+  b6040:         { label: "60/40",              color: C.warn,    width: 1.6 },
+  FullSystem:    { label: "PC16 anchor (ref)",  color: "#9aa7b3", width: 1.1 },
+  all_equity:    { label: "All-equity",         color: "#c1ccd6", width: 1.0 },
 };
 
 function renderPerformance(t) {
   if (el("perf-window")) el("perf-window").textContent = t.window;
   // Growth of $1 — now a TRUE date-picker rebase (was a static raw-NAV chart).
-  const order = ["FullSystem", "b6040", "FullSystem_BL", "SAA_static", "all_equity"];
+  const order = ["FullSystem_BL", "b6040", "SAA_static_BL", "FullSystem", "all_equity"];
   if (el("nav-chart")) mountRebaseGrowth({
     chartId: "nav-chart", controlsId: "nav-controls", labelId: "nav-rebase-label",
     seriesMap: t.nav, order: order.filter(k => t.nav[k]),
@@ -324,19 +363,19 @@ function renderPerformance(t) {
 
   // Metrics cards
   el("metrics-table").innerHTML = t.metrics.map(m => {
-    const hl = m.strategy.startsWith("Full System (PC16)") ? "hl" : "";
+    const hl = m.strategy.startsWith("Full System (live)") ? "hl" : "";
     return `<div class="mcard ${hl}"><span class="nm">${m.strategy}</span>
       <span class="mv">${m.cagr}%<small>CAGR</small></span>
       <span class="mv">${m.sharpe}<small>Sharpe</small></span>
       <span class="mv">${m.maxdd}%<small>Max DD</small></span></div>`;
   }).join("");
-  const fs = t.metrics.find(m => m.strategy.startsWith("Full System (PC16)"));
+  const fs = t.metrics.find(m => m.strategy.startsWith("Full System (live)"));
   const bm = t.metrics.find(m => m.strategy === "60/40");
   el("perf-read").innerHTML = `Full system Sharpe <strong>${fs.sharpe}</strong>, max drawdown `
     + `<strong>${fs.maxdd}%</strong> — best tail of any option (60/40 ${bm.maxdd}%). Risk-managed compounding, not return-maximisation.`;
 
-  // Drawdown (underwater) for Full System
-  const nav = t.nav["FullSystem"] || Object.values(t.nav)[0];
+  // Drawdown (underwater) for the live Full System (BL)
+  const nav = t.nav["FullSystem_BL"] || t.nav["FullSystem"] || Object.values(t.nav)[0];
   let peak = -Infinity; const dd = nav.map(p => { peak = Math.max(peak, p.v); return { date: p.date, dd: (p.v / peak - 1) * 100 }; });
   Plotly.newPlot("drawdown-chart", [{
     type: "scatter", mode: "lines", x: dd.map(d => d.date), y: dd.map(d => d.dd),
@@ -391,9 +430,9 @@ function renderScenarios(s) {
 }
 
 // ================= SAA vs DAA vs benchmarks (Performance page) =================
-const CMP_COLOR = { "SAA": "#5b8c9f", "DAA": "#0e2233", "S&P 500": "#c0392b",
+const CMP_COLOR = { "SAA": "#5b8c9f", "DAA": "#0e2233", "PC16 anchor": "#9aa7b3", "S&P 500": "#c0392b",
   "60/40": "#d68a13", "Equal-Weight": "#5aa6d4", "All-Equity": "#aab6c2" };
-const CMP_WIDTH = { "SAA": 2.4, "DAA": 3, "S&P 500": 1.6 };
+const CMP_WIDTH = { "SAA": 2.4, "DAA": 3, "PC16 anchor": 1.2, "S&P 500": 1.6 };
 
 function renderComparison(c) {
   if (el("value-add")) {
@@ -541,6 +580,110 @@ function renderRolling(c) {
   });
 }
 
+// ================= Performance attribution depth (Performance page) =================
+const ASSET_CLASS = { USEq: "Equity", IntlDM: "Equity", EM: "Equity",
+  IG: "Fixed Income", HY: "Fixed Income", Govt: "Fixed Income", RealA: "Real Assets", Cash: "Cash" };
+const CLASS_COLOR = { "Equity": "#1f5e8f", "Fixed Income": "#2f7d5e", "Real Assets": "#8ec7a6", "Cash": "#8b97a3" };
+
+function renderPerformanceAttribution(d) {
+  const a = d.attribution; if (!a || !el("perf-attr-sleeve-table")) return;
+  const ret = a.return_attr;
+
+  // 1) sleeve contribution table (avg weight, contribution, share) with inline bars
+  const maxc = Math.max(...ret.sleeves.map(s => Math.abs(s.contrib_bp))) || 1;
+  el("perf-attr-sleeve-table").innerHTML = `<table class="dtbl"><thead><tr><th>Sleeve</th>
+    <th>Block</th><th class="num">Avg wt</th><th class="num">Contribution</th>
+    <th class="num">% of total</th><th>·</th></tr></thead><tbody>`
+    + ret.sleeves.map(s => {
+        const pos = s.contrib_bp >= 0, w = Math.abs(s.contrib_bp) / maxc * 100;
+        return `<tr><td><span class="swatch" style="background:${codeColor(s.key)}"></span><b>${s.sleeve}</b></td>
+          <td class="sub">${s.block}</td><td class="num">${s.avg_weight}%</td>
+          <td class="num ${pos ? "pos" : "neg"}">${pos ? "+" : ""}${(s.contrib_bp / 100).toFixed(2)}%/yr</td>
+          <td class="num">${s.contrib_pct_of_total}%</td>
+          <td style="width:120px"><span class="cbar"><span style="width:${w}%;background:${pos ? "var(--pos)" : "var(--neg)"}"></span></span></td></tr>`;
+      }).join("")
+    + `<tr class="hl"><td colspan="3"><b>Total — Full System (DAA)</b></td>
+        <td class="num strong">${ret.total_ann}%/yr</td><td class="num">100%</td><td></td></tr></tbody></table>`;
+  if (el("perf-attr-read")) el("perf-attr-read").innerHTML = ret.narrative;
+
+  // 2) asset-class contribution (Equity / Fixed Income / Real Assets / Cash)
+  if (el("perf-attr-class-chart")) {
+    const agg = {};
+    ret.sleeves.forEach(s => { const c = ASSET_CLASS[s.key] || "Other"; agg[c] = (agg[c] || 0) + s.contrib_bp; });
+    const order = ["Equity", "Fixed Income", "Real Assets", "Cash"].filter(c => c in agg);
+    Plotly.newPlot("perf-attr-class-chart", [{
+      type: "bar", x: order, y: order.map(c => +(agg[c] / 100).toFixed(2)),
+      marker: { color: order.map(c => CLASS_COLOR[c]) }, text: order.map(c => `${(agg[c] / 100).toFixed(2)}%`),
+      textposition: "auto", hovertemplate: "%{x}: %{y:.2f}%/yr<extra></extra>" }],
+      { ...BASE, margin: { l: 42, r: 10, t: 10, b: 30 }, yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
+  }
+
+  // 3) cumulative contribution by sleeve over time (multi-line)
+  if (el("perf-attr-cum-chart") && ret.cumulative) {
+    const order = ret.sleeves.map(s => s.key);
+    const traces = order.filter(k => ret.cumulative[k]).map(k => {
+      const s = ret.cumulative[k], lab = (ret.sleeves.find(x => x.key === k) || {}).sleeve || k;
+      return { type: "scatter", mode: "lines", name: lab, x: s.map(p => p.date), y: s.map(p => p.v),
+        line: { width: 1.6, color: codeColor(k) }, hovertemplate: lab + " %{y:.1f}%<extra></extra>" };
+    });
+    Plotly.newPlot("perf-attr-cum-chart", traces, { ...BASE, margin: { l: 44, r: 12, t: 10, b: 30 },
+      legend: { orientation: "h", y: 1.14, font: { size: 9 } },
+      xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
+      yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
+  }
+
+  // 4) cumulative active value-add (DAA vs SAA) over time
+  if (el("perf-attr-active-chart") && a.active_attr && a.active_attr.cumulative) {
+    const s = a.active_attr.cumulative;
+    Plotly.newPlot("perf-attr-active-chart", [{
+      type: "scatter", mode: "lines", x: s.map(p => p.date), y: s.map(p => p.v),
+      line: { width: 2.2, color: C.navy }, fill: "tozeroy", fillcolor: "rgba(14,34,51,0.07)",
+      hovertemplate: "%{x}: %{y:+.1f}% cumulative active<extra></extra>" }],
+      { ...BASE, margin: { l: 46, r: 12, t: 10, b: 30 },
+        xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
+        yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
+  }
+}
+
+// ================= Construction drill-down: sleeve -> its instruments =================
+function renderConstructionDrill(c) {
+  const host = el("cons-drill-donut"); if (!host) return;
+  const sleeves = c.sleeves.filter(s => s.weight > 0.05);
+  let cur = sleeves[0].sleeve;
+
+  const draw = () => {
+    const s = sleeves.find(x => x.sleeve === cur);
+    const held = (s.instruments || []).filter(i => i.holding > 0).sort((a, b) => b.holding - a.holding);
+    const base = hexToRgb(codeColor(s.sleeve)), n = held.length;
+    const colors = held.map((_, k) => `rgba(${base},${(0.95 - 0.6 * (k / Math.max(1, n - 1))).toFixed(2)})`);
+    Plotly.react("cons-drill-donut", [{
+      type: "pie", hole: 0.58, sort: false, labels: held.map(i => i.ticker), values: held.map(i => i.holding),
+      marker: { colors, line: { color: "#fff", width: 2 } },
+      textposition: "outside", texttemplate: "%{label}<br>%{value:.1f}%", automargin: true, textfont: { size: 10 },
+      hovertemplate: "<b>%{label}</b>: %{value:.2f}% of portfolio<extra></extra>",
+    }], { ...BASE, margin: { l: 60, r: 60, t: 20, b: 20 }, showlegend: false,
+      annotations: [{ text: `<b>${s.weight}%</b><br><span style="font-size:10px;color:#6b7783">${s.label}</span>`,
+        showarrow: false, font: { size: 17, color: C.navy } }] }, CFG);
+    if (el("cons-drill-table"))
+      el("cons-drill-table").innerHTML = `<table class="dtbl"><thead><tr><th>Ticker</th><th>Role</th>
+        <th class="num">Weight</th></tr></thead><tbody>`
+        + held.map(i => `<tr><td><span class="tk" style="font-family:var(--mono);font-weight:750;color:var(--navy)">${i.ticker}</span></td>
+            <td>${i.role}<span class="rat" style="display:block;font-size:.72rem;color:var(--muted);line-height:1.35;margin-top:.1rem">${i.rationale || ""}</span></td>
+            <td class="num"><b>${i.holding.toFixed(2)}%</b></td></tr>`).join("") + `</tbody></table>`;
+    if (el("cons-drill-read"))
+      el("cons-drill-read").innerHTML = `<strong>${s.label}</strong> — ${s.thesis}`;
+    [...el("cons-drill-pick").children].forEach(ch => ch.classList.toggle("sel", ch.dataset.s === cur));
+  };
+
+  if (el("cons-drill-pick")) {
+    el("cons-drill-pick").innerHTML = sleeves.map(s =>
+      `<span class="chip clickable" data-s="${s.sleeve}" style="border-left:3px solid ${codeColor(s.sleeve)}">${s.label} <b>${s.weight}%</b></span>`).join("");
+    [...el("cons-drill-pick").children].forEach(ch =>
+      ch.addEventListener("click", () => { cur = ch.dataset.s; draw(); }));
+  }
+  draw();
+}
+
 // ================= Construction deep-dive (Construction page) =================
 function renderConstructionDetail(con) {
   if (el("universe")) {
@@ -588,6 +731,45 @@ function renderConstructionDetail(con) {
       legend: { orientation: "h", y: 1.18, font: { size: 9 } },
       yaxis: { ...BASE.yaxis, autorange: "reversed" }, xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
   }
+}
+
+// ================= Risk drill-down: sleeve -> instrument risk donut =================
+function renderRiskDrill(rbs) {
+  const host = el("risk-drill-donut"); if (!host || !rbs) return;
+  const sleeves = Object.entries(rbs).sort((a, b) => b[1].risk - a[1].risk);  // [label, {...}]
+  if (!sleeves.length) return;
+  let cur = sleeves[0][0];
+
+  const draw = () => {
+    const s = rbs[cur], insts = s.instruments, base = hexToRgb(codeColor(s.sleeve));
+    const n = insts.length;
+    const colors = insts.map((_, k) => `rgba(${base},${(0.95 - 0.6 * (k / Math.max(1, n - 1))).toFixed(2)})`);
+    Plotly.react("risk-drill-donut", [{
+      type: "pie", hole: 0.58, sort: false, labels: insts.map(i => i.ticker), values: insts.map(i => i.risk),
+      marker: { colors, line: { color: "#fff", width: 2 } },
+      textposition: "outside", texttemplate: "%{label}<br>%{value:.1f}%", automargin: true, textfont: { size: 10 },
+      hovertemplate: "<b>%{label}</b>: %{value:.1f}% of portfolio risk<extra></extra>",
+    }], { ...BASE, margin: { l: 60, r: 60, t: 20, b: 20 }, showlegend: false,
+      annotations: [{ text: `<b>${s.risk}%</b><br><span style="font-size:10px;color:#6b7783">${cur} risk</span>`,
+        showarrow: false, font: { size: 18, color: C.navy } }] }, CFG);
+    if (el("risk-drill-read")) {
+      const top = insts[0], hot = s.risk > s.capital;
+      el("risk-drill-read").innerHTML =
+        `<strong>${cur}</strong> consumes <strong>${s.risk}% of total portfolio risk</strong> on ${s.capital}% of capital `
+        + (hot ? `— it punches <strong>above</strong> its weight. ` : `— risk-efficient vs its weight. `)
+        + `Within it, <strong>${top.ticker}</strong> alone is ${top.risk}% of portfolio risk`
+        + (top.role ? ` (${top.role})` : "") + `. Click another sleeve to drill in.`;
+    }
+    [...el("risk-drill-pick").children].forEach(ch => ch.classList.toggle("sel", ch.dataset.s === cur));
+  };
+
+  if (el("risk-drill-pick")) {
+    el("risk-drill-pick").innerHTML = sleeves.map(([lab, s]) =>
+      `<span class="chip clickable" data-s="${lab}" style="border-left:3px solid ${codeColor(s.sleeve)}">${lab} <b>${s.risk}%</b></span>`).join("");
+    [...el("risk-drill-pick").children].forEach(ch =>
+      ch.addEventListener("click", () => { cur = ch.dataset.s; draw(); }));
+  }
+  draw();
 }
 
 // ================= Deep risk decomposition (Risk page) =================
@@ -796,6 +978,41 @@ function renderAttribution(a) {
   if (el("attr-bench-read")) el("attr-bench-read").innerHTML = bm.narrative;
 }
 
+// ================= Attribution drill-down: sleeve -> contribution path =================
+function renderAttributionDrill(a) {
+  const host = el("attr-drill-chart"); if (!host) return;
+  const ret = a.return_attr;
+  if (!ret || !ret.cumulative) return;
+  const sleeves = ret.sleeves.filter(s => ret.cumulative[s.key]);
+  if (!sleeves.length) return;
+  let cur = sleeves[0].key;
+
+  const draw = () => {
+    const s = sleeves.find(x => x.key === cur), ser = ret.cumulative[cur];
+    Plotly.react("attr-drill-chart", [{
+      type: "scatter", mode: "lines", x: ser.map(p => p.date), y: ser.map(p => p.v),
+      line: { width: 2.2, color: codeColor(cur) }, fill: "tozeroy", fillcolor: `rgba(${hexToRgb(codeColor(cur))},0.10)`,
+      hovertemplate: s.sleeve + " %{y:.1f}% cumulative (%{x})<extra></extra>",
+    }], { ...BASE, margin: { l: 46, r: 14, t: 10, b: 30 },
+      xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
+      yaxis: { ...BASE.yaxis, ticksuffix: "%", zeroline: true, zerolinecolor: "#c5cfd9" } }, CFG);
+    if (el("attr-drill-read"))
+      el("attr-drill-read").innerHTML = `<strong>${s.sleeve}</strong> contributed `
+        + `<strong>${(s.contrib_bp / 100).toFixed(2)}%/yr</strong> (${s.contrib_pct_of_total}% of the book's total return) `
+        + `on an average weight of ${s.avg_weight}%. The line is its cumulative additive contribution — `
+        + `where and when this sleeve actually paid off. Click another sleeve to compare.`;
+    [...el("attr-drill-pick").children].forEach(ch => ch.classList.toggle("sel", ch.dataset.k === cur));
+  };
+
+  if (el("attr-drill-pick")) {
+    el("attr-drill-pick").innerHTML = sleeves.map(s =>
+      `<span class="chip clickable" data-k="${s.key}" style="border-left:3px solid ${codeColor(s.key)}">${s.sleeve} <b>${(s.contrib_bp / 100).toFixed(1)}%</b></span>`).join("");
+    [...el("attr-drill-pick").children].forEach(ch =>
+      ch.addEventListener("click", () => { cur = ch.dataset.k; draw(); }));
+  }
+  draw();
+}
+
 // ================= 9x9 cross-sectional matrix (Compare page) =================
 function render9x9(m) {
   if (!el("matrix-scatter")) return;
@@ -827,6 +1044,26 @@ function render9x9(m) {
         }).join("") + `</tbody></table>`;
   }
   if (el("matrix-read")) el("matrix-read").innerHTML = m.narrative;
+}
+
+// ---------------- Overview hero verdict band ----------------
+function renderHero(d) {
+  if (!el("hero-verdict")) return;
+  const p = d.positioning;
+  if (el("hero-eyebrow")) el("hero-eyebrow").textContent = `Portfolio positioning · as of ${d.decision_month}`;
+  el("hero-verdict").innerHTML = `${p.regime} regime <span class="arrow">→</span> ${p.stance} stance`;
+  // highlight cluster: the comparisons that matter, with sign/colour
+  const v = (d.comparison && d.comparison.value_added) || {};
+  const fs = d.track_record && d.track_record.metrics
+    ? d.track_record.metrics.find(m => m.strategy.startsWith("Full System")) : null;
+  const cards = [
+    { v: `${p.growth_weight}%`, l: "Growth assets", t: "" },
+    { v: `${v.sharpe_delta >= 0 ? "+" : ""}${v.sharpe_delta}`, l: "Sharpe added by DAA", t: v.sharpe_delta >= 0 ? "pos" : "neg" },
+    { v: `${v.maxdd_delta >= 0 ? "+" : ""}${v.maxdd_delta}pp`, l: "Shallower max drawdown", t: v.maxdd_delta >= 0 ? "pos" : "neg" },
+    fs ? { v: `${fs.cagr}%`, l: "CAGR since 2008 · net", t: "" } : null,
+  ].filter(Boolean);
+  if (el("hero-highlights")) el("hero-highlights").innerHTML = cards.map(c =>
+    `<div class="hstat"><div class="hstat-v ${c.t}">${c.v}</div><div class="hstat-l">${c.l}</div></div>`).join("");
 }
 
 // ---------------- Overview lead insight (generated, not hardcoded) ----------------
@@ -881,12 +1118,17 @@ function renderHoldings(d) {
     { k: "kind", t: "Type", num: false }, { k: "policy", t: "Policy %", num: true },
     { k: "holding", t: "Weight %", num: true },
   ];
-  let sortK = "holding", sortDir = -1, query = "";
+  let sortK = "holding", sortDir = -1, query = "", sleeveFilter = null;
 
   const draw = () => {
     const q = query.trim().toLowerCase();
-    let view = held.filter(r => !q ||
-      [r.ticker, r.role, r.sleeve, r.block, r.kind].join(" ").toLowerCase().includes(q));
+    let view = held.filter(r => (!sleeveFilter || r.sleeve === sleeveFilter) && (!q ||
+      [r.ticker, r.role, r.sleeve, r.block, r.kind].join(" ").toLowerCase().includes(q)));
+    if (el("holdings-filter"))
+      el("holdings-filter").innerHTML = sleeveFilter
+        ? `Filtered to <b>${sleeveFilter}</b> <span class="chip clickable" id="holdings-clear" style="padding:.05rem .45rem">clear ✕</span>`
+        : `Click a donut slice to filter by sleeve.`;
+    if (el("holdings-clear")) el("holdings-clear").addEventListener("click", () => { sleeveFilter = null; draw(); });
     view.sort((a, b) => {
       const av = a[sortK], bv = b[sortK];
       const c = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
@@ -914,6 +1156,24 @@ function renderHoldings(d) {
       }));
   };
   draw();
+
+  // composition donut (weight by sleeve) — click a slice to filter the blotter
+  if (el("holdings-donut")) {
+    const bySleeve = {};
+    held.forEach(r => { bySleeve[r.sleeve] = bySleeve[r.sleeve] || { w: 0, code: r.sleeveCode }; bySleeve[r.sleeve].w += r.holding; });
+    const labels = Object.keys(bySleeve).sort((a, b) => bySleeve[b].w - bySleeve[a].w);
+    Plotly.newPlot("holdings-donut", [{
+      type: "pie", hole: 0.58, sort: false, labels, values: labels.map(l => bySleeve[l].w),
+      marker: { colors: labels.map(l => codeColor(bySleeve[l].code)), line: { color: "#fff", width: 2 } },
+      textposition: "outside", texttemplate: "%{label}<br>%{value:.1f}%", automargin: true, textfont: { size: 10 },
+      hovertemplate: "<b>%{label}</b>: %{value:.1f}% · click to filter<extra></extra>",
+    }], { ...BASE, margin: { l: 60, r: 60, t: 16, b: 16 }, showlegend: false,
+      annotations: [{ text: `<b>${held.length}</b><br><span style="font-size:10px;color:#6b7783">holdings</span>`,
+        showarrow: false, font: { size: 18, color: C.navy } }] }, CFG);
+    el("holdings-donut").on("plotly_click", (e) => {
+      const lab = e.points[0].label; sleeveFilter = (sleeveFilter === lab) ? null : lab; draw();
+    });
+  }
 
   if (el("holdings-search"))
     el("holdings-search").addEventListener("input", (e) => { query = e.target.value; draw(); });
@@ -984,6 +1244,70 @@ function renderMonteCarlo(mc) {
     }));
   }
   drawFan();
+
+  // ---- bull / base / bear scenario cases (comparison table)
+  if (el("mc-scenarios")) {
+    const sc = mc.scenarios, cases = [["bull", "Bull · 95th pct"], ["base", "Base · median"], ["bear", "Bear · 5th pct"]];
+    el("mc-scenarios").innerHTML = `<table class="dtbl"><thead><tr><th>Case</th>`
+      + mc.labels.map(l => `<th class="num"><span class="swatch" style="background:${MC_COLOR[l]}"></span>${l}</th>`).join("")
+      + `</tr></thead><tbody>`
+      + cases.map(([k, lab]) => `<tr><td><b>${lab}</b></td>`
+          + mc.labels.map(l => `<td class="num">$${sc[l][k].terminal.toFixed(2)}<br><span class="sub">${sc[l][k].cagr.toFixed(1)}%/yr</span></td>`).join("") + `</tr>`).join("")
+      + `<tr class="hl"><td><b>Tail · worst-5% mean</b><br><span class="sub">conditional value-at-risk</span></td>`
+      + mc.labels.map(l => { const v = sc[l].cvar5; return `<td class="num ${v < 1 ? "neg" : ""}">$${v.toFixed(2)}</td>`; }).join("") + `</tr>`
+      + `</tbody></table>`;
+  }
+  if (el("mc-scenarios-read") && byName.DAA && byName.SAA)
+    el("mc-scenarios-read").innerHTML = `The case for the dynamic book is the <strong>bear row and the tail</strong>: in the `
+      + `5th-percentile future it still ends at <strong>$${mc.scenarios.DAA.bear.terminal.toFixed(2)}</strong> (vs SAA `
+      + `$${mc.scenarios.SAA.bear.terminal.toFixed(2)}), and across the worst 5% of paths it averages `
+      + `<strong>$${mc.scenarios.DAA.cvar5.toFixed(2)}</strong> vs SAA $${mc.scenarios.SAA.cvar5.toFixed(2)} — it gives up `
+      + `bull-case upside to protect the downside.`;
+
+  // ---- sample-path overlay (spaghetti) — see the dispersion and where paths diverge
+  let pcur = "DAA";
+  const drawPaths = () => {
+    const sp = mc.sample_paths[pcur], col = MC_COLOR[pcur];
+    const traces = sp.paths.map((y, i) => ({ type: "scatter", mode: "lines", x: sp.years, y,
+      line: { width: 0.8, color: col }, opacity: 0.28, hoverinfo: "skip", showlegend: false }));
+    const med = mc.fan[pcur];
+    traces.push({ type: "scatter", mode: "lines", x: med.years, y: med.p50, line: { width: 2.8, color: C.navy },
+      name: "median", hovertemplate: "yr %{x:.0f}: median $%{y:.2f}<extra></extra>" });
+    Plotly.react("mc-paths", traces, { ...BASE, margin: { l: 50, r: 14, t: 10, b: 34 }, showlegend: false,
+      xaxis: { ...BASE.xaxis, title: { text: "years forward", font: { size: 11, color: C.muted } }, dtick: 1 },
+      yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$", title: { text: `${pcur} sample paths`, font: { size: 10, color: C.muted } } } }, CFG);
+  };
+  if (el("mc-paths")) {
+    if (el("mc-paths-pick")) {
+      el("mc-paths-pick").innerHTML = mc.labels.map(k =>
+        `<span class="chip clickable ${k === pcur ? "sel" : ""}" data-k="${k}">${k}</span>`).join("");
+      [...el("mc-paths-pick").children].forEach(ch => ch.addEventListener("click", () => {
+        pcur = ch.dataset.k; [...el("mc-paths-pick").children].forEach(c => c.classList.toggle("sel", c.dataset.k === pcur));
+        drawPaths();
+      }));
+    }
+    drawPaths();
+  }
+
+  // ---- cross-strategy comparison: median + 5–95 cone for every strategy, one chart
+  if (el("mc-compare")) {
+    const traces = [];
+    mc.labels.forEach(l => {
+      const f = mc.fan[l], rgb = hexToRgb(MC_COLOR[l]);
+      traces.push({ type: "scatter", mode: "lines", x: f.years, y: f.p5, line: { width: 0 }, hoverinfo: "skip", showlegend: false });
+      traces.push({ type: "scatter", mode: "lines", x: f.years, y: f.p95, line: { width: 0 }, fill: "tonexty",
+        fillcolor: `rgba(${rgb},0.08)`, hoverinfo: "skip", showlegend: false });
+    });
+    mc.labels.forEach(l => {
+      const f = mc.fan[l];
+      traces.push({ type: "scatter", mode: "lines", name: l, x: f.years, y: f.p50,
+        line: { width: 2.4, color: MC_COLOR[l] }, hovertemplate: l + " median $%{y:.2f} (yr %{x:.0f})<extra></extra>" });
+    });
+    Plotly.newPlot("mc-compare", traces, { ...BASE, margin: { l: 50, r: 14, t: 10, b: 34 },
+      legend: { orientation: "h", y: 1.1, font: { size: 10 } },
+      xaxis: { ...BASE.xaxis, title: { text: "years forward", font: { size: 11, color: C.muted } }, dtick: 1 },
+      yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$", title: { text: "growth of $1 (median · 5–95% cone)", font: { size: 10, color: C.muted } } } }, CFG);
+  }
 
   // ---- terminal-value distribution (DAA vs SAA), shared bins
   const te = mc.hist.terminal_edges, tc = (te.slice(0, -1)).map((e, i) => (e + te[i + 1]) / 2);
@@ -1067,8 +1391,8 @@ function renderAttributionTimeline(a) {
     Plotly.newPlot("attr-tilt-chart", [{
       type: "scatter", mode: "lines", x: s.map(p => p.date), y: s.map(p => +(p.daa_growth - p.saa_growth).toFixed(1)),
       line: { width: 1.8, color: C.accent }, fill: "tozeroy", fillcolor: "rgba(47,111,159,0.10)",
-      customdata: s.map(p => [p.daa_growth, p.regime]),
-      hovertemplate: "%{x}: %{y:+.1f}pp tilt<br>DAA growth %{customdata[0]}%% · %{customdata[1]}<extra></extra>" }],
+      customdata: s.map(p => p.regime),
+      hovertemplate: "%{x}: %{y:+.1f}pp growth tilt vs policy · %{customdata}<extra></extra>" }],
       { ...BASE, margin: { l: 48, r: 14, t: 10, b: 30 }, shapes,
         xaxis: { type: "date", dtick: "M24", tickformat: "%Y" },
         yaxis: { ...BASE.yaxis, ticksuffix: "pp", zeroline: true, zerolinecolor: "#c5cfd9",
@@ -1091,18 +1415,23 @@ async function main() {
     if (el("holdings-treemap")) renderConstruction(d.construction);
     if (el("sleeve-evidence")) renderSleeveEvidence(d.construction, d.positioning);
     if (el("universe") || el("constraint-chart")) renderConstructionDetail(d.construction);
+    if (el("cons-drill-donut")) renderConstructionDrill(d.construction);
     if (el("vol-gauge")) renderRisk(d.risk);
     if (el("corr-heatmap") && d.diversification) renderDiversification(d.diversification);
     if (el("nav-chart")) renderPerformance(d.track_record);
     if (d.comparison) { renderComparison(d.comparison); renderGrowth(d.comparison); renderRolling(d.comparison); }
+    if (el("perf-attr-sleeve-table")) renderPerformanceAttribution(d);
     if (d.risk_detail) renderRiskDetail(d.risk_detail);
+    if (el("risk-drill-donut") && d.risk) renderRiskDrill(d.risk.risk_by_sleeve);
     if (el("stress-chart") && d.stress) renderStress(d.stress);
     if (d.stress_forward) renderForwardStress(d.stress_forward);
     if (d.attribution && el("attr-layer-chart")) renderAttribution(d.attribution);
     if (d.attribution && (el("attr-cum-chart") || el("attr-tilt-chart"))) renderAttributionTimeline(d.attribution);
+    if (d.attribution && el("attr-drill-chart")) renderAttributionDrill(d.attribution);
     if (d.matrix && el("matrix-scatter")) render9x9(d.matrix);
     if (d.monte_carlo && el("mc-fan")) renderMonteCarlo(d.monte_carlo);
     if (el("holdings-table")) renderHoldings(d);
+    if (el("hero-verdict")) renderHero(d);
     if (el("overview-insight")) renderOverviewInsight(d);
     if (el("scenario-strip")) renderScenarios(d.scenarios);
     if (el("status-footer")) el("status-footer").textContent =

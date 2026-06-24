@@ -360,3 +360,102 @@ table.blotter tr:hover td { background: #f6f9fc; }
   .insight { grid-template-columns: 1fr; }
   .insight .ic { display: none; }
 }
+
+/* ======================================================================
+   EXPERIENCE ELEVATION — information hierarchy, density, story spine.
+   A cohesive institutional layer over the base system above.
+   ====================================================================== */
+
+:root {
+  --maxw: 1760px;
+  --shadow-lg: 0 1px 2px rgba(14,34,51,0.06), 0 8px 30px rgba(14,34,51,0.08);
+  --accent-2: #3a86c4;
+}
+
+/* Wider, denser canvas — fill the screen, don't leave blank gutters */
+.db, footer.status { max-width: min(96vw, var(--maxw)); }
+.db { padding: 1.15rem 1.9rem 3.5rem; }
+.grid { gap: 0.95rem; margin-bottom: 0.95rem; }
+
+/* Extra grid templates for denser, more intentional layouts */
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-2-1 { grid-template-columns: 2fr 1fr; }
+.grid-1-2 { grid-template-columns: 1fr 2fr; }
+.grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+/* Refined app bar + nav (active pill, subtle gradient) */
+.appbar { background: linear-gradient(180deg, #102a40 0%, #0e2233 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.06); }
+.appnav a { border-bottom: none; border-radius: 6px; padding: 0.32rem 0.62rem; }
+.appnav a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.appnav a.active { background: rgba(58,134,196,0.22); color: #fff; box-shadow: inset 0 0 0 1px rgba(120,180,225,0.35); }
+
+/* KPI ribbon — a crisp persistent metric strip with an accent top-rail */
+.kpi-ribbon { border-top: 2px solid var(--accent); }
+.kpi { position: relative; transition: background 0.15s; }
+.kpi:hover { background: #f7fafd; }
+.kpi-value { font-size: 1.36rem; letter-spacing: -0.01em; }
+.kpi-sub { line-height: 1.3; }
+
+/* ---- HERO verdict band (Overview): the page's strongest visual element ---- */
+.hero { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1.6rem; align-items: stretch;
+  background: radial-gradient(120% 140% at 0% 0%, #19395422 0%, transparent 55%),
+    linear-gradient(135deg, #0e2233 0%, #16324a 100%);
+  color: #fff; border-radius: 14px; padding: 1.5rem 1.7rem; margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-lg); overflow: hidden; }
+.hero-eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700;
+  color: #7fb1d8; margin-bottom: 0.55rem; }
+.hero-verdict { font-size: 1.85rem; font-weight: 780; line-height: 1.12; margin: 0 0 0.6rem;
+  letter-spacing: -0.01em; }
+.hero-verdict .arrow { color: #6fa8d6; font-weight: 400; margin: 0 0.25rem; }
+.hero-thesis { font-size: 0.95rem; line-height: 1.6; color: #cddcea; margin: 0; max-width: 62ch; }
+.hero-thesis strong { color: #fff; }
+.hero-side { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; align-content: center;
+  border-left: 1px solid rgba(255,255,255,0.10); padding-left: 1.5rem; }
+.hstat { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 9px; padding: 0.7rem 0.8rem; }
+.hstat-v { font-size: 1.5rem; font-weight: 780; font-family: var(--mono); line-height: 1; color: #fff; }
+.hstat-v.pos { color: #7dd39a; } .hstat-v.neg { color: #ef9a8f; }
+.hstat-l { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9fb6cc; margin-top: 0.35rem; line-height: 1.3; }
+
+/* ---- SECTION header (the story spine): numbered chapters with a rule ---- */
+.section-head { display: flex; align-items: baseline; gap: 0.85rem; margin: 1.9rem 0 0.95rem;
+  padding-bottom: 0.55rem; border-bottom: 2px solid #dde4ec; }
+.section-head:first-of-type { margin-top: 0.6rem; }
+.section-num { font-family: var(--mono); font-weight: 800; font-size: 0.82rem; color: var(--accent);
+  background: #eaf2f9; border: 1px solid #d3e3f0; border-radius: 6px; padding: 0.1rem 0.5rem; }
+.section-title { font-size: 1.08rem; font-weight: 760; color: var(--navy); letter-spacing: -0.01em; }
+.section-q { font-size: 0.8rem; color: var(--muted); margin-left: auto; font-style: italic; text-align: right; }
+
+/* ---- Tile polish: title tick, hover lift, denser ---- */
+.tile { padding: 1rem 1.15rem; transition: box-shadow 0.16s ease, transform 0.16s ease, border-color 0.16s; }
+.tile:hover { box-shadow: var(--shadow-lg); border-color: #d3dde7; }
+.tile-head { margin-bottom: 0.65rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eef2f6; }
+.tile-head h2 { position: relative; padding-left: 0.6rem; }
+.tile-head h2::before { content: ""; position: absolute; left: 0; top: 0.12em; bottom: 0.12em;
+  width: 3px; border-radius: 2px; background: var(--accent); }
+.tile-feature { border-top: 3px solid var(--accent); box-shadow: var(--shadow-lg); }
+.tile-feature .tile-head h2::before { background: linear-gradient(180deg, var(--accent), var(--diversifier)); }
+
+/* Compact stat used inside denser strips */
+.bigstat { padding: 0.55rem 0.7rem; }
+.bigstat-v { font-size: 1.4rem; }
+
+/* Inline contribution bar (performance attribution table) */
+.cbar { display: inline-block; width: 100%; height: 8px; background: #eef1f4; border-radius: 4px; overflow: hidden; vertical-align: middle; }
+.cbar > span { display: block; height: 100%; border-radius: 4px; }
+
+@media (min-width: 1500px) { .db, footer.status { max-width: min(96vw, var(--maxw)); } }
+
+@media (max-width: 1000px) {
+  .hero { grid-template-columns: 1fr; gap: 1.1rem; }
+  .hero-side { border-left: none; border-top: 1px solid rgba(255,255,255,0.10); padding-left: 0; padding-top: 1.1rem; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2-1, .grid-1-2 { grid-template-columns: 1fr; }
+  .section-q { display: none; }
+}
+@media (max-width: 620px) {
+  .hero-verdict { font-size: 1.45rem; }
+  .hero-side { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+}

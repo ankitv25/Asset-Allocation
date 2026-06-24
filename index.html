@@ -31,20 +31,19 @@
 
 <main class="db">
 
-  <div class="page-intro">
-    <h1>Portfolio overview</h1>
-    <p>What the book is doing today, and why. A regime-aware, multi-asset strategy built
-      <strong>bottom-up from investable instruments</strong> — read top to bottom: positioning →
-      construction logic → risk → diversification → track record → stress.</p>
-  </div>
-
-  <div class="insight">
-    <div class="ic">🧭</div>
-    <div>
-      <h3>Today's read</h3>
-      <p id="overview-insight">Loading the current stance…</p>
+  <!-- HERO — the page's strongest visual element: the verdict + the comparisons that matter -->
+  <section class="hero">
+    <div class="hero-main">
+      <div class="hero-eyebrow" id="hero-eyebrow">Portfolio positioning</div>
+      <h1 class="hero-verdict" id="hero-verdict">Loading…</h1>
+      <p class="hero-thesis" id="overview-insight">Loading the current stance…</p>
     </div>
-  </div>
+    <div class="hero-side" id="hero-highlights"></div>
+  </section>
+
+  <div class="section-head"><span class="section-num">01</span>
+    <span class="section-title">Positioning</span>
+    <span class="section-q">What is the book today, and how is it leaning?</span></div>
 
   <!-- ALLOCATION -->
   <section id="allocation" class="grid grid-2">
@@ -61,6 +60,10 @@
       <p class="read" id="pos-read"></p>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">02</span>
+    <span class="section-title">Construction</span>
+    <span class="section-q">How is every weight justified, bottom-up?</span></div>
 
   <!-- CONSTRUCTION — the most valuable view, given full width + height -->
   <section id="construction" class="grid grid-1">
@@ -83,6 +86,10 @@
       <div class="flags-compact" id="cons-flags" style="margin-top:1rem"></div>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">03</span>
+    <span class="section-title">Risk</span>
+    <span class="section-q">Where does the risk actually come from?</span></div>
 
   <!-- RISK -->
   <section id="risk" class="grid grid-3">
@@ -112,6 +119,10 @@
     </article>
   </section>
 
+  <div class="section-head"><span class="section-num">04</span>
+    <span class="section-title">Diversification</span>
+    <span class="section-q">Is the diversification real, or just averaging?</span></div>
+
   <!-- DIVERSIFICATION -->
   <section id="diversification" class="grid grid-3-2">
     <article class="tile tile-feature">
@@ -125,6 +136,10 @@
       <p class="read" id="div-read"></p>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">05</span>
+    <span class="section-title">Track record</span>
+    <span class="section-q">Has it worked, net of cost?</span></div>
 
   <!-- PERFORMANCE -->
   <section id="performance" class="grid grid-3-2">
@@ -166,6 +181,10 @@
       <div id="dd-table"></div>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">06</span>
+    <span class="section-title">Resilience</span>
+    <span class="section-q">How does it behave under stress?</span></div>
 
   <!-- STRESS -->
   <section id="stress" class="grid grid-1">

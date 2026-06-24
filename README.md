@@ -32,7 +32,35 @@ strategic policy?**
 
 ---
 
-## Current status / session handoff (2026-06-23, iteration 5)
+## Current status / session handoff (2026-06-24, iteration 6 — experience elevation)
+
+A presentation-layer pass to match the depth of the analytics, plus a depth pass on
+the two pages that were thinnest.
+
+- **Design system / story spine** — a global elevation in `style.css`: wider denser
+  canvas, refined app-bar + active-pill nav, accent-railed KPI strip, polished tiles
+  (title tick, hover lift), and two reusable patterns: a **`.hero` verdict band**
+  (regime→stance + the comparisons that matter) and **numbered `.section-head` chapters**.
+  The Overview now reads as a guided story (01 Positioning → 06 Resilience).
+- **Monte Carlo, deepened into a complete area** — added **sample-path dispersion**
+  (spaghetti, strategy toggle), a **cross-strategy median+cone comparison**, and a
+  **bull/base/bear + CVaR scenario table**. Engine emits `sample_paths` + `scenarios`.
+  Honest story sharpens: DAA's bear case ends **$1.21 vs SAA $0.98**; worst-5% tail
+  **$1.06 vs $0.79**.
+- **Performance, deepened** — new "Where the return came from" section: per-sleeve
+  **contribution table** (avg weight × return, additive, reconciles to total), an
+  **asset-class** breakdown (Equity / Fixed Income / Real Assets / Cash), **cumulative
+  contribution by sleeve**, and **cumulative active value-add (DAA vs SAA) over time**.
+- **Growth-number consistency fix** — the Outlook scenario strip used the raw PC16
+  `STANCE_MATRIX` (Neutral = 69.4% growth), contradicting the live book's 55.3%
+  (the live engine runs off a BL-anchored ~52% baseline, not PC16). `build_scenarios`
+  now anchors the map to the live book and expresses regimes as stance *deltas*, so the
+  current regime reads **55.3%** like everywhere else; the attribution-timeline hover no
+  longer surfaces the backtest's absolute growth.
+
+---
+
+## Prior status / session handoff (2026-06-23, iteration 5)
 
 **Built this session (iteration 5)** — completing the documented roadmap:
 - **Monte Carlo page** (new `montecarlo.html`, 8th page) + engine

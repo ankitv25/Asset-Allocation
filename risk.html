@@ -36,6 +36,10 @@
       just an average of correlated bets</strong>.</p>
   </div>
 
+  <div class="section-head"><span class="section-num">01</span>
+    <span class="section-title">Risk budget</span>
+    <span class="section-q">How much risk, against what limit, and from which factor?</span></div>
+
   <section class="grid grid-3">
     <article class="tile"><div class="tile-head"><h2>Volatility vs budget</h2></div>
       <div id="vol-gauge" class="volbudget-host"></div><p class="read" id="vol-read"></p></article>
@@ -46,17 +50,34 @@
       <p class="read">Sleeves whose risk bar exceeds their capital bar consume risk disproportionately.</p></article>
   </section>
 
-  <!-- Deep decomposition -->
+  <div class="section-head"><span class="section-num">02</span>
+    <span class="section-title">Where risk concentrates</span>
+    <span class="section-q">Drill in: which sleeve, then which holding inside it?</span></div>
+
+  <!-- Drill-down: click a sleeve -> its instrument-level risk donut -->
   <section class="grid grid-3-2">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Risk by sleeve → drill to instruments</h2>
+        <span class="tile-sub">click a sleeve to see which holdings inside it carry its risk</span></div>
+      <div class="thesis-pick" id="risk-drill-pick" style="margin:0 0 .4rem"></div>
+      <div id="risk-drill-donut" class="chart chart-lg"></div>
+      <p class="read" id="risk-drill-read"></p>
+    </article>
     <article class="tile">
-      <div class="tile-head"><h2>Risk decomposition</h2><span class="tile-sub">marginal &amp; component contribution, per sleeve (DAA)</span></div>
+      <div class="tile-head"><h2>Risk decomposition — by sleeve</h2>
+        <span class="tile-sub">marginal &amp; component contribution (DAA)</span></div>
       <div id="sleeve-risk-table"></div>
     </article>
-    <article class="tile">
-      <div class="tile-head"><h2>Concentration</h2></div>
+  </section>
+
+  <section class="grid grid-3-2">
+    <article class="tile"><div class="tile-head"><h2>Where risk sits — by instrument</h2>
+      <span class="tile-sub">contribution to total portfolio risk vs capital weight, per holding (Layer 3)</span></div>
+      <div id="instrument-risk-chart" class="chart chart-md"></div>
+      <p class="read">The bottom-up view the sleeve chart cannot show — bars above their capital weight are the risk drivers.</p></article>
+    <article class="tile"><div class="tile-head"><h2>Concentration</h2></div>
       <div class="bigstats" id="risk-detail-stats"></div>
-      <p class="read" id="risk-detail-narrative"></p>
-    </article>
+      <p class="read" id="risk-detail-narrative"></p></article>
   </section>
 
   <section class="grid grid-2">
@@ -68,13 +89,9 @@
       <p class="read">Where the dynamic tilt has shifted risk relative to the strategic policy.</p></article>
   </section>
 
-  <!-- Instrument-level -->
-  <section class="grid grid-1">
-    <article class="tile"><div class="tile-head"><h2>Where risk sits — by instrument</h2>
-      <span class="tile-sub">from the 27-instrument covariance (Layer 3)</span></div>
-      <div id="instrument-risk-chart" class="chart chart-md"></div>
-      <p class="read">Contribution to total portfolio risk vs capital weight, per holding.</p></article>
-  </section>
+  <div class="section-head"><span class="section-num">03</span>
+    <span class="section-title">Diversification</span>
+    <span class="section-q">Is the diversification real, or just an average of correlated bets?</span></div>
 
   <!-- Correlation / diversification — a core construction concept, given full weight -->
   <section class="grid grid-3-2">

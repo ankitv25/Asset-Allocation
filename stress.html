@@ -35,16 +35,38 @@
       forward factor-shock scenarios on today's weights, and a custom builder to shock the portfolio yourself.</p>
   </div>
 
-  <!-- Historical -->
-  <section class="grid grid-1">
-    <article class="tile">
-      <div class="tile-head"><h2>Historical stress — what actually happened</h2>
-        <span class="tile-sub">realised return across recognised crises, net of cost</span></div>
+  <div class="insight">
+    <div class="ic">🛡️</div>
+    <div>
+      <h3>The whole point of the dynamic process</h3>
+      <p id="stress-read">Loading…</p>
+    </div>
+  </div>
+
+  <div class="section-head"><span class="section-num">01</span>
+    <span class="section-title">What actually happened</span>
+    <span class="section-q">How deep were real crises, and what cushioned them?</span></div>
+
+  <!-- Historical: comparison + click-to-drill episode detail -->
+  <section class="grid grid-3-2">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Realised return across recognised crises</h2>
+        <span class="tile-sub">Full System vs 60/40 vs all-equity, net of cost · click a bar group below to drill in</span></div>
       <div id="stress-chart" class="chart chart-md"></div>
       <div id="stress-table"></div>
-      <p class="read" id="stress-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Inside a crisis — which sleeves lost, which protected</h2>
+        <span class="tile-sub">per-sleeve realised return over the episode window</span></div>
+      <div class="thesis-pick" id="stress-ep-pick" style="margin:0 0 .5rem"></div>
+      <div id="stress-ep-chart" class="chart chart-md"></div>
+      <p class="read" id="stress-ep-read"></p>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">02</span>
+    <span class="section-title">Forward-looking</span>
+    <span class="section-q">What would today's book do under a factor shock?</span></div>
 
   <!-- Forward-looking -->
   <section class="grid grid-1">
@@ -58,6 +80,10 @@
       <div id="fwd-detail-chart" class="chart chart-md"></div>
     </article>
   </section>
+
+  <div class="section-head"><span class="section-num">03</span>
+    <span class="section-title">Build your own</span>
+    <span class="section-q">Move a factor — what happens to the book?</span></div>
 
   <!-- Custom -->
   <section class="grid grid-3-2">
