@@ -80,6 +80,65 @@ function refLine(y, text, color = C.muted) {
   };
 }
 
+// ---------------- Headline period (recent-first) ----------------
+// The portfolio's current construction is what's being evaluated, so the DEFAULT
+// headline is a recent window — long history stays one click away for validation.
+// CAGR / vol / max-DD / growth are risk-free-independent and computed exactly here;
+// Sharpe is rf-dependent and stays with the authoritative prebuilt full-history metrics.
+const HEADLINE_PERIODS = [
+  { key: "2022", label: "Since 2022", from: "2022-01-01" },
+  { key: "3y", label: "3-year", years: 3 },
+  { key: "5y", label: "5-year", years: 5 },
+  { key: "full", label: "Full history", from: null },  // inception
+];
+let HEADLINE_PERIOD = "2022";  // recent + representative of the live methodology
+
+const minusYears = (iso, n) => { const d = new Date(iso); d.setFullYear(d.getFullYear() - n); return d.toISOString().slice(0, 10); };
+function periodFrom(series, p) {
+  const last = series[series.length - 1].date;
+  if (p.years) return minusYears(last, p.years);
+  return p.from || series[0].date;
+}
+function windowStats(series, fromDate) {
+  const s = (series || []).filter(p => p.date >= fromDate);
+  if (s.length < 2) return null;
+  const rets = [];
+  for (let i = 1; i < s.length; i++) rets.push(s[i].v / s[i - 1].v - 1);
+  const n = rets.length, years = n / 12;
+  const growth = s[s.length - 1].v / s[0].v;
+  const mean = rets.reduce((a, b) => a + b, 0) / n;
+  const vol = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1)) * Math.sqrt(12) * 100;
+  let peak = -Infinity, mdd = 0;
+  s.forEach(p => { peak = Math.max(peak, p.v); mdd = Math.min(mdd, p.v / peak - 1); });
+  return { cagr: (Math.pow(growth, 1 / years) - 1) * 100, vol, maxdd: mdd * 100,
+    growth: (growth - 1) * 100, start: s[0].date, months: n };
+}
+// One headline stat object for the live book vs 60/40 over the selected period.
+function headlinePeriodStats(d, key) {
+  const p = HEADLINE_PERIODS.find(x => x.key === key) || HEADLINE_PERIODS[0];
+  const nav = d.track_record.nav, fsNav = nav.FullSystem_BL || nav.FullSystem;
+  if (key === "full") {  // authoritative prebuilt numbers (incl. rf-based Sharpe)
+    const m = d.track_record.metrics, fs = m.find(x => x.strategy.startsWith("Full System")), bm = m.find(x => x.strategy === "60/40");
+    return { label: "Since 2008", from: fsNav[0].date, cagr: fs.cagr, vol: fs.vol, maxdd: fs.maxdd,
+      sharpe: fs.sharpe, bmMaxdd: bm ? bm.maxdd : null, bmCagr: bm ? bm.cagr : null };
+  }
+  const from = periodFrom(fsNav, p), fs = windowStats(fsNav, from), bm = windowStats(nav.b6040, from);
+  return { label: p.label, from, cagr: fs.cagr, vol: fs.vol, maxdd: fs.maxdd, growth: fs.growth,
+    bmMaxdd: bm ? bm.maxdd : null, bmCagr: bm ? bm.cagr : null };
+}
+// Period toggle chips; onPick(key) re-renders every period-driven view.
+function periodToggle(host, onPick) {
+  if (!host) return;
+  host.innerHTML = `<span class="lbl">performance window:</span>` + HEADLINE_PERIODS.map(p =>
+    `<span class="chip clickable ${p.key === HEADLINE_PERIOD ? "sel" : ""}" data-p="${p.key}">${p.label}</span>`).join("");
+  host.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-p]"); if (!t) return;
+    HEADLINE_PERIOD = t.dataset.p;
+    [...host.querySelectorAll("[data-p]")].forEach(c => c.classList.toggle("sel", c.dataset.p === HEADLINE_PERIOD));
+    onPick(HEADLINE_PERIOD);
+  });
+}
+
 // ---------------- Donut (one standard component) ----------------
 // items: [{label, value, color}]. Many-slice "composition" donuts use a clean side
 // legend (no leader-line clutter); small drill donuts use tidy outside labels.
@@ -97,14 +156,18 @@ function donut(id, items, opts = {}) {
       textposition: legend ? "none" : "outside",
       texttemplate: legend ? "" : "%{label}<br>%{value:.1f}%",
       textfont: { size: 10 }, automargin: true,
+      // Reserve the left for the donut and the right for the legend so they never overlap
+      // (the donut sits in a narrow column on Holdings/Overview).
+      domain: legend ? { x: [0, 0.56] } : undefined,
       hovertemplate: (opts.hover || "<b>%{label}</b>: %{value:.1f}%") + "<extra></extra>",
     };
     Plotly.react(id, [trace], {
       ...BASE, showlegend: legend,
       margin: legend ? { l: 6, r: 6, t: 10, b: 10 } : { l: 58, r: 58, t: 16, b: 16 },
-      legend: legend ? { orientation: "v", x: 1.0, xanchor: "right", y: 0.5, yanchor: "middle",
+      legend: legend ? { orientation: "v", x: 0.6, xanchor: "left", y: 0.5, yanchor: "middle",
         font: { size: 10.5 }, itemclick: false, itemdoubleclick: false } : undefined,
-      annotations: opts.centerVal ? [{ text: `<b>${opts.centerVal}</b><br><span style="font-size:10px;color:#6b7783">${opts.centerSub || ""}</span>`,
+      annotations: opts.centerVal ? [{ ...(legend ? { x: 0.28, y: 0.5, xref: "paper", yref: "paper" } : {}),
+        text: `<b>${opts.centerVal}</b><br><span style="font-size:10px;color:#6b7783">${opts.centerSub || ""}</span>`,
         showarrow: false, font: { size: 18, color: C.navy } }] : [],
     }, CFG);
   };
@@ -180,10 +243,40 @@ async function load() {
 }
 
 // ---------------- KPIs ----------------
-function renderKpis(kpis) {
-  el("kpi-ribbon").innerHTML = kpis.map(k => `
+let GROWTH_API = null;  // set when the Growth-of-$1 chart mounts, so the period toggle can rebase it
+
+function renderKpis(d) {
+  const base = (d.kpis || []).slice(0, 3);  // regime · vol · equity-factor (period-independent)
+  el("kpi-ribbon").innerHTML = base.map(k => `
     <div class="kpi"><div class="kpi-label">${k.label}</div>
-      <div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
+      <div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("")
+    + `<div class="kpi kpi-perf" id="kpi-perf"></div>`;
+  renderHeadlineKpi(d);
+  // Period toggle directly under the ribbon — the recent window leads; full history is one click away.
+  const ribbon = el("kpi-ribbon");
+  let bar = el("period-bar");
+  if (!bar) { bar = document.createElement("div"); bar.id = "period-bar"; bar.className = "period-bar";
+    ribbon.parentNode.insertBefore(bar, ribbon.nextSibling); }
+  periodToggle(bar, () => onHeadlinePeriodChange(d));
+}
+
+function renderHeadlineKpi(d) {
+  const host = el("kpi-perf"); if (!host) return;
+  const s = headlinePeriodStats(d, HEADLINE_PERIOD);
+  const beats = s.bmMaxdd != null && s.maxdd > s.bmMaxdd;  // less-negative = shallower drawdown
+  const sub = s.sharpe != null
+    ? `Sharpe ${s.sharpe.toFixed(2)} · max DD ${fmtPct(s.maxdd)}`
+    : `${s.vol.toFixed(1)}% vol · max DD ${fmtPct(s.maxdd)}${s.bmMaxdd != null ? ` · 60/40 ${fmtPct(s.bmMaxdd)}` : ""}`;
+  host.innerHTML = `<div class="kpi-label">${s.label} · net</div>
+    <div class="kpi-value">${fmtPct(s.cagr)} CAGR</div><div class="kpi-sub">${sub}</div>`;
+  host.title = `${s.label}: the live book's realised performance over this window`;
+}
+
+// Re-render every period-driven view when the window changes.
+function onHeadlinePeriodChange(d) {
+  renderHeadlineKpi(d);
+  if (el("hero-highlights")) renderHero(d);
+  if (GROWTH_API) GROWTH_API.setStart(headlinePeriodStats(d, HEADLINE_PERIOD).from);
 }
 
 // ---------------- Allocation donut ----------------
@@ -276,21 +369,29 @@ function renderSleeveEvidence(c, positioning) {
   (positioning && positioning.weights || []).forEach(w => { activeOf[w.sleeve] = w.active; });
   host.innerHTML = c.sleeves.filter(s => s.weight > 0.05).map(s => {
     const held = (s.instruments || []).filter(i => i.holding > 0).sort((a, b) => b.holding - a.holding);
-    const topTxt = held.slice(0, 3).map(i => `${i.ticker} <span class="mono">${i.holding.toFixed(1)}%</span>`).join(" · ") || "–";
+    const chips = held.slice(0, 3).map(i => `<span class="ev-hold"><b>${i.ticker}</b> ${i.holding.toFixed(1)}%</span>`).join("") || "–";
     const a = activeOf[s.sleeve];
     const deltaHtml = (a == null || Math.abs(a) < 0.1) ? `<span class="ev-delta flat">at policy</span>`
-      : `<span class="ev-delta ${a > 0 ? "pos" : "neg"}">${a > 0 ? "+" : ""}${a}pp tilt</span>`;
-    return `<article class="ev-card" style="--pc:${codeColor(s.sleeve)}">
+      : `<span class="ev-delta ${a > 0 ? "pos" : "neg"}">${fmtSign(a, "pp", a % 1 ? 1 : 0)} tilt</span>`;
+    return `<article class="ev-card clickable" data-sleeve="${s.sleeve}" tabindex="0" role="button"
+        aria-label="Explore ${s.label}" style="--pc:${codeColor(s.sleeve)}">
       <div class="ev-head"><span class="ev-name">${s.label}</span>
         <span class="ev-block" style="--bc:${BLOCK_COLOR[s.block]}">${s.block}</span></div>
       <div class="ev-metric"><span class="ev-w">${s.weight}%</span>${deltaHtml}</div>
-      <dl class="ev-evidence">
-        <div><dt>Holdings</dt><dd>${topTxt}</dd></div>
-        <div><dt>Roster</dt><dd>${s.n_core} core${held.length > s.n_core ? ` · ${held.length} held` : ""}</dd></div>
-      </dl>
+      <div class="ev-holds">${chips}</div>
+      <div class="ev-meta">${s.n_core} core${held.length > s.n_core ? ` · ${held.length} held` : ""}</div>
       <p class="ev-note">${s.thesis}</p>
+      <div class="ev-cta">Explore sleeve <span class="arr">→</span></div>
     </article>`;
   }).join("");
+  // The whole card is clickable — drill into the sleeve on the Construction page.
+  const go = (sl) => { location.href = "construction.html#slv=" + encodeURIComponent(sl); };
+  [...host.querySelectorAll(".ev-card")].forEach(card => {
+    card.addEventListener("click", () => go(card.dataset.sleeve));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(card.dataset.sleeve); }
+    });
+  });
 }
 
 // ---------------- Risk ----------------
@@ -467,14 +568,17 @@ const NAV_META = {
 
 function renderPerformance(t) {
   if (el("perf-window")) el("perf-window").textContent = t.window;
-  // Growth of $1 — now a TRUE date-picker rebase (was a static raw-NAV chart).
+  // Growth of $1 — defaults to the recent headline window on a clean linear $ scale.
   const order = ["FullSystem_BL", "b6040", "SAA_static_BL", "FullSystem", "all_equity"];
+  const fsNav = t.nav.FullSystem_BL || t.nav.FullSystem || Object.values(t.nav)[0];
+  const dStart = periodFrom(fsNav, HEADLINE_PERIODS.find(x => x.key === HEADLINE_PERIOD) || HEADLINE_PERIODS[0]);
   if (el("nav-chart")) mountRebaseGrowth({
     chartId: "nav-chart", controlsId: "nav-controls", labelId: "nav-rebase-label",
     seriesMap: t.nav, order: order.filter(k => t.nav[k]),
     colorOf: (k) => (NAV_META[k] || {}).color || C.muted,
     widthOf: (k) => (NAV_META[k] || {}).width || 1.3,
-    labelOf: (k) => (NAV_META[k] || {}).label || k, defaultLog: true,
+    labelOf: (k) => (NAV_META[k] || {}).label || k, defaultLog: false,
+    defaultStart: dStart, onMount: (api) => { GROWTH_API = api; },
   });
 
   // Metrics cards
@@ -521,6 +625,13 @@ function renderPerformance(t) {
       hovertemplate: "60/40 %{x}: %{y:.1f}%<extra></extra>" },
   ], { ...BASE, margin: { l: 40, r: 10, t: 22, b: 28 }, legend: { orientation: "h", y: 1.2, font: { size: 10 } },
     yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
+  if (el("annual-read")) {
+    const up = a.filter(d => d.full >= 0).length, worst = a.reduce((m, d) => d.full < m.full ? d : m, a[0]);
+    const calmer = a.filter(d => Math.abs(d.full) <= Math.abs(d.b6040)).length;
+    el("annual-read").innerHTML = `Positive in <strong>${up} of ${a.length}</strong> years; worst year `
+      + `<strong>${fmtSignPct(worst.full)}</strong> (${worst.year}). The bars sit inside the 60/40 marks in `
+      + `<strong>${calmer}</strong> years — a smoother ride, the trade for not topping the best years.`;
+  }
 
   // Trailing returns table
   if (t.trailing) {
@@ -616,8 +727,8 @@ function mountRebaseGrowth(o) {
   const presets = [...new Set(presetYears)].sort((a, b) => a - b)
     .map(y => dates.find(d => +d.slice(0, 4) >= y)).filter(Boolean);
 
-  let logScale = o.defaultLog !== false;
-  let startDate = firstDate;
+  let logScale = o.defaultLog === true;            // linear by default — a readable $ scale
+  let startDate = o.defaultStart ? snap(o.defaultStart) : firstDate;  // recent window leads
 
   const plot = () => {
     const ends = [];
@@ -630,17 +741,22 @@ function mountRebaseGrowth(o) {
         line: { width: widthOf(k), color: colorOf(k) }, hovertemplate: labelOf(k) + " $%{y:.2f}<extra></extra>" };
     }).filter(Boolean);
     // Crisis bands so each line is read against the episodes it's built to survive,
-    // plus an endpoint callout per series ("DAA $2.34") — the read, on the chart.
+    // plus a compact $-only endpoint callout per series — names live in the legend, so the
+    // labels stay short and never clip the right edge; the border colour maps to the line.
     const crisis = crisisOverlay({ from: startDate, to: lastDate });
-    const ends2 = ends.slice().sort((a, b) => b.y - a.y);  // de-clutter overlapping labels
-    const callouts = ends2.map((e, i) => endpointLabel(e.x, e.y, `${labelOf(e.k)} ${fmtUsd(e.y)}`, e.color));
+    const callouts = ends.map(e => endpointLabel(e.x, e.y, fmtUsd(e.y), e.color));
+    // Clean dollar scale either way; exponentformat "none" kills the SI "$10M"-style
+    // tick labels that made the log view unreadable.
+    const yAxis = logScale
+      ? { type: "log", tickprefix: "$", tickformat: ".2f", exponentformat: "none" }
+      : { type: "linear", tickprefix: "$", tickformat: ".2f", exponentformat: "none" };
     Plotly.react(o.chartId, traces, {
-      ...BASE, margin: { l: 54, r: 64, t: 10, b: 18 },
+      ...BASE, margin: { l: 56, r: 50, t: 10, b: 22 },
       shapes: crisis.shapes, annotations: [...crisis.annotations, ...callouts],
       legend: { orientation: "h", y: 1.1, font: { size: 10 } },
-      xaxis: { type: "date", rangeslider: { visible: true, thickness: 0.06 } },
-      yaxis: { ...BASE.yaxis, type: logScale ? "log" : "linear", tickprefix: "$",
-        title: { text: `$1 at ${startDate.slice(0, 7)}`, font: { size: 10, color: C.muted } } },
+      xaxis: { ...BASE.xaxis, type: "date", automargin: true },
+      yaxis: { ...BASE.yaxis, ...yAxis, autorange: true,
+        title: { text: `growth of $1 from ${startDate.slice(0, 7)}`, font: { size: 10, color: C.muted } } },
     }, { ...CFG, scrollZoom: true });
     if (o.labelId && el(o.labelId)) el(o.labelId).textContent = `rebased to $1 at ${startDate.slice(0, 7)}`;
     const dinput = controls && controls.querySelector("input[type=date]");
@@ -655,7 +771,7 @@ function mountRebaseGrowth(o) {
         <input type="date" min="${firstDate}" max="${lastDate}" value="${firstDate}"></label>`
       + `<span class="lbl">quick:</span>`
       + presets.map(d => `<span class="chip clickable" data-d="${d}">${d.slice(0, 7)}</span>`).join("")
-      + `<span class="chip clickable" data-log="1" style="margin-left:.5rem">log scale ✓</span>`;
+      + `<span class="chip clickable" data-log="1" style="margin-left:.5rem">log scale ${logScale ? "✓" : "✗"}</span>`;
     const dinput = controls.querySelector("input[type=date]");
     dinput.addEventListener("change", () => { startDate = snap(dinput.value); plot(); });
     [...controls.querySelectorAll("[data-d]")].forEach(ch =>
@@ -664,6 +780,10 @@ function mountRebaseGrowth(o) {
     lt.addEventListener("click", () => { logScale = !logScale; lt.textContent = `log scale ${logScale ? "✓" : "✗"}`; plot(); });
   }
   plot();
+
+  // Expose a setter so the headline period toggle can rebase this chart in sync.
+  const api = { setStart: (dateStr) => { startDate = snap(dateStr || firstDate); plot(); } };
+  if (o.onMount) o.onMount(api);
 
   // Optional drawdown overlay paired with the growth chart.
   if (o.ddId && el(o.ddId) && o.ddSeries) {
@@ -685,11 +805,14 @@ function mountRebaseGrowth(o) {
 
 // Performance page Growth-of-$1 (SAA / DAA / benchmarks).
 function renderGrowth(c) {
+  const daa = c.series.DAA || c.series[c.order[0]];
+  const dStart = periodFrom(daa, HEADLINE_PERIODS.find(x => x.key === HEADLINE_PERIOD) || HEADLINE_PERIODS[0]);
   mountRebaseGrowth({
     chartId: "growth-chart", controlsId: "growth-controls", labelId: "growth-rebase-label",
     ddId: "growth-dd", seriesMap: c.series, order: c.order,
     colorOf: (k) => CMP_COLOR[k], widthOf: (k) => CMP_WIDTH[k] || 1.3,
-    ddSeries: c.dd_series, ddKeys: ["DAA", "SAA"], defaultLog: true,
+    ddSeries: c.dd_series, ddKeys: ["DAA", "SAA"], defaultLog: false,
+    defaultStart: dStart, onMount: (api) => { GROWTH_API = api; },
   });
 }
 
@@ -719,6 +842,23 @@ function renderRolling(c) {
       xaxis: { type: "date", dtick: "M36", tickformat: "%Y" },
       yaxis: { ...BASE.yaxis, ticksuffix: suf } }, CFG);
   });
+
+  // Generated takeaway so the 3-up isn't abstract: the point of rolling windows is that
+  // the overlay holds realised risk in a tighter band than the equity market.
+  if (el("rolling-read")) {
+    const last = (arr) => arr && arr.length ? arr[arr.length - 1].v : null;
+    const range = (arr) => { const v = arr.map(p => p.v); return [Math.min(...v), Math.max(...v)]; };
+    const dRet = last(c.rolling.DAA.ret), dVol = last(c.rolling.DAA.vol), dSh = last(c.rolling.DAA.sharpe);
+    const spVol = c.rolling["S&P 500"] ? last(c.rolling["S&P 500"].vol) : null;
+    const [vLo, vHi] = range(c.rolling.DAA.vol);
+    el("rolling-read").innerHTML =
+      `Read these as the live experience in any given 12-month window. The book's latest rolling year is `
+      + `<strong>${fmtSignPct(dRet)} return</strong> at <strong>${dVol.toFixed(1)}% volatility</strong>`
+      + (spVol != null ? ` — well inside the S&P's <strong>${spVol.toFixed(1)}%</strong>` : "")
+      + `, with a ${dSh.toFixed(2)} Sharpe. Across the full record its rolling volatility stays in a `
+      + `<strong>${vLo.toFixed(0)}–${vHi.toFixed(0)}%</strong> band: holding risk steady through cycles is the `
+      + `mechanism, not chasing the highest 12-month return.`;
+  }
 }
 
 // ================= Performance attribution depth (Performance page) =================
@@ -796,7 +936,9 @@ function renderPerformanceAttribution(d) {
 function renderConstructionDrill(c) {
   const host = el("cons-drill-donut"); if (!host) return;
   const sleeves = c.sleeves.filter(s => s.weight > 0.05);
-  let cur = sleeves[0].sleeve;
+  // Honor a #slv=<code> deep link (e.g. clicking a sleeve card on the Overview).
+  const hashSleeve = decodeURIComponent((location.hash.match(/slv=([^&]+)/) || [])[1] || "");
+  let cur = sleeves.some(s => s.sleeve === hashSleeve) ? hashSleeve : sleeves[0].sleeve;
 
   const draw = () => {
     const s = sleeves.find(x => x.sleeve === cur);
@@ -829,6 +971,11 @@ function renderConstructionDrill(c) {
       ch.addEventListener("click", () => { cur = ch.dataset.s; draw(); }));
   }
   draw();
+  // Arrived via a sleeve-card deep link — bring the drill-down into view.
+  if (hashSleeve && cur === hashSleeve) {
+    const sec = host.closest("section") || host;
+    setTimeout(() => sec.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
+  }
 }
 
 // ================= Construction deep-dive (Construction page) =================
@@ -1197,16 +1344,16 @@ function renderHero(d) {
   const p = d.positioning;
   if (el("hero-eyebrow")) el("hero-eyebrow").textContent = `Portfolio positioning · as of ${d.decision_month}`;
   el("hero-verdict").innerHTML = `${p.regime} regime <span class="arrow">→</span> ${p.stance} stance`;
-  // highlight cluster: the comparisons that matter, with sign/colour
+  // Highlight cluster — led by the selected (recent-first) window, not decades of history.
   const v = (d.comparison && d.comparison.value_added) || {};
-  const fs = d.track_record && d.track_record.metrics
-    ? d.track_record.metrics.find(m => m.strategy.startsWith("Full System")) : null;
+  const s = headlinePeriodStats(d, HEADLINE_PERIOD);
+  const ddBeats = s.bmMaxdd != null && s.maxdd > s.bmMaxdd;
   const cards = [
+    { v: `${fmtPct(s.cagr)}`, l: `CAGR · ${s.label.toLowerCase()} · net`, t: "" },
+    { v: `${fmtPct(s.maxdd)}`, l: ddBeats ? "Max drawdown — shallower than 60/40" : "Max drawdown", t: ddBeats ? "pos" : "" },
     { v: `${p.growth_weight}%`, l: "Growth assets", t: "" },
-    { v: fmtSign(v.sharpe_delta, "", 2), l: "Sharpe added by DAA", t: v.sharpe_delta >= 0 ? "pos" : "neg" },
-    { v: fmtSign(v.maxdd_delta, "pp", 0), l: "Shallower max drawdown", t: v.maxdd_delta >= 0 ? "pos" : "neg" },
-    fs ? { v: `${fs.cagr}%`, l: "CAGR since 2008 · net", t: "" } : null,
-  ].filter(Boolean);
+    { v: fmtSign(v.maxdd_delta, "pp", 0), l: "Shallower than its own policy", t: v.maxdd_delta >= 0 ? "pos" : "neg" },
+  ];
   if (el("hero-highlights")) el("hero-highlights").innerHTML = cards.map(c =>
     `<div class="hstat"><div class="hstat-v ${c.t}">${c.v}</div><div class="hstat-l">${c.l}</div></div>`).join("");
 }
@@ -1561,7 +1708,7 @@ async function main() {
   try {
     const d = await load();
     if (el("appbar-status")) el("appbar-status").textContent = `as of ${d.decision_month}`;
-    if (el("kpi-ribbon")) renderKpis(d.kpis);
+    if (el("kpi-ribbon")) renderKpis(d);
     if (el("alloc-donut")) renderAllocation(d.positioning);
     if (el("pos-board")) renderPositioning(d.positioning, d.construction.blocks);
     if (el("holdings-treemap")) renderConstruction(d.construction);

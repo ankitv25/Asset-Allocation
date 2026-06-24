@@ -32,7 +32,33 @@ strategic policy?**
 
 ---
 
-## Current status / session handoff (2026-06-24, graph storytelling — on-chart annotations)
+## Current status / session handoff (2026-06-24, usability audit + recent-first headline)
+
+Acting on owner feedback (clipping/scale/readability + "don't headline decades of history").
+
+- **Recent-first headline.** The portfolio's *current* construction is what's being evaluated,
+  so the default headline is now **Since 2022** (7.5% CAGR · 10.3% vol · max DD −15.1%, vs
+  60/40 −17.0% — the live book actually beats 60/40 on drawdown in its design era). A
+  **performance-window toggle** (Since 2022 · 3Y · 5Y · Full history) under the KPI ribbon
+  re-renders the headline KPI, hero highlights and the Growth-of-$1 rebase together. Full
+  history (incl. the authoritative rf-based Sharpe 0.56) stays one click away for validation.
+  Recent-window CAGR/vol/max-DD/growth are risk-free-independent and computed exactly client-side.
+- **Growth-of-$1 scale fixed.** It was defaulting to a log scale over 18 years, whose SI tick
+  labels rendered as "$10M"-style nonsense. Now **linear by default** with clean `$` ticks
+  (`exponentformat:"none"`), rebased to the recent window, rangeslider dropped (redundant with
+  the date picker); log is still a toggle. Endpoint callouts shortened to the $-value (names
+  in the legend) so they no longer clip the right edge.
+- **Sleeve thesis cards** rebuilt: cleaner header/metric/holdings-chips/rationale layout, and
+  **the whole card is now clickable** → opens that sleeve's drill-down on the Construction page
+  (`#slv=` deep link, auto-scrolled).
+- **Holdings composition donut overlap fixed** — explicit pie domain + reserved legend area so
+  the legend never sits on the donut in the narrow column.
+- **Commentary added** to previously abstract charts: Rolling-12m 3-up and Calendar-year returns
+  now carry a generated read with the takeaway.
+
+---
+
+## Prior status / session handoff (2026-06-24, graph storytelling — on-chart annotations)
 
 Following the storytelling/graph audit (`../docs/audits/Dashboard_Storytelling_Graph_Audit_2026-06-24.md`),
 the audit's #1 lift — **put the punchline on the chart** — is now a reusable `app.js` standard:
