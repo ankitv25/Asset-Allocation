@@ -1,0 +1,285 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio Construction Methodology v3.4 — Research-Backed Sleeve Build</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0A1A30;--navy:#122A4A;--navy-2:#1D3D63;--steel:#5B7088;--ice:#EEF3F8;--card:#fff;--line:#D5E1EC;--line-2:#C2D2E1;--gold:#C2A14A;--gold-deep:#9C7E2E;--gold-soft:#EFE4C4;--exp:#2E7D6B;--neu:#6B7C93;--slow:#C9912E;--con:#A3433B;--serif:"Newsreader",Georgia,serif;--sans:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--ice);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.doc{max-width:1000px;margin:0 auto;background:var(--card);box-shadow:0 1px 0 var(--line),0 30px 80px -40px rgba(10,26,48,.25)}
+.hero{background:radial-gradient(120% 90% at 88% -10%,rgba(194,161,74,.18),transparent 55%),linear-gradient(160deg,#0A1A30,#102745 60%,#15314f);color:#EAF1F8;padding:60px 60px 44px;position:relative;overflow:hidden}
+.hero .ribbon{position:absolute;top:0;left:0;right:0;height:5px;display:flex}.hero .ribbon span{flex:1}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin:0 0 16px}
+.hero h1{font-family:var(--serif);font-weight:500;font-size:42px;line-height:1.08;letter-spacing:-.01em;margin:0 0 14px;max-width:22ch}
+.hero .lede{font-size:17.5px;color:#C7D6E6;max-width:66ch;margin:0 0 26px}
+.meta{display:flex;flex-wrap:wrap;gap:10px 26px;font-family:var(--mono);font-size:12px;color:#9DB3CB;border-top:1px solid rgba(255,255,255,.12);padding-top:16px}.meta b{color:#D9E5F2;font-weight:500}
+.body{padding:50px 60px 60px}
+.lead{font-size:18px;color:var(--navy);font-family:var(--serif);line-height:1.5}
+.mod-head{display:flex;align-items:baseline;gap:16px;margin:56px 0 16px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+.mod-head .no{font-family:var(--mono);font-size:13px;color:var(--gold-deep);font-weight:500;flex:none;padding-top:4px}
+.mod-head h2{font-family:var(--serif);font-weight:600;font-size:27px;line-height:1.14;margin:0;letter-spacing:-.01em}
+h3{font-family:var(--serif);font-weight:600;font-size:20px;margin:34px 0 8px}
+h4{font-size:13px;font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--navy-2);margin:22px 0 6px}
+p{margin:0 0 14px}strong{color:var(--ink);font-weight:600}em{color:var(--navy-2);font-style:italic}
+ul,ol{margin:0 0 14px;padding-left:22px}li{margin:0 0 8px}.small{font-size:13.5px;color:var(--steel)}a{color:var(--gold-deep)}
+code{font-family:var(--mono);font-size:12.5px;background:#EEF3F8;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--navy-2)}
+.toc{columns:2;column-gap:40px;margin:26px 0 8px;padding:22px 24px;background:var(--ice);border:1px solid var(--line);border-radius:12px}
+.toc a{display:block;text-decoration:none;color:var(--navy);font-size:14px;padding:5px 0;break-inside:avoid}.toc a .n{font-family:var(--mono);color:var(--gold-deep);font-size:12px;margin-right:10px}
+figure{margin:26px 0;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+figure img{display:block;width:100%;height:auto}
+figcaption{font-family:var(--mono);font-size:12px;color:var(--steel);padding:11px 18px;border-top:1px solid var(--line);background:#FBFDFF;display:flex;gap:10px;align-items:baseline}figcaption b{color:var(--gold-deep);font-weight:500;letter-spacing:.08em;flex:none}
+.scroll{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:680px}
+thead th{background:var(--ink);color:#EAF1F8;font-family:var(--mono);font-weight:500;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;text-align:left;padding:10px 11px;vertical-align:bottom}
+tbody td{padding:9px 11px;border-top:1px solid var(--line);vertical-align:top}tbody tr:nth-child(even){background:#F7FAFD}
+td.num{text-align:right;font-family:var(--mono);font-size:12px}th.num{text-align:right}
+td .h{font-family:var(--serif);font-weight:600;font-size:13px;color:var(--ink)}
+.note{border:1px solid var(--line);background:var(--ice);border-radius:10px;padding:15px 20px;margin:20px 0;font-size:15px}
+.note .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);display:block;margin-bottom:6px}
+.flag{border-left:4px solid var(--con);background:#FBF1F0}.flag .tag{color:var(--con)}
+.key{border-left:4px solid var(--gold);background:linear-gradient(180deg,#fff,#FAFAF3)}.key .tag{color:var(--gold-deep)}
+.src{border-left:4px solid var(--navy-2);background:#F4F7FA}.src .tag{color:var(--navy-2)}
+.rfp{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;background:#FBF1F0;color:var(--con)}
+.rlegend{display:flex;flex-wrap:wrap;gap:7px 16px;margin:6px 0 18px}.rlegend span{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;color:var(--steel)}.dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+footer{padding:32px 60px 46px;background:var(--ink);color:#9DB3CB;font-size:13px}footer .ribbon{height:4px;display:flex;margin:0 -60px 24px}footer .ribbon span{flex:1}footer b{color:#D9E5F2;font-weight:500}
+@media(max-width:720px){.hero,.body,footer{padding-left:24px;padding-right:24px}.hero h1{font-size:31px}.toc{columns:1}footer .ribbon{margin-left:-24px;margin-right:-24px}}
+@media print{body{background:#fff}.doc{box-shadow:none;max-width:none}figure,.note,.scroll{break-inside:avoid}.hero{padding:36px}.body{padding:26px 36px}}
+
+.schematic{margin:24px 0 6px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:18px 16px 8px}
+.schematic svg{display:block;width:100%;height:auto}
+.ph{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 9px;border-radius:20px;background:#FBF3DE;color:var(--gold-deep);border:1px solid #E7D4A0;letter-spacing:.04em}
+.ev{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 9px;border-radius:20px;background:#EAF1F8;color:var(--navy-2);border:1px solid var(--line-2);letter-spacing:.04em}
+.tcap{font-family:var(--mono);font-size:11.5px;color:var(--steel);margin:7px 2px 22px;display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+.up{color:var(--exp);font-weight:600}.dn{color:var(--con);font-weight:600}.fl{color:var(--steel);font-weight:600}
+td.dir{text-align:center;font-family:var(--mono);font-size:13px}
+.sleeve-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:30px 0 6px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.sleeve-head h3{margin:0;border:0;padding:0}
+.chip{font-family:var(--mono);font-size:11px;color:var(--navy);background:var(--ice);border:1px solid var(--line-2);border-radius:6px;padding:2px 8px}
+.chain{font-family:var(--mono);font-size:10.5px;color:var(--steel);letter-spacing:.02em;margin:2px 0 14px}
+.compact li{margin:0 0 4px}
+</style></head>
+<div class="doc">
+<header class="hero">
+<div class="ribbon"><span style="background:var(--exp)"></span><span style="background:var(--neu)"></span><span style="background:var(--slow)"></span><span style="background:var(--con)"></span></div>
+<p class="eyebrow">Research Methodology · Sleeve-Evidence Build · v3.4 (on the v3.0 structure)</p>
+<h1>Research-Backed Sleeve Construction</h1>
+<p class="lede">A research extension of the v3.0 build, operating on the six agreed sleeves. For each sleeve it documents the full chain — portfolio role, institutional allocation evidence, realistic range, internal split, ETF/proxy, CMA logic, MRS linkage, constraint, and a draft validation weight — and rebuilds the capital-market assumptions through a historical&#8594;forward&#8594;final chain. The trajectory: rebalance the over-defensive v3.0 into a more aggressive endowment, and build a solid Accelerated SAA / DAA alongside it. All weights and CMAs here are <b>draft</b>; the validated pipeline finalises them.</p>
+<div class="meta"><span><b>Evidence</b> Norway · Yale/Swensen · CalPERS · JPM LTCMA 2026</span><span><b>Numbers</b> draft, pipeline-finalised</span><span><b>Regime engine</b> MRS v2.1 (unchanged)</span></div>
+</header>
+<main class="body">
+
+<p class="lead">This pass returns to the v3.0 document structure and strengthens it with research. The architecture is settled — six top-level levers, instruments nested inside — and the goal here is to ground every sleeve in real institutional practice and published capital-market assumptions, then carry that evidence forward into draft ranges, draft CMAs, draft regime tilts, and draft validation weights. The numbers are explicitly provisional: they show the logic the pipeline will execute and the magnitudes the evidence supports, not final optimised output. The confirmed trajectory is a <b>more aggressive endowment</b> than the over-defensive v3.0, and a <b>solid Accelerated SAA / DAA</b> built to perform — both measured against, and built to compete with, 60/40.</p>
+
+<div class="toc">
+<a href="#a"><span class="n">A</span>Scope: what this pass adds</a>
+<a href="#b"><span class="n">B</span>Institutional reference evidence</a>
+<a href="#c"><span class="n">C</span>The six-sleeve architecture and the research chain</a>
+<a href="#d"><span class="n">D</span>Per-sleeve research build</a>
+<a href="#e"><span class="n">E</span>Capital-market assumptions (historical&#8594;forward&#8594;final)</a>
+<a href="#f"><span class="n">F</span>Covariance and optimisation logic</a>
+<a href="#g"><span class="n">G</span>MRS regime linkage (five pillars)</a>
+<a href="#h"><span class="n">H</span>Implementation constraints</a>
+<a href="#i"><span class="n">I</span>Draft validation</a>
+<a href="#j"><span class="n">J</span>Decision register and pipeline hand-off</a>
+</div>
+
+<!-- A -->
+<div class="mod-head" id="a"><div class="no">A</div><h2>Scope: what this pass adds</h2></div>
+<p>The v3.0 structure and the six-sleeve architecture are retained. What this pass adds is the research layer beneath the architecture and a first set of draft numbers consistent with it.</p>
+<div class="scroll"><table>
+<thead><tr><th>Carried over from v3.0 / prior</th><th>Added in this pass</th></tr></thead>
+<tbody>
+<tr><td>Six-lever architecture, instruments nested inside</td><td>Per-sleeve institutional allocation evidence</td></tr>
+<tr><td>IG as an internal fixed-income tilt, not a standalone sleeve</td><td>Realistic min/max ranges grounded in references</td></tr>
+<tr><td>REITs and commodities as separate levers</td><td>ETF/proxy mapping and draft CMA per proxy</td></tr>
+<tr><td>Geometric-growth objective; full-history covariance</td><td>Historical&#8594;forward&#8594;final CMA build</td></tr>
+<tr><td>MRS v2.1 regime engine (unchanged)</td><td>MRS five-pillar &#8594; sleeve &#8594; proxy tilt linkage</td></tr>
+<tr><td>Validation as a gate</td><td>Draft validation weights and forward stats vs 60/40</td></tr>
+</tbody></table></div>
+
+<!-- B -->
+<div class="mod-head" id="b"><div class="no">B</div><h2>Institutional reference evidence</h2></div>
+<p>Ranges are set against real institutional portfolios spanning sovereign funds, endowments, public pensions, and published capital-market assumptions — not by averaging them, but by using them as sanity bounds for a growth-oriented book. The consistent signal across these references is a clear majority in growth assets, fixed income that is government-and-inflation-led rather than credit-heavy, and real assets held as distinct, visible exposures.</p>
+<div class="scroll"><table>
+<thead><tr><th>Reference</th><th>Type</th><th class="num">Growth / equity-like</th><th class="num">Fixed income</th><th>Notable for this build</th></tr></thead>
+<tbody>
+<tr><td><span class="h">Norway GPFG</span></td><td>Sovereign fund</td><td class="num">~70% equity (+RE)</td><td class="num">~27%</td><td>Govt-heavy bonds; minimal standalone IG</td></tr>
+<tr><td><span class="h">Yale / Swensen model</span></td><td>Endowment</td><td class="num">Equity + 20% REITs</td><td class="num">Treasuries + TIPS</td><td>REITs a separate lever; FI is govt + inflation, no corporate-credit sleeve</td></tr>
+<tr><td><span class="h">CalPERS reference</span></td><td>Public pension</td><td class="num">75% equities</td><td class="num">25% bonds</td><td>Reference portfolio raised 72/28 &#8594; 75/25; growth-tilted</td></tr>
+<tr><td><span class="h">JPM 60/40+</span></td><td>Multi-asset CMA</td><td class="num">~40% public eq + alts/RE</td><td class="num">~30% agg</td><td>Adds real assets / alternatives to lift return and Sharpe</td></tr>
+<tr><td>Target-date (near-dated)</td><td>Balanced / TDF</td><td class="num">~50&ndash;60% equity</td><td class="num">~40&ndash;50%</td><td>Glidepath references for the defensive end</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ev">RESEARCH EVIDENCE</span><span>Public figures from each manager's disclosures; used as bounds, not inputs to average. Norway ~70/30 strategic; CalPERS reference 75/25; Swensen keeps REITs separate with Treasury/TIPS defense; JPM 2026 LTCMA.</span></p>
+<div class="note key"><span class="tag">Reading the evidence</span>None of these growth-oriented references holds a large standalone investment-grade block, and the most return-seeking (CalPERS 75/25, Norway ~70/30, the endowment model) sit well above a 60/40 growth weight. This supports both legs of the trajectory: a <em>more aggressive endowment</em> (growth orientation in the high-60s, not the low-50s of v3.0) and an <em>Accelerated book</em> that runs hotter still and leans further in supportive regimes.</p>
+
+<!-- C -->
+<div class="mod-head" id="c"><div class="no">C</div><h2>The six-sleeve architecture and the research chain</h2></div>
+<p>The six levers are fixed. The lever weights set the portfolio's character and are decided first; instruments live inside their parent lever as implementation. The research in §D follows a fixed chain for each sleeve, so every allocation is traceable from portfolio role through to a draft weight.</p>
+<div class="schematic"><svg viewBox="0 0 1000 392" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six levers with nested instruments"><text x="20" y="26" fill="#9C7E2E" font-family="IBM Plex Mono,monospace" font-size="11" letter-spacing="0.08em">TOP-LEVEL LEVERS &#183; SET CHARACTER (DECIDED FIRST)</text><rect x="20.0" y="46" width="150.0" height="50" rx="7" fill="#122A4A"/><text x="95.0" y="68" text-anchor="middle" fill="#FFFFFF" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">Equity</text><text x="95.0" y="84" text-anchor="middle" fill="#DCE6F1" font-family="Inter,sans-serif" font-size="11">/ growth</text><rect x="20.0" y="100" width="150.0" height="232" rx="7" fill="#F7FAFD" stroke="#D5E1EC" stroke-width="1"/><text x="95.0" y="124" text-anchor="middle" fill="#9C7E2E" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="0.04em">RETURN ENGINE</text><line x1="34.0" y1="134" x2="156.0" y2="134" stroke="#E3EAF2" stroke-width="1"/><circle cx="40.0" cy="154.0" r="2.4" fill="#122A4A"/><text x="50.0" y="158.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">US equity</text><circle cx="40.0" cy="180.0" r="2.4" fill="#122A4A"/><text x="50.0" y="184.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Developed intl</text><circle cx="40.0" cy="206.0" r="2.4" fill="#122A4A"/><text x="50.0" y="210.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Emerging markets</text><circle cx="40.0" cy="232.0" r="2.4" fill="#122A4A"/><text x="50.0" y="236.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Factor tilts</text><rect x="182.0" y="46" width="150.0" height="50" rx="7" fill="#5B7088"/><text x="257.0" y="68" text-anchor="middle" fill="#FFFFFF" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">Fixed income</text><text x="257.0" y="84" text-anchor="middle" fill="#DCE6F1" font-family="Inter,sans-serif" font-size="11">/ defensive</text><rect x="182.0" y="100" width="150.0" height="232" rx="7" fill="#F7FAFD" stroke="#D5E1EC" stroke-width="1"/><text x="257.0" y="124" text-anchor="middle" fill="#9C7E2E" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="0.04em">BALLAST</text><line x1="196.0" y1="134" x2="318.0" y2="134" stroke="#E3EAF2" stroke-width="1"/><circle cx="202.0" cy="154.0" r="2.4" fill="#5B7088"/><text x="212.0" y="158.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Government duration</text><circle cx="202.0" cy="180.0" r="2.4" fill="#5B7088"/><text x="212.0" y="184.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">TIPS — inflation</text><circle cx="202.0" cy="206.0" r="2.4" fill="#5B7088"/><text x="212.0" y="210.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">IG credit — tilt only</text><rect x="344.0" y="46" width="150.0" height="50" rx="7" fill="#1D3D63"/><text x="419.0" y="68" text-anchor="middle" fill="#FFFFFF" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">Real estate</text><text x="419.0" y="84" text-anchor="middle" fill="#DCE6F1" font-family="Inter,sans-serif" font-size="11">/ REITs</text><rect x="344.0" y="100" width="150.0" height="232" rx="7" fill="#F7FAFD" stroke="#D5E1EC" stroke-width="1"/><text x="419.0" y="124" text-anchor="middle" fill="#9C7E2E" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="0.04em">REAL-ASSET INCOME</text><line x1="358.0" y1="134" x2="480.0" y2="134" stroke="#E3EAF2" stroke-width="1"/><circle cx="364.0" cy="154.0" r="2.4" fill="#1D3D63"/><text x="374.0" y="158.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Listed REITs</text><circle cx="364.0" cy="180.0" r="2.4" fill="#1D3D63"/><text x="374.0" y="184.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Rents · cap rates</text><rect x="506.0" y="46" width="150.0" height="50" rx="7" fill="#C2A14A"/><text x="581.0" y="68" text-anchor="middle" fill="#FFFFFF" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">Commodities</text><rect x="506.0" y="100" width="150.0" height="232" rx="7" fill="#F7FAFD" stroke="#D5E1EC" stroke-width="1"/><text x="581.0" y="124" text-anchor="middle" fill="#9C7E2E" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="0.04em">INFLATION HEDGE</text><line x1="520.0" y1="134" x2="642.0" y2="134" stroke="#E3EAF2" stroke-width="1"/><circle cx="526.0" cy="154.0" r="2.4" fill="#C2A14A"/><text x="536.0" y="158.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Broad commodities</text><circle cx="526.0" cy="180.0" r="2.4" fill="#C2A14A"/><text x="536.0" y="184.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Gold</text><rect x="668.0" y="46" width="150.0" height="50" rx="7" fill="#9C7E2E"/><text x="743.0" y="68" text-anchor="middle" fill="#FFFFFF" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">Alternatives</text><text x="743.0" y="84" text-anchor="middle" fill="#DCE6F1" font-family="Inter,sans-serif" font-size="11">/ trend</text><rect x="668.0" y="100" width="150.0" height="232" rx="7" fill="#F7FAFD" stroke="#D5E1EC" stroke-width="1"/><text x="743.0" y="124" text-anchor="middle" fill="#9C7E2E" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="0.04em">DIVERSIFIER</text><line x1="682.0" y1="134" x2="804.0" y2="134" stroke="#E3EAF2" stroke-width="1"/><circle cx="688.0" cy="154.0" r="2.4" fill="#9C7E2E"/><text x="698.0" y="158.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Trend / managed</text><circle cx="688.0" cy="180.0" r="2.4" fill="#9C7E2E"/><text x="698.0" y="184.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">futures</text><rect x="830.0" y="46" width="150.0" height="50" rx="7" fill="#8194A8"/><text x="905.0" y="68" text-anchor="middle" fill="#FFFFFF" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">Cash</text><text x="905.0" y="84" text-anchor="middle" fill="#DCE6F1" font-family="Inter,sans-serif" font-size="11">/ liquidity</text><rect x="830.0" y="100" width="150.0" height="232" rx="7" fill="#F7FAFD" stroke="#D5E1EC" stroke-width="1"/><text x="905.0" y="124" text-anchor="middle" fill="#9C7E2E" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="0.04em">LIQUIDITY</text><line x1="844.0" y1="134" x2="966.0" y2="134" stroke="#E3EAF2" stroke-width="1"/><circle cx="850.0" cy="154.0" r="2.4" fill="#8194A8"/><text x="860.0" y="158.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">T-bills</text><circle cx="850.0" cy="180.0" r="2.4" fill="#8194A8"/><text x="860.0" y="184.0" fill="#122A4A" font-family="Inter,sans-serif" font-size="11.5">Dry powder</text><text x="20" y="368" fill="#5B7088" font-family="IBM Plex Mono,monospace" font-size="11" letter-spacing="0.06em">INTERNAL TOOLS &#183; IMPLEMENTED INSIDE EACH LEVER BY THE OPTIMISER</text></svg></div>
+<p class="chain">existing sleeve &#8594; portfolio role &#8594; institutional evidence &#8594; realistic min/max range &#8594; internal split &#8594; ETF/proxy &#8594; CMA input logic &#8594; MRS linkage &#8594; constraint &#8594; draft validation weight</p>
+
+<!-- D -->
+<div class="mod-head" id="d"><div class="no">D</div><h2>Per-sleeve research build</h2></div>
+<p>Each sleeve is built through the full chain. Draft weights show the more aggressive Endowment and the Accelerated SAA neutral base; the Accelerated book then tilts by regime (§G). All weights are draft.</p>
+
+<!-- D1 Equity -->
+<div class="sleeve-head"><h3>D1 · Equity / growth</h3><span class="chip">Endowment 58%</span><span class="chip">Accelerated base 64%</span><span class="chip">range 50&ndash;72%</span></div>
+<p>The equity sleeve is the return engine and the dominant driver of both books' compounding. Institutional references put growth-oriented equity well above the 60/40 line — CalPERS' reference portfolio at 75% equities, Norway near 70%, the endowment model higher still through public and private equity. The total equity decision is made first; the internal regional and factor split is implementation. A home-biased split is retained — the realized US-exceptionalism of the last cycle argues against under-weighting the US, even as JPM's forward CMAs give developed-international and EM a modest edge on entry valuations and currency.</p>
+<div class="scroll"><table>
+<thead><tr><th>Internal split</th><th>ETF / proxy</th><th class="num">Draft CMA</th><th>MRS linkage</th><th>Constraint</th></tr></thead>
+<tbody>
+<tr><td>US equity</td><td>SPY / VTI</td><td class="num">6.7%</td><td>Growth pillar drives core sizing</td><td rowspan="4">Total equity is the lever decision; splits are implementation. Home bias retained.</td></tr>
+<tr><td>Developed intl</td><td>EFA / VEA</td><td class="num">7.4%</td><td>Growth; dollar/liquidity pillar on FX</td></tr>
+<tr><td>EM equity</td><td>EEM / VWO</td><td class="num">7.7%</td><td>Growth + stress pillar (risk-on/off)</td></tr>
+<tr><td>Factor tilts</td><td>quality / value / min-vol</td><td class="num">overlay</td><td>Defensive factors up as stress rises</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Forward CMAs anchored to JPM 2026 LTCMA: US large cap 6.7%, EAFE 7.4%, EM 7.7%.</span></p>
+
+<!-- D2 Fixed income -->
+<div class="sleeve-head"><h3>D2 · Fixed income / defensive</h3><span class="chip">Endowment 20%</span><span class="chip">Accelerated base 12%</span><span class="chip">range 8&ndash;24%</span></div>
+<p>Fixed income is one lever with one job — defense — and its composition is regime-driven. This is the structural correction at the centre of the rebuild: the over-defensive v3.0 let investment-grade credit accumulate toward 30%; here IG is an internal tilt only, used when spreads pay, and the sleeve is government-and-inflation-led. The references support this directly — Norway's bond book is government-heavy and Swensen's defensive allocation is Treasuries and TIPS with no corporate-credit sleeve at all.</p>
+<div class="scroll"><table>
+<thead><tr><th>Internal split</th><th>ETF / proxy</th><th class="num">Draft CMA</th><th>MRS linkage</th><th>Constraint</th></tr></thead>
+<tbody>
+<tr><td>Government duration</td><td>IEF / TLT</td><td class="num">4.3%</td><td>Rates/Liquidity pillar; default ballast, up in growth shock</td><td rowspan="3"><b>IG &le;~5% of book</b> (&le;~25% of FI). FI total &le;~24% endow / &le;~16% accel.</td></tr>
+<tr><td>TIPS</td><td>TIP / SCHP</td><td class="num">4.2%</td><td>Inflation pillar; tilt up when inflation elevated</td></tr>
+<tr><td>IG credit (tilt)</td><td>LQD</td><td class="num">5.2%</td><td>Credit pillar; add only when spreads wide/attractive</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>JPM 2026 LTCMA: intermediate Treasuries 4.0% / long 4.9% (duration blend drafted 4.3%), IG credit 5.2%, TIPS drafted 4.2%.</span></p>
+
+<!-- D3 Real estate -->
+<div class="sleeve-head"><h3>D3 · Real estate / REITs</h3><span class="chip">Endowment 9%</span><span class="chip">Accelerated base 8%</span><span class="chip">range 6&ndash;12%</span></div>
+<p>Real estate is a distinct real-asset lever, kept visible rather than folded into equity. It is equity-like in beta but driven by rents, occupancy, cap rates, and real yields, and it carries an income and inflation-sensitivity profile equity lacks. Swensen sized it as a separate ~20% lever; core institutional real estate runs nearer 8&ndash;12%. JPM's core real-estate CMA is high (8.2%), reflecting private/core entry yields; listed REITs are drafted more conservatively given their higher equity beta and liquidity.</p>
+<div class="scroll"><table>
+<thead><tr><th>Internal split</th><th>ETF / proxy</th><th class="num">Draft CMA</th><th>MRS linkage</th><th>Constraint</th></tr></thead>
+<tbody>
+<tr><td>Listed REITs</td><td>VNQ / SCHH</td><td class="num">7.0%</td><td>Rates pillar (duration-sensitive) + Growth pillar</td><td>Sized as a distinct decision; not merged into equity or commodities</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Listed-REIT CMA drafted 7.0% (vs JPM core real estate 8.2%, which reflects private/core, not listed).</span></p>
+
+<!-- D4 Commodities -->
+<div class="sleeve-head"><h3>D4 · Commodities</h3><span class="chip">Endowment 4%</span><span class="chip">Accelerated base 5%</span><span class="chip">range 2&ndash;8%</span></div>
+<p>Commodities are a separate inflation/real-asset lever with a different economic role from real estate. They are close to the only liquid asset that tends to rise when equities and bonds fall together, as in 2022, which is why they are not merged into a generic "real assets" bucket with rate-sensitive REITs. The sleeve is modest in calm regimes and scales up when the inflation pillar fires (§G). Forward return is moderate; the value is the inflation-shock hedge and the low-to-moderate equity correlation.</p>
+<div class="scroll"><table>
+<thead><tr><th>Internal split</th><th>ETF / proxy</th><th class="num">Draft CMA</th><th>MRS linkage</th><th>Constraint</th></tr></thead>
+<tbody>
+<tr><td>Broad commodities</td><td>DBC / PDBC</td><td class="num">4.0%</td><td>Inflation pillar primary; scale up in slowdown/contraction</td><td rowspan="2">Held separate from REITs; sized for inflation defense, not return</td></tr>
+<tr><td>Gold</td><td>GLD</td><td class="num">~3&ndash;4%</td><td>Stress + Liquidity pillars (real-rate/USD hedge)</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Broad-commodity CMA drafted 4.0% from a historical&#8594;forward chain (recent decade weak; long-run higher); gold drafted slightly lower.</span></p>
+
+<!-- D5 Alternatives -->
+<div class="sleeve-head"><h3>D5 · Alternatives / trend</h3><span class="chip">Endowment 6%</span><span class="chip">Accelerated base 8%</span><span class="chip">range 4&ndash;16%</span></div>
+<p>Trend and managed futures are a diversifying strategy sleeve, valued for a near-zero equity correlation and a tendency to be convex in sustained drawdowns — they have historically paid off in exactly the prolonged crises where bonds disappoint. The architecture is honest about the role: this sleeve diversifies the growth book; it does not replace it. It is sized modestly at neutral and scaled up as growth steps down, capped so it never substitutes for the return engine.</p>
+<div class="scroll"><table>
+<thead><tr><th>Internal split</th><th>ETF / proxy</th><th class="num">Draft CMA</th><th>MRS linkage</th><th>Constraint</th></tr></thead>
+<tbody>
+<tr><td>Trend / managed futures</td><td>DBMF / KMLM</td><td class="num">5.0%</td><td>Stress + Liquidity pillars; scale up as MRS deteriorates</td><td><b>&le;~16%</b> &mdash; a diversifier, never a growth substitute</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Trend CMA drafted 5.0% (net of fees) from a historical&#8594;forward chain; short live-ETF history flagged for pipeline review.</span></p>
+
+<!-- D6 Cash -->
+<div class="sleeve-head"><h3>D6 · Cash / liquidity</h3><span class="chip">Endowment 3%</span><span class="chip">Accelerated base 3%</span><span class="chip">range 1&ndash;10%</span></div>
+<p>Cash is operational liquidity and dry powder, not a return source. It is held to the minimum operations require, rising only in contraction. The instrument gap here is a data note: short-bill ETFs (BIL/SHV/SGOV) are absent from the current repository, so a FRED T-bill series proxies the sleeve until the production migration.</p>
+<div class="scroll"><table>
+<thead><tr><th>Internal split</th><th>ETF / proxy</th><th class="num">Draft CMA</th><th>MRS linkage</th><th>Constraint</th></tr></thead>
+<tbody>
+<tr><td>T-bills / liquidity</td><td>BIL / SGOV <span class="rfp">gap &#8594; FRED proxy</span></td><td class="num">3.2%</td><td>Liquidity + Stress pillars; raise in contraction</td><td><b>&le;~10%</b> &mdash; cash drag guardrail</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Cash CMA drafted 3.2% on normalising front-end rates; instrument proxied pending CRSP/WRDS migration.</span></p>
+
+<!-- E -->
+<div class="mod-head" id="e"><div class="no">E</div><h2>Capital-market assumptions (historical&#8594;forward&#8594;final)</h2></div>
+<p>Each proxy's expected return is built transparently: a long-run historical estimate, a forward-looking adjustment for today's valuations and yields, and a final draft input. The forward adjustment is anchored to JPM's 2026 Long-Term Capital Market Assumptions, which mark equities down from their long-run averages (elevated valuations) and bonds modestly up (higher starting yields). The final inputs are draft; the pipeline supplies validated values on production data.</p>
+<div class="scroll"><table>
+<thead><tr><th>Asset / proxy</th><th>ETF</th><th class="num">Historical</th><th class="num">Fwd adj.</th><th class="num">Final (draft)</th><th class="num">Vol</th></tr></thead>
+<tbody><tr><td><span class="h">US equity</span></td><td>SPY/VTI</td><td class="num">10.0%</td><td class="num"><span class="dn">-3.3</span></td><td class="num"><b>6.7%</b></td><td class="num">16%</td></tr><tr><td><span class="h">Developed intl</span></td><td>EFA/VEA</td><td class="num">8.5%</td><td class="num"><span class="dn">-1.1</span></td><td class="num"><b>7.4%</b></td><td class="num">17%</td></tr><tr><td><span class="h">EM equity</span></td><td>EEM/VWO</td><td class="num">9.0%</td><td class="num"><span class="dn">-1.3</span></td><td class="num"><b>7.7%</b></td><td class="num">20%</td></tr><tr><td><span class="h">Listed REITs</span></td><td>VNQ/SCHH</td><td class="num">9.5%</td><td class="num"><span class="dn">-2.5</span></td><td class="num"><b>7.0%</b></td><td class="num">19%</td></tr><tr><td><span class="h">Commodities</span></td><td>DBC/PDBC</td><td class="num">4.5%</td><td class="num"><span class="dn">-0.5</span></td><td class="num"><b>4.0%</b></td><td class="num">15%</td></tr><tr><td><span class="h">Trend / mgd futures</span></td><td>DBMF/KMLM</td><td class="num">6.0%</td><td class="num"><span class="dn">-1.0</span></td><td class="num"><b>5.0%</b></td><td class="num">10%</td></tr><tr><td><span class="h">Govt duration</span></td><td>IEF/TLT</td><td class="num">5.0%</td><td class="num"><span class="dn">-0.7</span></td><td class="num"><b>4.3%</b></td><td class="num">7%</td></tr><tr><td><span class="h">TIPS</span></td><td>TIP/SCHP</td><td class="num">4.5%</td><td class="num"><span class="dn">-0.3</span></td><td class="num"><b>4.2%</b></td><td class="num">6%</td></tr><tr><td><span class="h">IG credit</span></td><td>LQD</td><td class="num">6.0%</td><td class="num"><span class="dn">-0.8</span></td><td class="num"><b>5.2%</b></td><td class="num">7%</td></tr><tr><td><span class="h">Cash / bills</span></td><td>BIL/SGOV</td><td class="num">3.3%</td><td class="num"><span class="dn">-0.1</span></td><td class="num"><b>3.2%</b></td><td class="num">1%</td></tr></tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Historical = long-run nominal estimate; forward adjustment anchored to JPM 2026 LTCMA (US 6.7, EAFE 7.4, EM 7.7, IG 5.2, interm Treasuries 4.0); final inputs draft.</span></p>
+<p>For each proxy the build also records the risk profile that drives covariance, drawdown behaviour, and regime linkage:</p>
+<div class="scroll"><table>
+<thead><tr><th>Asset / proxy</th><th class="num">Equity &beta;</th><th>Duration sens.</th><th>Credit sens.</th><th>Inflation sens.</th><th>Drawdown</th><th>Primary MRS pillar</th></tr></thead>
+<tbody><tr><td><span class="h">US equity</span></td><td class="num">1.00</td><td>Low</td><td>Low</td><td>Mixed</td><td>Deep</td><td>Growth</td></tr><tr><td><span class="h">Developed intl</span></td><td class="num">0.95</td><td>Low</td><td>Low</td><td>Mixed</td><td>Deep</td><td>Growth</td></tr><tr><td><span class="h">EM equity</span></td><td class="num">1.10</td><td>Low</td><td>Med</td><td>Mixed</td><td>Deep</td><td>Growth / Stress</td></tr><tr><td><span class="h">Listed REITs</span></td><td class="num">0.80</td><td>Med</td><td>Med</td><td>Mod +</td><td>Deep</td><td>Rates / Growth</td></tr><tr><td><span class="h">Commodities</span></td><td class="num">0.30</td><td>Low</td><td>Low</td><td>High +</td><td>Moderate</td><td>Inflation</td></tr><tr><td><span class="h">Trend / mgd futures</span></td><td class="num">-0.10</td><td>Low</td><td>Low</td><td>Variable</td><td>Convex +</td><td>Stress</td></tr><tr><td><span class="h">Govt duration</span></td><td class="num">-0.10</td><td>High</td><td>Low</td><td>Negative</td><td>Shallow</td><td>Rates / Liquidity</td></tr><tr><td><span class="h">TIPS</span></td><td class="num">0.10</td><td>High</td><td>Low</td><td>High +</td><td>Shallow</td><td>Inflation</td></tr><tr><td><span class="h">IG credit</span></td><td class="num">0.35</td><td>Med-high</td><td>High</td><td>Low</td><td>Shallow-mod</td><td>Credit</td></tr><tr><td><span class="h">Cash / bills</span></td><td class="num">0.00</td><td>—</td><td>—</td><td>Low +</td><td>None</td><td>Liquidity</td></tr></tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Qualitative draft sensitivities to seed the covariance and the regime overlay; numeric betas/correlations finalised by the pipeline on production data.</span></p>
+
+<!-- F -->
+<div class="mod-head" id="f"><div class="no">F</div><h2>Covariance and optimisation logic</h2></div>
+<p>Two estimation decisions carry over and are unchanged. Correlations are estimated from <strong>full pairwise long-term history</strong> (the 50/50 long-versus-recent blend was dropped after a sweep showed monotonic improvement toward full history); <strong>regime-conditional covariance was retracted</strong> because forward-probability weighting underweights stress regimes — regime information lives in the tactical overlay (§G), not the strategic covariance. The matrix is nearest-PSD-guarded.</p>
+<div class="scroll"><table>
+<thead><tr><th>Step</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td>Correlation estimation</td><td>Full pairwise long-term history; nearest-PSD guard</td></tr>
+<tr><td>Views (Black-Litterman)</td><td>Excess-return space; equilibrium prior from the benchmark blend only</td></tr>
+<tr><td>Objective</td><td>Maximise expected geometric return s.t. volatility and drawdown budget (not max-Sharpe)</td></tr>
+<tr><td>Optimiser scope</td><td>Implements <em>within</em> the sleeve ranges of §D; it does not set top-level character</td></tr>
+<tr><td>Regime conditioning</td><td>Tactical overlay only, never inside strategic covariance</td></tr>
+</tbody></table></div>
+
+<!-- G -->
+<div class="mod-head" id="g"><div class="no">G</div><h2>MRS regime linkage (five pillars)</h2></div>
+<p>The Accelerated book's dynamism runs through the locked MRS v2.1 and its five pillars — Growth, Inflation, Liquidity/Rates, Credit, and Market Stress. Each pillar maps to specific sleeves and proxies with an explicit tilt and a draft weight impact. The strategic base is regime-agnostic; the overlay reads the pillars and tilts around it. Crucially, the <em>kind</em> of defense is pillar-specific: a growth-led contraction calls for government duration, an inflation-led one calls for TIPS and commodities, and a credit-led one cuts the IG tilt — the pillars distinguish which.</p>
+<div class="scroll"><table>
+<thead><tr><th>MRS pillar</th><th>Signal condition</th><th>Affected sleeve</th><th>ETF / proxy</th><th>Tilt logic</th><th class="dir">Draft weight impact</th></tr></thead>
+<tbody><tr><td><span class="h" style="color:#2E7D6B">Growth</span></td><td>Pillar strong (expansion)</td><td>Equity, Real estate</td><td class="small">SPY/EFA/EEM, VNQ</td><td>Lean into growth; raise equity and REITs</td><td class="dir">Equity &#8593;&#8593;, RE &#8593;</td></tr><tr><td><span class="h" style="color:#2E7D6B">Growth</span></td><td>Pillar weak (slowdown / contraction)</td><td>Equity, Fixed income</td><td class="small">trim equity, add Govt duration</td><td>De-risk growth; extend ballast</td><td class="dir">Equity &#8595;, Govt &#8593;</td></tr><tr><td><span class="h" style="color:#C9912E">Inflation</span></td><td>Inflation elevated</td><td>Commodities, FI (TIPS)</td><td class="small">DBC/GLD, TIP</td><td>Scale commodities; tilt FI to TIPS</td><td class="dir">Commod &#8593;, TIPS &#8593; (in FI)</td></tr><tr><td><span class="h" style="color:#6B7C93">Liquidity / Rates</span></td><td>Rates rising / liquidity tight</td><td>FI duration, Cash</td><td class="small">IEF/TLT, BIL</td><td>Shorten duration; raise cash</td><td class="dir">Duration &#8595;, Cash &#8593;</td></tr><tr><td><span class="h" style="color:#6B7C93">Liquidity / Rates</span></td><td>Rates falling / easing</td><td>FI duration, Equity</td><td class="small">extend IEF/TLT, risk-on</td><td>Extend duration; add risk</td><td class="dir">Govt &#8593;, Equity &#8593;</td></tr><tr><td><span class="h" style="color:#1D3D63">Credit</span></td><td>Spreads wide / attractive</td><td>FI (IG tilt)</td><td class="small">LQD</td><td>Add IG as an internal credit tilt only</td><td class="dir">IG &#8593; in FI (&le;5% book)</td></tr><tr><td><span class="h" style="color:#1D3D63">Credit</span></td><td>Credit stress</td><td>Equity, FI</td><td class="small">de-risk credit, add Govt</td><td>Cut credit; rotate to government</td><td class="dir">IG &#8595;→0, Govt &#8593;</td></tr><tr><td><span class="h" style="color:#A3433B">Market stress</span></td><td>Stress pillar high (contraction)</td><td>Alternatives, Cash, Equity</td><td class="small">DBMF/KMLM, BIL</td><td>Scale trend; raise cash; cut equity</td><td class="dir">Trend &#8593;&#8593;, Cash &#8593;, Equity &#8595;</td></tr></tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>&#8593; increase &#183; &#8595; decrease vs base. MRS v2.1 pillar weights (Growth 30 / Credit 20 / Stress 20 / Inflation 15 / Liquidity 15) unchanged.</span></p>
+<p>Aggregated across the pillars, the overlay produces the regime growth ladder for the Accelerated book — leaning into growth in expansion and rotating to defense as the score deteriorates:</p>
+<div class="scroll"><table>
+<thead><tr><th>Regime</th><th class="num">Growth</th><th class="num">Eq</th><th class="num">RE</th><th class="num">Cmd</th><th class="num">Alt</th><th class="num">FI</th><th class="num">Csh</th><th>Posture</th></tr></thead>
+<tbody><tr><td><span class="h" style="color:var(--exp)">Expansion</span></td><td class="num">81%</td><td class="num">72</td><td class="num">9</td><td class="num">4</td><td class="num">5</td><td class="num">8</td><td class="num">2</td><td class="small">Lean in &mdash; unmistakably growth</td></tr><tr><td><span class="h" style="color:var(--neu)">Neutral</span></td><td class="num">72%</td><td class="num">64</td><td class="num">8</td><td class="num">5</td><td class="num">8</td><td class="num">12</td><td class="num">3</td><td class="small">Strategic base</td></tr><tr><td><span class="h" style="color:var(--slow)">Slowdown</span></td><td class="num">61%</td><td class="num">54</td><td class="num">7</td><td class="num">8</td><td class="num">12</td><td class="num">16</td><td class="num">3</td><td class="small">Rotate &mdash; trim growth, scale diversifiers</td></tr><tr><td><span class="h" style="color:var(--con)">Contraction</span></td><td class="num">50%</td><td class="num">44</td><td class="num">6</td><td class="num">7</td><td class="num">15</td><td class="num">22</td><td class="num">6</td><td class="small">Most defensive, still constructive</td></tr></tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Draft six-sleeve weights by regime; the pipeline sets the realised level within each band per decision month.</span></p>
+
+<!-- H -->
+<div class="mod-head" id="h"><div class="no">H</div><h2>Implementation constraints</h2></div>
+<p>Constraints prevent the failure modes of the over-defensive v3.0. The binding one is the investment-grade cap, which keeps IG a conditional internal tilt and makes a 30%-style credit block structurally impossible. Growth floors keep both books from drifting into dead capital; a diversifier cap keeps trend from substituting for the growth engine.</p>
+<div class="scroll"><table>
+<thead><tr><th>Constraint</th><th class="num">Draft bound</th><th>Prevents</th></tr></thead>
+<tbody>
+<tr><td><span class="h">IG credit cap</span></td><td class="num">&le;~5% of book (&le;~25% of FI)</td><td>The 30% IG accretion / a credit warehouse</td></tr>
+<tr><td>Fixed-income total cap</td><td class="num">&le;~24% endow / &le;~16% accel</td><td>FI dominating either book</td></tr>
+<tr><td><span class="h">Growth floor &mdash; Endowment</span></td><td class="num">&ge;~62%</td><td>Endowment becoming dead capital (the v3.0 failure)</td></tr>
+<tr><td>Growth floor &mdash; Accelerated (contraction)</td><td class="num">&ge;~45%</td><td>Over-defensive rotation abandoning the mandate</td></tr>
+<tr><td>Diversifier (trend) cap</td><td class="num">&le;~16%</td><td>Trend substituting for growth</td></tr>
+<tr><td>Cash cap</td><td class="num">&le;~10%</td><td>Cash drag on compounding</td></tr>
+<tr><td><span class="h">No mechanical averaging</span></td><td class="num">rule</td><td>Reference portfolios set bounds, not weights</td></tr>
+</tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Constraint structure fixed; bound values calibrated by the pipeline.</span></p>
+
+<!-- I -->
+<div class="mod-head" id="i"><div class="no">I</div><h2>Draft validation</h2></div>
+<p>The draft weights below realise the chain of §D as point allocations inside the ranges, for a more aggressive Endowment and the Accelerated SAA base with its regime ladder. They are draft — the pipeline produces final weights and runs the full validation screen on production data. All columns sum to 100%.</p>
+<div class="scroll"><table>
+<thead><tr><th>Portfolio (six-sleeve)</th><th class="num">Equity</th><th class="num">Fixed inc.</th><th class="num">Real est.</th><th class="num">Commod.</th><th class="num">Alts</th><th class="num">Cash</th><th class="num">Growth</th></tr></thead>
+<tbody><tr><td><span class="h">60/40 (ref)</span></td><td class="num">60</td><td class="num">40</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num"><b>60%</b></td></tr><tr><td><span class="h">Endowment</span></td><td class="num">58</td><td class="num">20</td><td class="num">9</td><td class="num">4</td><td class="num">6</td><td class="num">3</td><td class="num"><b>67%</b></td></tr><tr><td><span class="h" style="color:var(--neu)">Accelerated — Neutral</span></td><td class="num">64</td><td class="num">12</td><td class="num">8</td><td class="num">5</td><td class="num">8</td><td class="num">3</td><td class="num"><b>72%</b></td></tr><tr><td><span class="h" style="color:var(--exp)">Accelerated — Expansion</span></td><td class="num">72</td><td class="num">8</td><td class="num">9</td><td class="num">4</td><td class="num">5</td><td class="num">2</td><td class="num"><b>81%</b></td></tr><tr><td><span class="h" style="color:var(--slow)">Accelerated — Slowdown</span></td><td class="num">54</td><td class="num">16</td><td class="num">7</td><td class="num">8</td><td class="num">12</td><td class="num">3</td><td class="num"><b>61%</b></td></tr><tr><td><span class="h" style="color:var(--con)">Accelerated — Contraction</span></td><td class="num">44</td><td class="num">22</td><td class="num">6</td><td class="num">7</td><td class="num">15</td><td class="num">6</td><td class="num"><b>50%</b></td></tr></tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Point weights inside the §D ranges; Endowment is the more aggressive rebalance of v3.0, Accelerated the dynamic SAA/DAA book.</span></p>
+<p>Draft forward statistics on the §E capital-market assumptions and the §F covariance, against 60/40. Both books clear 60/40 on forward CAGR while stepping up in growth orientation; the Accelerated book widens the edge as it leans into expansion and de-risks in contraction.</p>
+<div class="scroll"><table>
+<thead><tr><th>Portfolio</th><th class="num">Growth</th><th class="num">Arith.</th><th class="num">Vol</th><th class="num">CAGR</th><th class="num">Sharpe</th><th class="num">&Delta;CAGR vs 60/40</th></tr></thead>
+<tbody><tr><td><span class="h">60/40 (ref)</span></td><td class="num">60%</td><td class="num">6.02%</td><td class="num">10.04%</td><td class="num"><b>5.51%</b></td><td class="num">0.28</td><td class="num">0.00</td></tr><tr><td><span class="h">Endowment</span></td><td class="num">67%</td><td class="num">6.18%</td><td class="num">10.97%</td><td class="num"><b>5.57%</b></td><td class="num">0.27</td><td class="num"><span class="up">+0.06</span></td></tr><tr><td><span class="h" style="color:var(--neu)">Accelerated — Neutral</span></td><td class="num">72%</td><td class="num">6.30%</td><td class="num">11.71%</td><td class="num"><b>5.62%</b></td><td class="num">0.27</td><td class="num"><span class="up">+0.11</span></td></tr><tr><td><span class="h" style="color:var(--exp)">Accelerated — Expansion</span></td><td class="num">81%</td><td class="num">6.56%</td><td class="num">13.06%</td><td class="num"><b>5.71%</b></td><td class="num">0.26</td><td class="num"><span class="up">+0.20</span></td></tr><tr><td><span class="h" style="color:var(--slow)">Accelerated — Slowdown</span></td><td class="num">61%</td><td class="num">6.02%</td><td class="num">10.28%</td><td class="num"><b>5.50%</b></td><td class="num">0.27</td><td class="num"><span class="dn">-0.02</span></td></tr><tr><td><span class="h" style="color:var(--con)">Accelerated — Contraction</span></td><td class="num">50%</td><td class="num">5.71%</td><td class="num">8.66%</td><td class="num"><b>5.34%</b></td><td class="num">0.29</td><td class="num"><span class="dn">-0.17</span></td></tr></tbody></table></div>
+<p class="tcap"><span class="ph">DRAFT &#183; PIPELINE FINALISES</span><span>Forward draft only. External anchor: JPM 2026 LTCMA puts a 60% ACWI / 40% Agg 60/40 at 6.4% arithmetic; differences reflect instrument mix and the geometric/vol treatment. Realised validation (rolling 3/5Y, crisis windows) runs on production data.</span></p>
+<div class="scroll"><table>
+<thead><tr><th>Validation gate</th><th>Pass criterion</th><th>Action on failure</th></tr></thead>
+<tbody>
+<tr><td><span class="h">CAGR vs 60/40</span></td><td>&ge; 60/40 forward; &ge; in a majority of rolling windows</td><td>Revise: raise growth / fix dragging sleeve</td></tr>
+<tr><td>Max drawdown</td><td>Within budget; not materially worse than 60/40</td><td>Adjust diversifier / defensive mix</td></tr>
+<tr><td>Volatility &amp; Sharpe/Sortino</td><td>Within budget; ratios &ge; 60/40 or within tolerance</td><td>Rebalance growth vs diversifier</td></tr>
+<tr><td>Rolling 3Y / 5Y</td><td>Beat-rate vs 60/40 above threshold</td><td>Flag if persistently below</td></tr>
+<tr><td>Crisis &amp; regime behaviour</td><td>Drawdown within budget by episode type; DAA adds value vs static</td><td>Adjust regime tilts (§G)</td></tr>
+<tr><td><span class="h">Growth-orientation</span></td><td>Growth exposure within target band; not over-diversified</td><td><b>Reject</b> as too defensive if low-DD but losing CAGR</td></tr>
+</tbody></table></div>
+
+<!-- J -->
+<div class="mod-head" id="j"><div class="no">J</div><h2>Decision register and pipeline hand-off</h2></div>
+<h4>Settled</h4>
+<p class="compact">Six-lever architecture with instruments nested inside; IG an internal fixed-income tilt, never standalone or dominant; REITs and commodities as separate levers; geometric-growth objective under a drawdown budget; full pairwise long-term covariance with regime-conditional covariance retracted; Black-Litterman views in excess-return space with the prior from the benchmark blend only; two portfolios — a more aggressive Endowment and a dynamic Accelerated SAA/DAA; MRS five-pillar overlay driving the accelerated tilts.</p>
+<h4>Draft, to be finalised by the pipeline</h4>
+<p class="compact">All capital-market assumptions (anchored to JPM 2026 here); the new-sleeve assumptions (trend, listed REITs, commodities, TIPS); the internal US/international/EM equity split; calibrated constraint bounds; and all sleeve weights. The production data migration (CRSP/WRDS) keeps every number provisional until complete.</p>
+<h4>Hand-off sequence</h4>
+<p>The pipeline ingests production data, finalises the CMAs and the long-term covariance, optimises within the §D ranges under the geometric objective and the §H constraints, applies the §G MRS overlay, and runs the §I validation gates to accept, reject, or revise. This document supplies the research, the logic, and the draft magnitudes; the pipeline supplies the final, validated numbers.</p>
+
+</main>
+<footer>
+<div class="ribbon"><span style="background:var(--exp)"></span><span style="background:var(--neu)"></span><span style="background:var(--slow)"></span><span style="background:var(--con)"></span></div>
+<p><b>Portfolio Construction Methodology v3.4 — Research-Backed Sleeve Build.</b> Research extension of the v3.0 structure on the six agreed sleeves: per-sleeve institutional evidence, ETF/proxy mapping, a historical&#8594;forward&#8594;final CMA build, MRS five-pillar linkage, implementation constraints, and draft validation weights. The trajectory is a more aggressive Endowment and a solid Accelerated SAA/DAA, both built to compete with 60/40.</p>
+<p class="small" style="color:#7C90A8;margin-top:14px">All weights and capital-market assumptions are draft. Forward CMAs are anchored to JPMorgan's 2026 Long-Term Capital Market Assumptions; institutional ranges reference Norway GPFG, the Yale/Swensen endowment model, and CalPERS. Final values, calibrated constraints, and realised validation are produced by the validated pipeline (production CRSP/WRDS migration pending). Regime behaviour uses the existing Macro Regime Score (MRS v2.1), unchanged.</p>
+</footer>
+</div></html>
