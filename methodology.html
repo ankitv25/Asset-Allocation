@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Methodology v3.8 — Growth-First</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+<style>
+  .mtable{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  .mtable th,.mtable td{padding:6px 9px;border-bottom:1px solid var(--line,#26303a);text-align:right}
+  .mtable th:first-child,.mtable td:first-child{text-align:left}
+  .mtable thead th{color:var(--muted,#8aa);font-weight:600;border-bottom:1px solid #3a4756}
+  .mtable .hl{color:#7fd1b9;font-weight:600}
+  .role{color:var(--muted,#8aa);font-size:12px}
+  .badwas{color:#e08a8a}.goodnow{color:#7fd1b9}
+  .note{font-size:12.5px;color:var(--muted,#8aa);line-height:1.5}
+  .pill{display:inline-block;padding:2px 8px;border:1px solid #3a4756;border-radius:11px;font-size:11px;margin:2px 4px 2px 0}
+</style>
+</head>
+<body class="app">
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="portfolios.html">Portfolios</a>
+    <a href="methodology.html" class="active">Methodology v3.8</a>
+    <a href="construction.html">Construction</a>
+    <a href="holdings.html">Holdings</a>
+    <a href="performance.html">Performance</a>
+    <a href="attribution.html">Attribution</a>
+    <a href="risk.html">Risk</a>
+    <a href="stress.html">Stress</a>
+    <a href="montecarlo.html">Monte Carlo</a>
+  </nav>
+  <div class="appbar-status">v3.8 · growth-first</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+  <section class="hero">
+    <div class="hero-main">
+      <div class="hero-eyebrow">Portfolio methodology · v3.8 (growth-first rebuild)</div>
+      <h1 class="hero-verdict">A genuine growth engine, with insurance sized as insurance.</h1>
+      <p class="hero-thesis">A ~60% quality-growth equity core, right-sized govt-led ballast (FI ≤20%),
+        inflation hedges (TIPS/commodities/gold) and a trend protection budget sized as <em>insurance</em>,
+        and credit that turns on and off with the MRS credit pillar. A dynamic-allocation overlay flexes
+        the insurance and credit sleeves by regime — the growth core stays put.</p>
+    </div>
+    <div class="hero-side" id="hero-highlights"></div>
+  </section>
+
+  <div class="section-head"><span class="section-num">01</span>
+    <span class="section-title">The recommended book (SSA-neutral)</span>
+    <span class="section-q">What do we own, and what is each sleeve <em>for</em>?</span></div>
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Strategic allocation</h2><span class="tile-sub">growth 60% · FI 20%</span></div>
+      <div id="ssa-donut" class="chart chart-donut"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Sleeves &amp; roles</h2></div>
+      <table class="mtable"><thead><tr><th>Sleeve</th><th>Wt%</th><th>Role</th></tr></thead><tbody id="role-rows"></tbody></table>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">02</span>
+    <span class="section-title">DAA tilts playbook</span>
+    <span class="section-q">How the overlay flexes insurance &amp; credit by regime (growth core fixed at 60).</span></div>
+  <section class="tile">
+    <table class="mtable"><thead><tr><th>Regime</th><th>Eq</th><th>Trend</th><th>HY</th><th>TIPS</th><th>Cmd</th><th>Gold</th><th>Govt</th><th>Govt duration</th></tr></thead>
+      <tbody id="daa-rows"></tbody></table>
+    <p class="note" style="margin-top:10px">Trend is a <strong>scalable protection budget</strong> (3→10 as growth deteriorates).
+      HY toggles on the MRS credit signal (6→0 when spreads widen). Govt <strong>duration</strong> is dynamic — long in
+      contraction/disinflation (crash convexity), short in reflation (dodges the rate shock).</p>
+  </section>
+
+  <div class="section-head"><span class="section-num">03</span>
+    <span class="section-title">Validation</span>
+    <span class="section-q">Realised 2007–2026, vs 60/40 and the prior (too-defensive) book.</span></div>
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Risk &amp; return</h2></div>
+      <table class="mtable"><thead><tr><th>Book</th><th>CAGR</th><th>Vol</th><th>Sharpe</th><th>maxDD</th><th>β 60/40</th></tr></thead>
+        <tbody id="val-rows"></tbody></table>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Crisis behaviour (cum. return)</h2></div>
+      <table class="mtable"><thead><tr><th>Episode</th><th>60/40</th><th>SSA</th><th>SSA+DAA</th></tr></thead>
+        <tbody id="crisis-rows"></tbody></table>
+      <p class="note" style="margin-top:8px">The dynamic-duration DAA improves <strong>both</strong> tails: GFC (long duration in the crash)
+        and 2022 inflation (short duration). 2022 −17.5% vs 60/40 −20.1%.</p>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">04</span>
+    <span class="section-title">How we got here</span>
+    <span class="section-q">The methodology journey, v3.5 → v3.8.</span></div>
+  <section class="tile">
+    <table class="mtable"><thead><tr><th>Version</th><th>What was wrong</th><th>Fix</th></tr></thead><tbody id="journey-rows"></tbody></table>
+  </section>
+
+  <div class="section-head"><span class="section-num">05</span>
+    <span class="section-title">Honest caveats</span>
+    <span class="section-q">What this view does <em>not</em> yet reflect.</span></div>
+  <section class="tile">
+    <p class="note">
+      <span class="pill">equity-beta-led</span> At 60% equity the book draws down with equities (β 1.04, maxDD ≈ −34%) — the nature of a growth mandate.<br/>
+      <span class="pill">part-synthetic inputs</span> Quality/momentum factor tilt is backfilled with core pre-2013; trend is DBMF-anchored pre-2019. Neither inflates the result.<br/>
+      <span class="pill">pages pending cutover</span> Construction / Holdings / Attribution / Monte Carlo still run on the prior 8-sleeve BL pipeline. They migrate once the taxonomy cutover (add TIPS/Gold/Cmd/Trend lines; IG 30→3) is approved.
+    </p>
+  </section>
+</main>
+
+<script src="assets/js/app.js"></script>
+<script>
+const V38 = {
+  kpis:[["CAGR (2007–26)","8.0%","Sharpe 0.62"],["Max drawdown","−34.5%","SSA+DAA −33.6%"],
+        ["Growth engine","60%","quality-growth equity"],["Fixed income","20%","govt-led, was 33%"]],
+  ssa:[["Equity",60,"#4c9be8"],["Govt",13,"#5fb3a3"],["IG",3,"#7a8aa0"],["TIPS",4,"#e0b35c"],
+       ["Cmd",4,"#d98b5f"],["Gold",4,"#e0c84c"],["Trend",3,"#9b7fd1"],["HY",4,"#c96f8f"],["Cash",5,"#6b7785"]],
+  roles:[["Equity",60,"Growth engine — US quality-growth (core/QUAL/MTUM/IWF) + intl + EM"],
+    ["Govt",13,"Recession/deflation ballast (neutral duration; DAA shifts it)"],
+    ["IG",3,"Carry — governance-capped (credit beta)"],
+    ["TIPS",4,"Inflation insurance — DAA-flexed up in reflation"],
+    ["Cmd",4,"Real-asset / supply-shock hedge"],["Gold",4,"Monetary / tail / real-rate hedge"],
+    ["Trend",3,"Tail insurance — scalable protection budget"],
+    ["HY",4,"Credit carry — regime-conditional (MRS credit pillar)"],["Cash",5,"Liquidity / dry powder"]],
+  daa:[["Neutral",60,3,6,4,4,4,12,"balanced"],["Reflation",60,3,5,6,6,5,9,"short"],
+    ["Disinflation + Slowdown",60,6,5,3,3,3,13,"long"],["Contraction + credit-off",60,8,0,3,3,4,14,"long"]],
+  val:[["60/40","8.0","10.1","0.66","−32.3","1.00",false],
+    ["v3.8 SSA","8.0","10.8","0.62","−34.5","1.04",true],
+    ["v3.8 SSA+DAA","7.9","10.7","0.62","−33.6","—",true],
+    ["v3.7 (too defensive)","6.6","8.6","0.59","−26.6","0.80",false]],
+  crisis:[["GFC","−32.3","−34.5","−33.6"],["COVID","−4.2","−5.2","−5.5"],
+    ["2022 inflation","−20.1","−19.7","−17.5"],["2025","−1.5","+1.5","+1.4"]],
+  journey:[["v3.5","Optimiser never converged; TIPS/IG were bound-artifacts","Exposed in failure audit"],
+    ["v3.6","Disguised bond-heavy 60/40 (40% FI, 0% real assets)","Converged optimiser, real trend"],
+    ["v3.7","Role-based + regime-aware but too defensive (45% eq, TIPS 10, trend 12)","Good framework, wrong risk level"],
+    ["v3.8","—","Growth-first: 60% quality-growth, insurance sized as insurance, regime-conditional HY"]]
+};
+// KPI ribbon
+document.getElementById('kpi-ribbon').innerHTML = V38.kpis.map(k=>
+  `<div class="kpi"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join('');
+document.getElementById('hero-highlights').innerHTML =
+  `<div class="hstat"><div class="hstat-v pos">8.0%</div><div class="hstat-l">Growth restored (CAGR) — vs v3.7 6.6%</div></div>
+   <div class="hstat"><div class="hstat-v pos">−17.5%</div><div class="hstat-l">2022 inflation shock — vs 60/40 −20.1%</div></div>`;
+// donut
+Plotly.newPlot('ssa-donut',[{type:'pie',hole:.62,labels:V38.ssa.map(r=>r[0]),values:V38.ssa.map(r=>r[1]),
+  marker:{colors:V38.ssa.map(r=>r[2])},textinfo:'label+percent',textfont:{size:11},sort:false}],
+  {margin:{t:8,b:8,l:8,r:8},height:300,paper_bgcolor:'rgba(0,0,0,0)',showlegend:false},{displayModeBar:false,responsive:true});
+// role rows
+document.getElementById('role-rows').innerHTML = V38.roles.map(r=>
+  `<tr><td>${r[0]}</td><td class="hl">${r[1]}</td><td class="role">${r[2]}</td></tr>`).join('');
+// daa rows
+document.getElementById('daa-rows').innerHTML = V38.daa.map(r=>
+  `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td><td class="role">${r[8]}</td></tr>`).join('');
+// validation rows
+document.getElementById('val-rows').innerHTML = V38.val.map(r=>
+  `<tr${r[6]?' style="background:rgba(127,209,185,.06)"':''}><td>${r[0]}</td><td>${r[1]}%</td><td>${r[2]}%</td><td>${r[3]}</td><td>${r[4]}%</td><td>${r[5]}</td></tr>`).join('');
+// crisis rows
+document.getElementById('crisis-rows').innerHTML = V38.crisis.map(r=>
+  `<tr><td>${r[0]}</td><td>${r[1]}%</td><td>${r[2]}%</td><td class="hl">${r[3]}%</td></tr>`).join('');
+// journey rows
+document.getElementById('journey-rows').innerHTML = V38.journey.map(r=>
+  `<tr><td class="hl">${r[0]}</td><td class="badwas">${r[1]}</td><td class="goodnow">${r[2]}</td></tr>`).join('');
+</script>
+</body>
+</html>
