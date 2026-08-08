@@ -1,5 +1,7 @@
 # Multi-Asset Portfolio Analytics Platform
 
+> Part of the multi-asset research platform → **[ankitv25.github.io](https://ankitv25.github.io)**
+
 An institutional portfolio-analytics dashboard for a regime-aware, multi-asset
 strategy. It is **interpretation-first**: every page leads with a generated
 read-through (computed from the numbers, never hardcoded prose) and uses charts
