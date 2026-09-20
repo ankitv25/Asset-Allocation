@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Funds — Multi-Asset Portfolio</title>
+<title>Live NAV — Multi-Asset Portfolio</title>
 <link rel="stylesheet" href="assets/css/style.css" />
 <script src="assets/vendor/plotly.min.js"></script>
 </head>
@@ -14,9 +14,8 @@
   <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
     <a href="index.html">Overview</a>
-    <a href="funds.html" class="active">Funds</a>
+    <a href="live.html" class="active">Live NAV</a>
     <a href="portfolios.html">Portfolios</a>
-    <a href="playbook.html">Playbook</a>
     <a href="methodology.html">Methodology v3.8</a>
     <a href="construction.html">Construction</a>
     <a href="holdings.html">Holdings</a>
@@ -34,8 +33,8 @@
 <main class="db">
 
   <div class="page-intro">
-    <h1>The funds</h1>
-    <p>Five funds, launched together on <strong>15 July 2026</strong> at a NAV of 100.00 per unit.
+    <h1>Live NAV</h1>
+    <p>Five portfolios, launched together on <strong>15 July 2026</strong> at a NAV of 100.00 per unit.
       Each is priced every trading day from the closing prices of what it holds, net of a 15bp annual fee
       and 10bp per side of dealing — <strong>the NAV is what a holder would actually have</strong>.</p>
   </div>
@@ -50,7 +49,7 @@
 
   <div class="section-head"><span class="section-num">01</span>
     <span class="section-title">Net asset value</span>
-    <span class="section-q">Where does each fund stand today?</span></div>
+    <span class="section-q">Where does each portfolio stand today?</span></div>
 
   <section class="grid grid-1">
     <article class="tile tile-feature">
@@ -100,13 +99,13 @@
   </section>
 
   <div class="section-head"><span class="section-num">04</span>
-    <span class="section-title">How each fund is different</span>
+    <span class="section-title">How each portfolio is different</span>
     <span class="section-q">Four mandates, four different books — not one book with a dial.</span></div>
 
   <section class="grid grid-1">
     <article class="tile">
       <div class="tile-head"><h2>Mandates</h2>
-        <span class="tile-sub">each fund declares its own sleeve set; a holding it does not believe in is bounded to zero</span></div>
+        <span class="tile-sub">each portfolio declares its own sleeve set; a holding it does not believe in is bounded to zero</span></div>
       <div id="mandate-table"></div>
     </article>
   </section>
@@ -114,7 +113,7 @@
 </main>
 
 <footer class="status" id="status-footer">Loading…</footer>
-<script src="data/funds_live.js"></script>
-<script src="assets/js/funds.js"></script>
+<script src="data/live_nav.js"></script>
+<script src="assets/js/live.js"></script>
 </body>
 </html>

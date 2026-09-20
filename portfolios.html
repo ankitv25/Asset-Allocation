@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Portfolio Versions — Endowment · SAA · DAA/MRS</title>
 <link rel="stylesheet" href="assets/css/style.css" />
+<style>@media (min-width:900px){.kpi-ribbon{grid-template-columns:repeat(5,1fr)}}</style><!-- kpi-ribbon-5 -->
 <script src="assets/vendor/plotly.min.js"></script>
 </head>
 <body class="app">
@@ -14,7 +15,7 @@
   <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
     <a href="index.html">Overview</a>
-    <a href="funds.html">Funds</a>
+    <a href="live.html">Live NAV</a>
     <a href="portfolios.html" class="active">Portfolios</a>
     <a href="methodology.html">Methodology v3.8</a>
     <a href="construction.html">Construction</a>
@@ -33,12 +34,8 @@
 <main class="db">
 
   <div class="page-intro">
-    <h1>Portfolio versions — the candidate family</h1>
-    <p>The three intended versions from the progression research (2026-07):
-      <strong>Endowment</strong> (stable core), <strong>SAA</strong> (return-seeking static tier) and
-      <strong>DAA&nbsp;/&nbsp;MRS</strong> (regime-rotated dynamic prototype) — compared on one common window,
-      against the 60/40 anchor and the market. The book shown on the legacy pages is
-      <strong>superseded</strong>; it appears here only as a reference line.</p>
+    <h1>The five portfolios</h1>
+    <p>Five portfolios, each built for a different job rather than one book at five risk settings — <strong>Certain</strong> (purchasing power), <strong>Endowment</strong> (real assets), <strong>SAA</strong> (the policy anchor), <strong>DAA</strong> (the policy book run actively on MRS) and <strong>Alpha</strong> (equity-level risk). All five are live from 15 July 2026 and are compared here on one common window against the balanced benchmark and the market.</p>
   </div>
 
   <!-- HERO — the verdict -->
@@ -59,8 +56,8 @@
   </div>
 
   <div class="section-head"><span class="section-num">01</span>
-    <span class="section-title">The three versions</span>
-    <span class="section-q">What is each book for, and what does it cost?</span></div>
+    <span class="section-title">The five portfolios</span>
+    <span class="section-q">What is each portfolio for, and what does it cost?</span></div>
 
   <section class="grid grid-1">
     <article class="tile">
@@ -194,7 +191,7 @@
 </main>
 
 <footer class="status" id="status-footer">Loading…</footer>
-<script src="data/candidates.js"></script>
+<script src="data/portfolios.js"></script>
 <script src="assets/js/portfolios.js"></script>
 </body>
 </html>

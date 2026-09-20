@@ -478,3 +478,13 @@ table.blotter tr:hover td { background: #f6f9fc; }
   .hero-side { grid-template-columns: 1fr 1fr; }
   .grid-4 { grid-template-columns: 1fr 1fr; }
 }
+
+/* portfolio selector (appbar) */
+.pf-switch { display: inline-flex; align-items: center; gap: 0.45rem; margin-left: auto;
+  padding: 0.18rem 0.5rem 0.18rem 0.6rem; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--panel); box-shadow: inset 3px 0 0 var(--pf-color, var(--accent)); }
+.pf-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.pf-switch select { font: 600 0.8rem inherit; color: var(--navy); background: transparent;
+  border: 0; padding: 0.15rem 0.1rem; cursor: pointer; }
+.pf-switch select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 720px) { .pf-switch { margin-left: 0; } }
