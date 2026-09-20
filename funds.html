@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Funds — Multi-Asset Portfolio</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="assets/vendor/plotly.min.js"></script>
+</head>
+<body class="app">
+
+<header class="appbar">
+  <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
+  <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
+  <nav class="appnav">
+    <a href="index.html">Overview</a>
+    <a href="funds.html" class="active">Funds</a>
+    <a href="portfolios.html">Portfolios</a>
+    <a href="playbook.html">Playbook</a>
+    <a href="methodology.html">Methodology v3.8</a>
+    <a href="construction.html">Construction</a>
+    <a href="holdings.html">Holdings</a>
+    <a href="performance.html">Performance</a>
+    <a href="attribution.html">Attribution</a>
+    <a href="risk.html">Risk</a>
+    <a href="stress.html">Stress</a>
+    <a href="montecarlo.html">Monte Carlo</a>
+  </nav>
+  <div class="appbar-status" id="appbar-status">Loading…</div>
+</header>
+
+<div class="kpi-ribbon" id="kpi-ribbon"></div>
+
+<main class="db">
+
+  <div class="page-intro">
+    <h1>The funds</h1>
+    <p>Five funds, launched together on <strong>15 July 2026</strong> at a NAV of 100.00 per unit.
+      Each is priced every trading day from the closing prices of what it holds, net of a 15bp annual fee
+      and 10bp per side of dealing — <strong>the NAV is what a holder would actually have</strong>.</p>
+  </div>
+
+  <div class="insight">
+    <div class="ic">🧭</div>
+    <div>
+      <h3>What you are looking at</h3>
+      <p id="funds-insight"></p>
+    </div>
+  </div>
+
+  <div class="section-head"><span class="section-num">01</span>
+    <span class="section-title">Net asset value</span>
+    <span class="section-q">Where does each fund stand today?</span></div>
+
+  <section class="grid grid-1">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Daily NAV since inception</h2>
+        <span class="tile-sub" id="nav-sub"></span></div>
+      <div class="chips" id="nav-chips" style="margin:.5rem 0 .7rem"></div>
+      <div id="nav-chart" class="chart chart-xl"></div>
+      <p class="read" id="nav-read"></p>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">02</span>
+    <span class="section-title">Performance and risk</span>
+    <span class="section-q">What did it cost in volatility to earn that?</span></div>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Since inception</h2>
+        <span class="tile-sub">priced daily, net of fee and dealing</span></div>
+      <div id="perf-table"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Against the benchmarks</h2>
+        <span class="tile-sub">excess, tracking error and beta on daily returns</span></div>
+      <div id="rel-table"></div>
+      <p class="read">Two months is far too short to judge a strategy. It is here because it is the real
+        record; the case for these funds is their construction, set out in Methodology and Construction.</p>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">03</span>
+    <span class="section-title">What is actually held</span>
+    <span class="section-q">Every line, and when it last traded.</span></div>
+
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Holdings and dealing</h2>
+        <span class="tile-sub" id="hold-sub"></span></div>
+      <div class="chips" id="fund-chips" style="margin:.5rem 0 .7rem"></div>
+      <div class="grid grid-2" style="gap:1rem">
+        <div><div id="hold-table"></div></div>
+        <div><h3 class="mini-head">Dealing log</h3><div id="trade-table"></div>
+          <h3 class="mini-head" style="margin-top:.9rem">Long-run evidence</h3><div id="bt-table"></div></div>
+      </div>
+      <p class="read" id="hold-read"></p>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">04</span>
+    <span class="section-title">How each fund is different</span>
+    <span class="section-q">Four mandates, four different books — not one book with a dial.</span></div>
+
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Mandates</h2>
+        <span class="tile-sub">each fund declares its own sleeve set; a holding it does not believe in is bounded to zero</span></div>
+      <div id="mandate-table"></div>
+    </article>
+  </section>
+
+</main>
+
+<footer class="status" id="status-footer">Loading…</footer>
+<script src="data/funds_live.js"></script>
+<script src="assets/js/funds.js"></script>
+</body>
+</html>
