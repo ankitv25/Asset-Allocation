@@ -25,6 +25,19 @@
     yaxis: { gridcolor: "#eff2f6", zeroline: false, linecolor: "#e3e8ee", ticks: "", tickfont: { size: 10 } } };
   const CFG = { displayModeBar: false, responsive: true };
 
+  // Plotly MUTATES the layout object it is handed — it writes `type`, `range` and `autorange` back
+  // onto the axis objects. BASE.xaxis was being shared by reference across every chart on the page,
+  // so once the growth chart (date x-axis) had drawn, every later chart inherited type:"date" and its
+  // range: the asset-class bars all collapsed onto one date and stacked to 500%. Always hand Plotly a
+  // fresh layout with freshly cloned axes.
+  const L = (extra) => {
+    const e = extra || {};
+    return Object.assign({}, BASE, e, {
+      xaxis: Object.assign({}, BASE.xaxis, e.xaxis || {}),
+      yaxis: Object.assign({}, BASE.yaxis, e.yaxis || {}),
+    });
+  };
+
   const P5 = D.order;                              // the five products, in house order
   const BENCH = D.bench_order || [];
   const lab = (k) => (D.books[k] || {}).label || k;
@@ -109,9 +122,9 @@
       "<br>Sharpe %{customdata[0]} · worst loss %{customdata[1]}%<extra></extra>",
   });
   Plotly.newPlot("posn-chart", [pts(BENCH, "Benchmarks"), pts(P5, "Portfolios")],
-    Object.assign({}, BASE, { showlegend: false, margin: { l: 52, r: 20, t: 14, b: 44 },
-      xaxis: Object.assign({}, BASE.xaxis, { ticksuffix: "%", title: { text: "Volatility →", font: { size: 11 } } }),
-      yaxis: Object.assign({}, BASE.yaxis, { ticksuffix: "%", title: { text: "CAGR →", font: { size: 11 } } }) }), CFG);
+    L({ showlegend: false, margin: { l: 52, r: 20, t: 14, b: 44 },
+      xaxis: Object.assign({}, { ticksuffix: "%", title: { text: "Volatility →", font: { size: 11 } } }),
+      yaxis: Object.assign({}, { ticksuffix: "%", title: { text: "CAGR →", font: { size: 11 } } }) }), CFG);
   el("posn-read").innerHTML =
     `The five are spread deliberately along the risk axis — from <strong>${lab(P5[0])}</strong> at ` +
     `${p1(M(P5[0]).vol)} volatility to <strong>${lab(P5[P5.length - 1])}</strong> at ` +
@@ -159,9 +172,9 @@
       line: { color: col(k), width: P5.includes(k) ? 2.1 : 1.3, dash: P5.includes(k) ? "solid" : "dot" },
       hovertemplate: "$%{y:.2f}<extra>" + lab(k) + "</extra>",
     }));
-    Plotly.react("growth-chart", tr, Object.assign({}, BASE, {
+    Plotly.react("growth-chart", tr, L({
       showlegend: false, hovermode: "x unified",
-      yaxis: Object.assign({}, BASE.yaxis, { type: "log", tickprefix: "$",
+      yaxis: Object.assign({}, { type: "log", tickprefix: "$",
         title: { text: "Growth of $1 (log)", font: { size: 10 } } }),
     }), CFG);
     const led = P5.slice().sort((a, b) => endv(b) - endv(a));
@@ -230,8 +243,8 @@
       hovertemplate: "%{y:.1f}%<extra>" + lab("acwi6040") + "</extra>" }]
       .concat(P5.map((k) => ({ x: dates, y: ddOf(k), name: lab(k), type: "scatter", mode: "lines",
         line: { color: col(k), width: 1.8 }, hovertemplate: "%{y:.1f}%<extra>" + lab(k) + "</extra>" })));
-    Plotly.newPlot("dd-chart", tr, Object.assign({}, BASE, { showlegend: false, hovermode: "x unified",
-      yaxis: Object.assign({}, BASE.yaxis, { ticksuffix: "%" }) }), CFG);
+    Plotly.newPlot("dd-chart", tr, L({ showlegend: false, hovermode: "x unified",
+      yaxis: Object.assign({}, { ticksuffix: "%" }) }), CFG);
     const shallow = P5.slice().sort((a, b) => M(b).mdd - M(a).mdd)[0];
     el("dd-read").innerHTML =
       `<strong>${lab(shallow)}</strong> has the shallowest worst loss of the five at ${p1(M(shallow).mdd)}, ` +
@@ -258,9 +271,9 @@
       .concat([{ type: "scatter", mode: "markers", name: lab("acwi6040"), x: years, y: yr("acwi6040"),
         marker: { color: "#c9932b", size: 6, symbol: "diamond" },
         hovertemplate: "%{y:.1f}%<extra>60/40</extra>" }]);
-    Plotly.newPlot("annual-chart", tr, Object.assign({}, BASE, { barmode: "group", showlegend: false,
-      margin: { l: 44, r: 10, t: 10, b: 40 }, yaxis: Object.assign({}, BASE.yaxis, { ticksuffix: "%" }),
-      xaxis: Object.assign({}, BASE.xaxis, { tickangle: -45, tickfont: { size: 8 } }) }), CFG);
+    Plotly.newPlot("annual-chart", tr, L({ barmode: "group", showlegend: false,
+      margin: { l: 44, r: 10, t: 10, b: 40 }, yaxis: Object.assign({}, { ticksuffix: "%" }),
+      xaxis: Object.assign({}, { tickangle: -45, tickfont: { size: 8 } }) }), CFG);
     const b = yr("acwi6040");
     const wins = P5.map((k) => [k, yr(k).filter((v, i) => v != null && b[i] != null && v > b[i]).length]);
     el("annual-read").innerHTML =
@@ -274,35 +287,58 @@
   (function sleeveMatrix() {
     const all = [];
     P5.forEach((k) => Object.keys(V(k).sleeves).forEach((s) => { if (!all.includes(s)) all.push(s); }));
-    const byClass = {};
-    all.forEach((s) => {
-      const cls = (D.class_of && D.class_of[s]) || "Other";
-      (byClass[cls] = byClass[cls] || []).push(s);
-    });
     const labels = D.sleeve_labels || {};
-    let h = `<table class="dtbl"><thead><tr><th>Sleeve</th>` +
-      P5.map((k) => `<th class="num" style="color:${col(k)}">${lab(k)}</th>`).join("") +
-      `<th class="num z">held by</th></tr></thead><tbody>`;
-    all.forEach((s) => {
-      const held = P5.filter((k) => (V(k).sleeves[s] || 0) > 0.0005).length;
-      h += `<tr><td class="strong">${labels[s] || s}</td>` + P5.map((k) => {
-        const w = V(k).sleeves[s] || 0;
-        return w > 0.0005
-          ? `<td class="num">${(100 * w).toFixed(1)}%</td>`
-          : `<td class="num z" title="bounded to zero by mandate">–</td>`;
-      }).join("") + `<td class="num z">${held}/5</td></tr>`;
+    const classOf = D.class_of || {};
+    // group by platform class so the matrix reads as a book, not an alphabetical list
+    const order = [];
+    (D.platform_classes || []).forEach((c) => {
+      all.filter((s) => classOf[s] === c)
+         .sort((a, b) => Math.max(...P5.map((k) => V(k).sleeves[b] || 0))
+                       - Math.max(...P5.map((k) => V(k).sleeves[a] || 0)))
+         .forEach((s) => order.push([c, s]));
     });
-    el("sleeve-matrix").innerHTML = h + `</tbody></table>`;
+    all.forEach((s) => { if (!order.some((x) => x[1] === s)) order.push([classOf[s] || "Other", s]); });
+
+    const maxw = Math.max(...order.map(([, s]) => Math.max(...P5.map((k) => V(k).sleeves[s] || 0))));
+    const shade = (w) => `rgba(48,131,180,${(0.05 + Math.min(w / maxw, 1) * 0.8).toFixed(3)})`;
+
+    let html = `<div class="smx">
+      <div class="smx-h smx-lab">Sleeve</div>` +
+      P5.map((k) => `<div class="smx-h smx-pf" style="--pc:${col(k)}">${lab(k)}</div>`).join("") +
+      `<div class="smx-h smx-cnt">held</div>`;
+    let lastClass = null;
+    order.forEach(([cls, s]) => {
+      if (cls !== lastClass) {
+        html += `<div class="smx-group">${cls}</div>`;
+        lastClass = cls;
+      }
+      const held = P5.filter((k) => (V(k).sleeves[s] || 0) > 0.0005).length;
+      html += `<div class="smx-lab" title="${labels[s] || s}">${labels[s] || s}</div>` +
+        P5.map((k) => {
+          const w = V(k).sleeves[s] || 0;
+          if (w <= 0.0005) {
+            return `<div class="smx-c smx-zero" title="bounded to zero by ${lab(k)}'s mandate">\u2013</div>`;
+          }
+          const strong = w / maxw > 0.55;
+          return `<div class="smx-c" style="background:${shade(w)};color:${strong ? "#fff" : "#1b2733"}"
+              title="${lab(k)} · ${labels[s] || s} ${(100 * w).toFixed(1)}%">${(100 * w).toFixed(1)}</div>`;
+        }).join("") +
+        `<div class="smx-c smx-cnt">${held}<i>/5</i></div>`;
+    });
+    html += `</div>`;
+    el("sleeve-matrix").innerHTML = html;
+
     const shared = all.filter((s) => P5.every((k) => (V(k).sleeves[s] || 0) > 0.0005));
     const unique = all.filter((s) => P5.filter((k) => (V(k).sleeves[s] || 0) > 0.0005).length === 1);
     el("matrix-read").innerHTML =
-      `${all.length} sleeves appear across the range. <strong>${shared.length}</strong> are held by all ` +
-      `five (${shared.map((s) => labels[s] || s).join(", ")}); <strong>${unique.length}</strong> are held ` +
-      `by exactly one portfolio` +
-      (unique.length ? ` (${unique.map((s) => `${labels[s] || s} — ${
-        lab(P5.find((k) => (V(k).sleeves[s] || 0) > 0.0005))}`).join(", ")})` : "") +
-      `. A dash is not a zero weight the optimiser happened to choose: it is a holding that portfolio's ` +
-      `mandate bounds to zero.`;
+      `${all.length} sleeves across the range, grouped by asset class and shaded by weight. ` +
+      `<strong>${shared.length}</strong> are held by all five` +
+      (shared.length ? ` (${shared.map((s) => labels[s] || s).join(", ")})` : "") +
+      `; <strong>${unique.length}</strong> by exactly one` +
+      (unique.length ? ` \u2014 ${unique.map((s) => `${labels[s] || s} in ${
+        lab(P5.find((k) => (V(k).sleeves[s] || 0) > 0.0005))}`).join(", ")}` : "") +
+      `. A dash is not a weight the optimiser happened to set to zero: it is a holding that ` +
+      `portfolio's mandate bounds out entirely.`;
   })();
 
   (function alloc() {
@@ -312,9 +348,9 @@
       marker: { color: ["#3083b4", "#5b8c9f", "#d68a13", "#2f7d5e", "#c9ced6", "#8a6bb1"][i % 6] },
       hovertemplate: "%{x} · " + c + " %{y:.1f}%<extra></extra>",
     }));
-    Plotly.newPlot("alloc-chart", tr, Object.assign({}, BASE, { barmode: "stack",
+    Plotly.newPlot("alloc-chart", tr, L({ barmode: "stack",
       legend: { orientation: "h", y: -0.18, font: { size: 9 } }, margin: { l: 40, r: 10, t: 8, b: 56 },
-      yaxis: Object.assign({}, BASE.yaxis, { ticksuffix: "%" }) }), CFG);
+      yaxis: Object.assign({}, { ticksuffix: "%" }) }), CFG);
     const eq = P5.map((k) => [k, 100 * (V(k).weights.Equities || 0)]).sort((a, b) => b[1] - a[1]);
     el("alloc-read").innerHTML =
       `Equity weight runs from <strong>${eq[0][1].toFixed(0)}%</strong> in ${lab(eq[0][0])} to ` +
@@ -383,9 +419,9 @@
       .concat([{ type: "scatter", mode: "markers", name: "60/40", x: eps.map((e) => e.name),
         y: eps.map((e) => 100 * e.returns.acwi6040), marker: { color: "#c9932b", size: 9, symbol: "diamond" },
         hovertemplate: "%{x} · 60/40 %{y:.1f}%<extra></extra>" }]);
-    Plotly.newPlot("crisis-chart", tr, Object.assign({}, BASE, { barmode: "group", showlegend: false,
-      margin: { l: 44, r: 10, t: 10, b: 62 }, yaxis: Object.assign({}, BASE.yaxis, { ticksuffix: "%" }),
-      xaxis: Object.assign({}, BASE.xaxis, { tickangle: -22, tickfont: { size: 9 } }) }), CFG);
+    Plotly.newPlot("crisis-chart", tr, L({ barmode: "group", showlegend: false,
+      margin: { l: 44, r: 10, t: 10, b: 62 }, yaxis: Object.assign({}, { ticksuffix: "%" }),
+      xaxis: Object.assign({}, { tickangle: -22, tickfont: { size: 9 } }) }), CFG);
 
     let h = `<table class="dtbl"><thead><tr><th>Episode</th>` +
       P5.map((k) => `<th class="num" style="color:${col(k)}">${lab(k)}</th>`).join("") +
@@ -441,8 +477,8 @@
       type: "scatter", mode: "lines", name: "MRS composite", x: t.dates, y: t.composite,
       line: { color: "#0e2233", width: 1.8 },
       hovertemplate: "composite %{y:.2f}<extra>%{x}</extra>",
-    }], Object.assign({}, BASE, { showlegend: false,
-      yaxis: Object.assign({}, BASE.yaxis, { title: { text: "MRS composite", font: { size: 10 } },
+    }], L({ showlegend: false,
+      yaxis: Object.assign({}, { title: { text: "MRS composite", font: { size: 10 } },
         zeroline: true, zerolinecolor: "#c5cfd9" }) }), CFG);
     const counts = D.da.states.map((s) => `${s} ${D.da.months_in_state[s]}`).join(" · ");
     el("regime-read").innerHTML =

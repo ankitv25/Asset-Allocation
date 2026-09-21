@@ -25,11 +25,19 @@ const codeColor = (k) => SLEEVE_COLOR[k] || SLEEVE_COLOR[LABEL2CODE[k]] || C.acc
 const FONT = { family: "-apple-system, Segoe UI, Roboto, sans-serif", size: 11, color: "#46535f" };
 // One institutional chart style for the whole platform — light gridlines, no chart
 // junk, and a styled hover card (white, bordered) so tooltips read consistently.
+// Plotly MUTATES the layout object it is handed: it writes `type`, `range` and `autorange` back onto
+// the axis objects. BASE is spread into ~80 layouts on these pages, and a plain nested object would
+// share ONE xaxis by reference across all of them — so the first date-axis chart to draw stamps
+// type:"date" and its range onto every chart that follows. (That is exactly what collapsed the
+// asset-class bars onto a single date and stacked them to 500% on the portfolios page.)
+// Defining the axes as getters means every `{...BASE}` and every `{...BASE.xaxis}` receives a fresh
+// object, so no chart can poison the next one.
+const AXIS = { gridcolor: "#eff2f6", zeroline: false, linecolor: "#e3e8ee", ticks: "", tickfont: { size: 10 } };
 const BASE = { font: FONT, margin: { l: 40, r: 12, t: 8, b: 30 }, paper_bgcolor: "transparent",
   plot_bgcolor: "transparent", separators: ".,",
   hoverlabel: { bgcolor: "#ffffff", bordercolor: "#dbe2ea", font: { size: 11, color: "#1b2733" }, align: "left" },
-  xaxis: { gridcolor: "#eff2f6", zeroline: false, linecolor: "#e3e8ee", ticks: "", tickfont: { size: 10 } },
-  yaxis: { gridcolor: "#eff2f6", zeroline: false, linecolor: "#e3e8ee", ticks: "", tickfont: { size: 10 } } };
+  get xaxis() { return { ...AXIS }; },
+  get yaxis() { return { ...AXIS }; } };
 const CFG = { displayModeBar: false, responsive: true };
 const el = (id) => document.getElementById(id);
 const hexToRgb = (h) => { const n = parseInt(h.replace("#", ""), 16); return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`; };
@@ -1805,6 +1813,96 @@ function mountProvenance(d) {
   });
 }
 
+// ================= Equity style box (3x3 size x value/growth) =================
+// PC-22 formalises sectors and styles as living inside the equity sleeves — "the 3x3 style box" —
+// and the waterfall handoff records it as NOT BUILT. Nothing on the platform ever showed whether the
+// range is large-blend or where it sits against the market. Built from returns-based style analysis
+// (Src/style_box.py); descriptive only, it sets no target or limit.
+function renderStyleBox(sb) {
+  if (!el("stylebox-grid")) return;
+  let mode = "weight";                                    // weight | active
+
+  const cell = (i, j) => (mode === "weight" ? sb.grid[i][j] : sb.active[i][j]);
+  const shade = (v) => {
+    if (mode === "weight") {
+      const a = Math.min(Math.abs(v) / 70, 1);
+      return `rgba(48,131,180,${(0.06 + a * 0.82).toFixed(3)})`;
+    }
+    const a = Math.min(Math.abs(v) / 25, 1);
+    return v >= 0 ? `rgba(47,125,94,${(0.05 + a * 0.75).toFixed(3)})`
+                  : `rgba(192,57,43,${(0.05 + a * 0.75).toFixed(3)})`;
+  };
+
+  function draw() {
+    const rows = sb.sizes.map((sz, i) => `
+      <div class="sbx-rowlab">${sz}</div>` + sb.styles.map((st, j) => {
+        const v = cell(i, j);
+        const dom = sb.dominant && sb.dominant[0] === i && sb.dominant[1] === j;
+        const strong = Math.abs(v) >= (mode === "weight" ? 28 : 12);
+        return `<div class="sbx-cell${dom ? " sbx-dom" : ""}" style="background:${shade(v)};
+            color:${strong ? "#fff" : "#1b2733"}"
+            title="${sz} ${st} — ${sb.corners[sz + "/" + st] || ""}">
+          <span class="sbx-v">${mode === "active" && v > 0 ? "+" : ""}${v.toFixed(1)}<i>%</i></span>
+          <span class="sbx-c">${sz} ${st}</span>
+        </div>`;
+      }).join("")).join("");
+    el("stylebox-grid").innerHTML = `
+      <div class="sbx">
+        <div class="sbx-corner"></div>
+        ${sb.styles.map(st => `<div class="sbx-collab">${st}</div>`).join("")}
+        ${rows}
+      </div>`;
+    if (el("stylebox-read")) {
+      el("stylebox-read").innerHTML = mode === "weight"
+        ? sb.narrative
+        : `Active against the <strong>${sb.market.name}</strong>, cell by cell. Green is overweight, `
+          + `red underweight. The whole range holds only large-cap trackers, so the visible bet is a `
+          + `<strong>${sb.size_active >= 0 ? "+" : ""}${sb.size_active.toFixed(2)}</strong> size tilt `
+          + `— large-cap and away from the mid and small the total market carries. No value or growth `
+          + `bet is taken anywhere (<strong>${sb.style_active >= 0 ? "+" : ""}`
+          + `${sb.style_active.toFixed(2)}</strong>).`;
+    }
+  }
+
+  if (el("stylebox-stats")) {
+    const veh = Object.entries(sb.vehicles || {})
+      .map(([t, w]) => `<span class="sbx-veh"><b>${t}</b> ${w.toFixed(0)}%</span>`).join("");
+    el("stylebox-stats").innerHTML = `
+      <div class="bigstat"><div class="bigstat-v">${sb.size_score >= 0 ? "+" : ""}${sb.size_score.toFixed(2)}</div>
+        <div class="bigstat-l">Size score</div>
+        <div class="bigstat-h">+1 all large · −1 all small · market ${
+          (sb.market.grid[0].reduce((a, b) => a + b, 0) / 100
+           - sb.market.grid[2].reduce((a, b) => a + b, 0) / 100).toFixed(2)}</div></div>
+      <div class="bigstat"><div class="bigstat-v">${sb.style_score >= 0 ? "+" : ""}${sb.style_score.toFixed(2)}</div>
+        <div class="bigstat-l">Value ↔ growth score</div>
+        <div class="bigstat-h">−1 all value · +1 all growth</div></div>
+      <div class="bigstat"><div class="bigstat-v">${(100 * sb.r2).toFixed(1)}%</div>
+        <div class="bigstat-l">Variance explained</div>
+        <div class="bigstat-h">how well the box identifies the sleeve</div></div>
+      <div class="bigstat"><div class="bigstat-v">${sb.us_equity_weight.toFixed(1)}%</div>
+        <div class="bigstat-l">US equity, % of fund</div>
+        <div class="bigstat-h">${veh}</div></div>`;
+  }
+  if (el("stylebox-toggle")) {
+    el("stylebox-toggle").innerHTML =
+      `<button class="chip sel" data-m="weight">Style mix</button>` +
+      `<button class="chip" data-m="active">Active vs market</button>`;
+    el("stylebox-toggle").querySelectorAll(".chip").forEach(b => {
+      b.onclick = () => {
+        mode = b.dataset.m;
+        [...el("stylebox-toggle").children].forEach(c => c.classList.toggle("sel", c === b));
+        draw();
+      };
+    });
+  }
+  if (el("stylebox-note")) {
+    el("stylebox-note").innerHTML =
+      `<b>Method.</b> ${sb.method} Window ${sb.window} (${sb.n_months} months). `
+      + `<b>Bounds.</b> ${sb.limitation}`;
+  }
+  draw();
+}
+
 async function main() {
   try {
     const d = await load();
@@ -1829,6 +1927,7 @@ async function main() {
     if (d.attribution && (el("attr-cum-chart") || el("attr-tilt-chart"))) renderAttributionTimeline(d.attribution);
     if (d.attribution && el("attr-drill-chart")) renderAttributionDrill(d.attribution);
     if (d.matrix && el("matrix-scatter")) render9x9(d.matrix);
+    if (d.style_box && el("stylebox-grid")) renderStyleBox(d.style_box);
     if (d.monte_carlo && el("mc-fan")) renderMonteCarlo(d.monte_carlo);
     if (el("holdings-table")) renderHoldings(d);
     if (el("hero-verdict")) renderHero(d);

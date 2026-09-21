@@ -554,3 +554,56 @@ table.blotter tr:hover td { background: #f6f9fc; }
 .ev-risk{margin:.35rem 0 0;font-size:.715rem;line-height:1.5;color:var(--muted,#46535f)}
 .ev-risk b{font-weight:650;color:#5c6b7a}
 .ev-impl{margin-top:.3rem;font-size:.665rem;color:#8b97a3;font-variant-numeric:tabular-nums}
+
+/* ---- Equity style box (3x3 size x value/growth) ---------------------------
+   PC-22's style box, finally built. A grid, not a table. */
+.sbx{display:grid;grid-template-columns:auto repeat(3,1fr);gap:.3rem;align-items:stretch}
+.sbx-corner{}
+.sbx-collab{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted,#46535f);text-align:center;padding-bottom:.15rem}
+.sbx-rowlab{display:flex;align-items:center;justify-content:flex-end;padding-right:.45rem;
+  font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted,#46535f)}
+.sbx-cell{position:relative;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:.1rem;min-height:74px;border-radius:7px;border:1px solid #e3e8ee;
+  transition:transform .12s}
+.sbx-cell:hover{transform:scale(1.03);z-index:2}
+.sbx-dom{outline:2px solid var(--accent,#3083b4);outline-offset:-2px}
+.sbx-v{font-size:1.06rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.sbx-v i{font-size:.64rem;font-style:normal;opacity:.7;margin-left:.06rem}
+.sbx-c{font-size:.6rem;opacity:.82;text-align:center;line-height:1.2}
+.sbx-veh{display:inline-block;margin-right:.3rem;font-size:.62rem}
+.sbx-veh b{font-weight:650}
+@media (max-width:560px){.sbx-cell{min-height:60px}.sbx-v{font-size:.9rem}}
+
+
+/* Style-box stats: a 2x2 rather than four squeezed rows */
+#stylebox-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}
+#stylebox-stats .bigstat{padding:.6rem .7rem}
+#stylebox-stats .bigstat-v{font-size:1.3rem}
+#stylebox-stats .bigstat-h{line-height:1.35}
+@media (max-width:520px){#stylebox-stats{grid-template-columns:1fr}}
+
+/* ---- Sleeve matrix: a shaded grid, not a plain table ---------------------- */
+.smx{display:grid;grid-template-columns:minmax(120px,1.6fr) repeat(5,minmax(48px,1fr)) minmax(42px,.6fr);
+  gap:2px;align-items:stretch;font-variant-numeric:tabular-nums}
+.smx-h{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted,#46535f);padding:.2rem .3rem .3rem;align-self:end}
+.smx-h.smx-pf{text-align:center;color:var(--pc);border-bottom:2px solid var(--pc)}
+.smx-h.smx-cnt,.smx-c.smx-cnt{text-align:center}
+.smx-group{grid-column:1/-1;font-size:.6rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:#8b97a3;padding:.5rem .3rem .15rem;border-top:1px solid #eef1f5;
+  margin-top:.15rem}
+.smx-lab{font-size:.74rem;color:var(--ink,#1b2733);padding:.3rem .35rem;display:flex;
+  align-items:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smx-c{display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:600;
+  border-radius:4px;padding:.3rem .1rem;min-height:26px}
+.smx-c.smx-zero{color:#c3cbd4;font-weight:400;background:#fafbfc}
+.smx-c.smx-cnt{background:transparent;color:#8b97a3;font-size:.68rem;font-weight:500}
+.smx-c.smx-cnt i{font-style:normal;opacity:.6}
+@media (max-width:700px){.smx{grid-template-columns:minmax(92px,1.4fr) repeat(5,1fr) 0;font-size:.68rem}
+  .smx-h.smx-cnt,.smx-c.smx-cnt{display:none}}
+
+/* A column of tiles inside one grid cell — stops a tall tile leaving its neighbour's column empty */
+.stack{display:flex;flex-direction:column;gap:1rem;min-width:0}
+.stack > .tile{margin:0}

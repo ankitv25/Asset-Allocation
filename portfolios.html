@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The range — Certain · Endowment · SAA · DAA · Alpha</title>
+<title>Portfolios — Certain · Endowment · SAA · DAA · Alpha</title>
 <link rel="stylesheet" href="assets/css/style.css" />
 <script src="assets/vendor/plotly.min.js"></script>
 </head>
@@ -13,9 +13,9 @@
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
   <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
-    <a href="portfolios.html" class="active">The range</a>
+    <a href="index.html">Overview</a>
     <a href="live.html">Live NAV</a>
-    <a href="index.html">Portfolio</a>
+    <a href="portfolios.html" class="active">Portfolios</a>
     <a href="methodology.html">Methodology v3.8</a>
     <a href="construction.html">Construction</a>
     <a href="holdings.html">Holdings</a>
@@ -33,7 +33,7 @@
 <main class="db">
 
   <div class="page-intro">
-    <h1>The range</h1>
+    <h1>Portfolios</h1>
     <p>Five portfolios, each built for a different job rather than one book at five risk settings.
       All five launched together on <strong>15 July 2026</strong>. This page is for choosing between
       them; each card opens the full experience for that portfolio.</p>
@@ -41,7 +41,7 @@
 
   <div class="insight">
     <div class="ic">🧭</div>
-    <div><h3>How the range is organised</h3>
+    <div><h3>How the five are organised</h3>
       <p id="range-insight">Loading…</p></div>
   </div>
 
@@ -121,27 +121,26 @@
       <div id="sleeve-matrix"></div>
       <p class="read" id="matrix-read"></p>
     </article>
-    <article class="tile">
-      <div class="tile-head"><h2>Asset class</h2>
-        <span class="tile-sub">platform classes, % of book</span></div>
-      <div id="alloc-chart" class="chart chart-md"></div>
-      <p class="read" id="alloc-read"></p>
-    </article>
-  </section>
-
-  <section class="grid grid-2">
-    <article class="tile">
-      <div class="tile-head"><h2>Fixed income — inside the sleeve</h2>
-        <span class="tile-sub">% of total book, per portfolio</span></div>
-      <div id="fi-table"></div>
-      <p class="read" id="fi-read"></p>
-    </article>
-    <article class="tile">
-      <div class="tile-head"><h2>Risk constraints each book was solved under</h2>
-        <span class="tile-sub">the caps the optimiser was actually held to — declared, and loosened where the declared cap was infeasible</span></div>
-      <div id="constraint-table"></div>
-      <p class="read" id="constraint-read"></p>
-    </article>
+    <div class="stack">
+      <article class="tile">
+        <div class="tile-head"><h2>Asset class</h2>
+          <span class="tile-sub">platform classes, % of book</span></div>
+        <div id="alloc-chart" class="chart chart-sm"></div>
+        <p class="read" id="alloc-read"></p>
+      </article>
+      <article class="tile">
+        <div class="tile-head"><h2>Fixed income — inside the sleeve</h2>
+          <span class="tile-sub">% of total book, per portfolio</span></div>
+        <div id="fi-table"></div>
+        <p class="read" id="fi-read"></p>
+      </article>
+      <article class="tile">
+        <div class="tile-head"><h2>Risk constraints each book was solved under</h2>
+          <span class="tile-sub">the caps the optimiser was actually held to — declared, and loosened where the declared cap was infeasible</span></div>
+        <div id="constraint-table"></div>
+        <p class="read" id="constraint-read"></p>
+      </article>
+    </div>
   </section>
 
   <div class="section-head"><span class="section-num">05</span>
