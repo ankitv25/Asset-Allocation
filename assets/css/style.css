@@ -488,3 +488,69 @@ table.blotter tr:hover td { background: #f6f9fc; }
   border: 0; padding: 0.15rem 0.1rem; cursor: pointer; }
 .pf-switch select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 720px) { .pf-switch { margin-left: 0; } }
+
+
+/* ---- Provenance band ------------------------------------------------------
+   What a performance series actually IS, next to the chart rather than in a
+   footnote. See mountProvenance() in app.js. */
+.provenance{margin:.7rem 0 .2rem;padding:.6rem .7rem;border:1px solid var(--line,#e3e8ee);
+  border-radius:8px;background:#fbfcfd}
+.provenance .pv-head{margin:0 0 .5rem;font-size:.82rem;line-height:1.5;color:var(--muted,#46535f)}
+.pv-row{display:grid;grid-template-columns:auto 1fr;gap:.25rem .55rem;align-items:baseline;
+  padding:.38rem 0;border-top:1px solid #edf1f5}
+.pv-row:first-of-type{border-top:0}
+.pv-tag{grid-row:span 1;font-size:.63rem;text-transform:uppercase;letter-spacing:.055em;
+  font-weight:700;padding:.14rem .42rem;border-radius:4px;white-space:nowrap}
+.pv-live{background:#e6f4ec;color:#1d6b43}
+.pv-back{background:#eef2f7;color:#4a5866}
+.pv-wf{background:#fdf1e2;color:#8a6510}
+.pv-sim{background:#f0ecf8;color:#5b4a8a}
+.pv-name{font-weight:650;font-size:.8rem;color:var(--ink,#1b2733)}
+.pv-meta,.pv-note{grid-column:2;font-size:.74rem;line-height:1.5;color:var(--muted,#46535f)}
+.pv-meta b{font-weight:650;color:#5c6b7a}
+.pv-note{margin-top:.18rem;font-style:italic}
+.pv-warn{font-style:normal;color:#8a6510}
+@media (max-width:640px){.pv-row{grid-template-columns:1fr}.pv-meta,.pv-note{grid-column:1}}
+
+/* ---- Product cards (the range page) ---------------------------------------
+   Five products, each a real entry point into its own pages — not five options
+   in a dropdown. See docs/architecture/Five_Product_IA.md. */
+.prod-grid{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+.pd-card{display:flex;flex-direction:column;gap:.5rem;padding:.9rem .95rem 0.8rem;
+  border:1px solid var(--line,#e3e8ee);border-left:4px solid var(--pc,#3083b4);border-radius:10px;
+  background:#fff;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s}
+.pd-card:hover,.pd-card:focus-visible{box-shadow:0 4px 16px rgba(14,34,51,.10);transform:translateY(-2px)}
+.pd-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.pd-name{font-size:1.06rem;font-weight:700;color:var(--ink,#1b2733);letter-spacing:-.01em}
+.pd-kind{font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;
+  padding:.16rem .44rem;border-radius:4px;white-space:nowrap}
+.pd-kind.act{background:#fdf1e2;color:#8a6510}
+.pd-kind.sta{background:#eef2f7;color:#4a5866}
+.pd-role{font-size:.76rem;font-weight:600;color:var(--pc,#3083b4)}
+.pd-thesis{margin:0;font-size:.775rem;line-height:1.55;color:var(--muted,#46535f)}
+.pd-dials{display:flex;flex-wrap:wrap;gap:.3rem}
+.pd-dial{font-size:.66rem;padding:.14rem .4rem;border-radius:4px;background:#f4f7fa;
+  color:var(--muted,#46535f);white-space:nowrap}
+.pd-dial b{font-weight:650;color:var(--ink,#1b2733)}
+.pd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:auto;
+  padding-top:.55rem;border-top:1px solid #eef1f5}
+.pd-stat{display:flex;flex-direction:column;gap:.05rem}
+.pd-stat b{font-size:.86rem;font-weight:700;color:var(--ink,#1b2733);font-variant-numeric:tabular-nums}
+.pd-stat b.pos{color:#1d6b43}.pd-stat b.neg{color:#b3402f}
+.pd-stat span{font-size:.62rem;color:var(--muted,#46535f);line-height:1.25}
+.pd-cta{margin-top:.55rem;padding-top:.5rem;border-top:1px solid #eef1f5;font-size:.76rem;
+  font-weight:650;color:var(--pc,#3083b4)}
+.pd-cta .arr{transition:transform .15s;display:inline-block}
+.pd-card:hover .pd-cta .arr{transform:translateX(3px)}
+
+/* Nav: a page that only applies to the actively run portfolios */
+.appnav a.nav-na{opacity:.55}
+.appnav a .nav-note{display:inline-block;font-size:.52rem;line-height:1.15;text-transform:uppercase;
+  letter-spacing:.04em;margin-left:.28rem;padding:.08rem .24rem;border-radius:3px;
+  background:rgba(255,255,255,.14);color:inherit;opacity:.9;vertical-align:middle;white-space:nowrap}
+
+/* Sleeve evidence cards: the thesis, role and risk character — not the ticker three times */
+.ev-role{font-size:.7rem;font-weight:650;color:var(--pc,#3083b4);margin-top:.15rem}
+.ev-risk{margin:.35rem 0 0;font-size:.715rem;line-height:1.5;color:var(--muted,#46535f)}
+.ev-risk b{font-weight:650;color:#5c6b7a}
+.ev-impl{margin-top:.3rem;font-size:.665rem;color:#8b97a3;font-variant-numeric:tabular-nums}

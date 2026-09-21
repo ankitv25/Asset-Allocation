@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Portfolio Versions — Endowment · SAA · DAA/MRS</title>
+<title>The range — Certain · Endowment · SAA · DAA · Alpha</title>
 <link rel="stylesheet" href="assets/css/style.css" />
-<style>@media (min-width:900px){.kpi-ribbon{grid-template-columns:repeat(5,1fr)}}</style><!-- kpi-ribbon-5 -->
 <script src="assets/vendor/plotly.min.js"></script>
 </head>
 <body class="app">
@@ -14,9 +13,9 @@
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
   <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
-    <a href="index.html">Overview</a>
+    <a href="portfolios.html" class="active">The range</a>
     <a href="live.html">Live NAV</a>
-    <a href="portfolios.html" class="active">Portfolios</a>
+    <a href="index.html">Portfolio</a>
     <a href="methodology.html">Methodology v3.8</a>
     <a href="construction.html">Construction</a>
     <a href="holdings.html">Holdings</a>
@@ -34,72 +33,51 @@
 <main class="db">
 
   <div class="page-intro">
-    <h1>The five portfolios</h1>
-    <p>Five portfolios, each built for a different job rather than one book at five risk settings — <strong>Certain</strong> (purchasing power), <strong>Endowment</strong> (real assets), <strong>SAA</strong> (the policy anchor), <strong>DAA</strong> (the policy book run actively on MRS) and <strong>Alpha</strong> (equity-level risk). All five are live from 15 July 2026 and are compared here on one common window against the balanced benchmark and the market.</p>
+    <h1>The range</h1>
+    <p>Five portfolios, each built for a different job rather than one book at five risk settings.
+      All five launched together on <strong>15 July 2026</strong>. This page is for choosing between
+      them; each card opens the full experience for that portfolio.</p>
   </div>
 
-  <!-- HERO — the verdict -->
-  <section class="hero">
-    <div class="hero-main">
-      <div class="hero-eyebrow">The progression, on one window</div>
-      <h1 class="hero-verdict" id="hero-verdict">Loading…</h1>
-      <p class="hero-thesis" id="hero-thesis">Loading…</p>
-    </div>
-    <div class="hero-side" id="hero-highlights"></div>
-  </section>
-
-  <!-- Superseded reference banner -->
-  <div class="insight" id="ref-banner" style="border-left-color:var(--warn)">
-    <div class="ic">⚠️</div>
-    <div><h3 style="color:#8a6510">Previous dashboard book — superseded</h3>
-      <p id="ref-note">Loading…</p></div>
+  <div class="insight">
+    <div class="ic">🧭</div>
+    <div><h3>How the range is organised</h3>
+      <p id="range-insight">Loading…</p></div>
   </div>
 
   <div class="section-head"><span class="section-num">01</span>
-    <span class="section-title">The five portfolios</span>
-    <span class="section-q">What is each portfolio for, and what does it cost?</span></div>
+    <span class="section-title">The five products</span>
+    <span class="section-q">What is each one for, and what does it cost?</span></div>
 
   <section class="grid grid-1">
     <article class="tile">
-      <div class="tile-head"><h2>Version cards</h2>
-        <span class="tile-sub">role · dials · headline result · honest cost — all figures from the research engines</span></div>
-      <div class="ev-grid" id="version-cards" style="grid-template-columns:repeat(3,1fr)"></div>
+      <div class="tile-head"><h2>Product cards</h2>
+        <span class="tile-sub">mandate · horizon · live NAV · long-run evidence — click a card to open that portfolio</span></div>
+      <div class="prod-grid" id="product-cards"></div>
     </article>
   </section>
 
   <div class="section-head"><span class="section-num">02</span>
-    <span class="section-title">Allocation</span>
-    <span class="section-q">Where does the money sit — and how does DAA move it?</span></div>
+    <span class="section-title">Choosing</span>
+    <span class="section-q">Which portfolio suits which job?</span></div>
 
   <section class="grid grid-3-2">
     <article class="tile tile-feature">
-      <div class="tile-head"><h2>Sleeve allocation — static books vs 60/40</h2>
-        <span class="tile-sub">governed optimizer output (reconciled FI basket, IG ≤ 5% of book)</span></div>
-      <div id="alloc-chart" class="chart chart-md"></div>
-      <p class="read" id="alloc-read"></p>
+      <div class="tile-head"><h2>Where each sits — risk against return</h2>
+        <span class="tile-sub" id="posn-sub"></span></div>
+      <div id="posn-chart" class="chart chart-md"></div>
+      <p class="read" id="posn-read"></p>
     </article>
     <article class="tile">
-      <div class="tile-head"><h2>Fixed income — inside the sleeve</h2>
-        <span class="tile-sub">% of total book · reconciled basket Govt 55 / IG 15 / TIPS 20 / HY 10</span></div>
-      <div id="fi-table"></div>
-      <p class="read">The reconciled basket restores the <strong>IG ≤ 5% of book</strong> intent that the
-        superseded dashboard book violated (IG pinned at 30%). TIPS at 6.4% of book vs the v3.8 ~4%
-        insurance principle is a carried owner decision (J-2).</p>
-    </article>
-  </section>
-
-  <section class="grid grid-1">
-    <article class="tile">
-      <div class="tile-head"><h2>DAA / MRS — the regime → book map</h2>
-        <span class="tile-sub" id="da-map-sub">pre-committed holdings per confirmed MRS regime (1-month confirmation lag)</span></div>
-      <div class="scenario-strip" id="da-map"></div>
-      <p class="read" id="da-map-read"></p>
+      <div class="tile-head"><h2>Built for</h2>
+        <span class="tile-sub">the job each portfolio is meant to do</span></div>
+      <div id="choose-table"></div>
     </article>
   </section>
 
   <div class="section-head"><span class="section-num">03</span>
-    <span class="section-title">Performance</span>
-    <span class="section-q">What did each version earn, and what did it risk?</span></div>
+    <span class="section-title">Side by side</span>
+    <span class="section-q">All five on one window, against the same benchmarks.</span></div>
 
   <section class="grid grid-3-2">
     <article class="tile tile-feature">
@@ -107,11 +85,12 @@
         <span class="tile-sub" id="growth-sub"></span></div>
       <div class="chips growth-controls" id="growth-controls" style="margin:.2rem 0 .6rem"></div>
       <div id="growth-chart" class="chart chart-lg"></div>
+      <div id="growth-prov"></div>
       <p class="read" id="growth-read"></p>
     </article>
     <article class="tile">
       <div class="tile-head"><h2>Metric panel</h2>
-        <span class="tile-sub">common window · best of the three books highlighted per row</span></div>
+        <span class="tile-sub">common window · best of the five portfolios highlighted per row</span></div>
       <div id="metric-table"></div>
     </article>
   </section>
@@ -119,26 +98,60 @@
   <section class="grid grid-2">
     <article class="tile">
       <div class="tile-head"><h2>Drawdown</h2>
-        <span class="tile-sub">the three versions vs 60/40 (shaded)</span></div>
+        <span class="tile-sub">all five portfolios vs 60/40 (shaded)</span></div>
       <div id="dd-chart" class="chart chart-md"></div>
       <p class="read" id="dd-read"></p>
     </article>
     <article class="tile">
       <div class="tile-head"><h2>Calendar-year returns</h2>
-        <span class="tile-sub">three versions vs 60/40</span></div>
+        <span class="tile-sub">five portfolios vs 60/40</span></div>
       <div id="annual-chart" class="chart chart-md"></div>
       <p class="read" id="annual-read"></p>
     </article>
   </section>
 
   <div class="section-head"><span class="section-num">04</span>
+    <span class="section-title">Built differently</span>
+    <span class="section-q">Where do the five books actually diverge?</span></div>
+
+  <section class="grid grid-3-2">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>Sleeve matrix — every holding, every portfolio</h2>
+        <span class="tile-sub">each portfolio declares its own sleeve set; a holding it does not believe in is bounded to zero, not left to the optimiser</span></div>
+      <div id="sleeve-matrix"></div>
+      <p class="read" id="matrix-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Asset class</h2>
+        <span class="tile-sub">platform classes, % of book</span></div>
+      <div id="alloc-chart" class="chart chart-md"></div>
+      <p class="read" id="alloc-read"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Fixed income — inside the sleeve</h2>
+        <span class="tile-sub">% of total book, per portfolio</span></div>
+      <div id="fi-table"></div>
+      <p class="read" id="fi-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Risk constraints each book was solved under</h2>
+        <span class="tile-sub">the caps the optimiser was actually held to — declared, and loosened where the declared cap was infeasible</span></div>
+      <div id="constraint-table"></div>
+      <p class="read" id="constraint-read"></p>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">05</span>
     <span class="section-title">Crisis behaviour</span>
     <span class="section-q">Who defends when it matters?</span></div>
 
   <section class="grid grid-3-2">
     <article class="tile tile-feature">
       <div class="tile-head"><h2>Crisis episodes — cumulative return</h2>
-        <span class="tile-sub">five recognised episodes · DAA net of cost</span></div>
+        <span class="tile-sub">five recognised episodes · active portfolios net of cost</span></div>
       <div id="crisis-chart" class="chart chart-md"></div>
     </article>
     <article class="tile">
@@ -148,41 +161,41 @@
     </article>
   </section>
 
-  <div class="section-head"><span class="section-num">05</span>
-    <span class="section-title">DAA / MRS mechanics</span>
-    <span class="section-q">Where does the dynamic edge actually come from?</span></div>
+  <div class="section-head"><span class="section-num">06</span>
+    <span class="section-title">The active layer</span>
+    <span class="section-q">What do DAA and Alpha do that the other three do not?</span></div>
 
   <section class="grid grid-1">
-    <article class="tile tile-feature">
-      <div class="tile-head"><h2>The rotation, over time</h2>
-        <span class="tile-sub" id="rot-sub">SPY-satellite size per month (the growth dial MRS moves) · regime shading</span></div>
-      <div id="regime-chart" class="chart chart-md"></div>
-      <p class="read" id="regime-read"></p>
+    <article class="tile">
+      <div class="tile-head"><h2>Which portfolios act on the macro read</h2>
+        <span class="tile-sub" id="active-sub"></span></div>
+      <div class="scenario-strip" id="da-map"></div>
+      <p class="read" id="da-map-read"></p>
     </article>
   </section>
 
-  <section class="grid grid-2">
-    <article class="tile">
-      <div class="tile-head"><h2>Rotation value, isolated</h2>
-        <span class="tile-sub">rotated book vs the same blend with no regime information</span></div>
-      <div id="rotation-chart" class="chart chart-sm"></div>
-      <p class="read" id="rotation-read"></p>
+  <section class="grid grid-3-2">
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>The macro composite, over time</h2>
+        <span class="tile-sub" id="rot-sub">the MRS composite and the class tilts it implies · regime shading</span></div>
+      <div id="regime-chart" class="chart chart-md"></div>
+      <p class="read" id="regime-read"></p>
     </article>
     <article class="tile">
-      <div class="tile-head"><h2>Honest caveats — the deep-dive verdict</h2>
+      <div class="tile-head"><h2>Honest caveats</h2>
         <span class="tile-sub">what survives scrutiny and what was withdrawn</span></div>
       <div class="flags-compact" id="da-caveats"></div>
     </article>
   </section>
 
-  <div class="section-head"><span class="section-num">06</span>
-    <span class="section-title">Status &amp; gates</span>
-    <span class="section-q">What must happen before any of this runs live?</span></div>
+  <div class="section-head"><span class="section-num">07</span>
+    <span class="section-title">What remains open</span>
+    <span class="section-q">Live since 15 July 2026 — and still unfinished in these ways.</span></div>
 
   <section class="grid grid-1">
     <article class="tile">
       <div class="tile-head"><h2>Open gates</h2>
-        <span class="tile-sub">every version is in-sample; nothing here is live-approved</span></div>
+        <span class="tile-sub">all five launched 15 July 2026 · what remains open on each</span></div>
       <div id="gates-table"></div>
       <p class="read" id="gates-read"></p>
     </article>
@@ -192,6 +205,8 @@
 
 <footer class="status" id="status-footer">Loading…</footer>
 <script src="data/portfolios.js"></script>
+<script src="data/live_nav.js"></script>
+<script src="data/portfolio_books.js"></script>
 <script src="assets/js/portfolios.js"></script>
 </body>
 </html>

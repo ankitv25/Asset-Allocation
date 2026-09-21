@@ -380,12 +380,21 @@ function renderSleeveEvidence(c, positioning) {
       <div class="ev-metric"><span class="ev-w">${s.weight}%</span>${deltaHtml}</div>
       <div class="ev-holds">${chips}</div>
       <div class="ev-meta">${s.n_core} core${held.length > s.n_core ? ` · ${held.length} held` : ""}</div>
+      ${s.role ? `<div class="ev-role">${s.role}</div>` : ""}
       <p class="ev-note">${s.thesis}</p>
+      ${s.risk_note ? `<p class="ev-risk"><b>Risk character.</b> ${s.risk_note}</p>` : ""}
+      ${s.implementation ? `<div class="ev-impl">Implemented as ${s.implementation}</div>` : ""}
       <div class="ev-cta">Explore sleeve <span class="arr">→</span></div>
     </article>`;
   }).join("");
   // The whole card is clickable — drill into the sleeve on the Construction page.
-  const go = (sl) => { location.href = "construction.html#slv=" + encodeURIComponent(sl); };
+  // Carry the selected portfolio through the drill-down; without it the sleeve link silently
+  // dropped the reader onto a different product's construction page.
+  const go = (sl) => {
+    const p = window.SUMMER_PORTFOLIO;
+    location.href = "construction.html" + (p ? `?p=${encodeURIComponent(p)}` : "")
+      + "#slv=" + encodeURIComponent(sl);
+  };
   [...host.querySelectorAll(".ev-card")].forEach(card => {
     card.addEventListener("click", () => go(card.dataset.sleeve));
     card.addEventListener("keydown", (e) => {
@@ -397,8 +406,12 @@ function renderSleeveEvidence(c, positioning) {
 // ---------------- Risk ----------------
 function renderRisk(r) {
   renderVolBudget(r);
-  if (el("vol-read")) el("vol-read").innerHTML = `Forecast <strong>${r.forecast_vol}%</strong> vs ${r.vol_budget}% budget — `
-    + (r.forecast_vol > r.vol_budget ? "binding; the envelope is trimming risk." : `${r.vol_util}% of budget used, comfortably within.`);
+  if (el("vol-read")) el("vol-read").innerHTML = r.vol_budget == null
+    ? `Forecast <strong>${r.forecast_vol}%</strong>, realised ${r.realised_vol}% over the full window. No volatility limit is approved for this portfolio.`
+    : `Forecast <strong>${r.forecast_vol}%</strong> against the ${r.vol_budget}% volatility cap this book was solved under — `
+      + (r.forecast_vol > r.vol_budget ? "binding; the envelope is trimming risk." : `${r.vol_util}% of the cap used, comfortably within.`)
+      + ` That cap is a construction constraint, not a monitoring limit.`
+      + (r.dd_limit != null ? ` An owner-set loss limit of ${r.dd_limit}% also applies.` : "");
 
   // Factor bars
   const f = r.factors;
@@ -442,6 +455,28 @@ function renderRisk(r) {
 function renderVolBudget(r) {
   const host = el("vol-gauge"); if (!host) return;
   const fc = r.forecast_vol, budget = r.vol_budget;
+  // No approved limit for this portfolio: show the measured levels instead of a utilisation bar
+  // against a number nobody set. See Src/build_portfolio_books_data.py APPROVED_LIMITS.
+  if (budget == null) {
+    host.classList.add("volbudget-host");
+    host.style.height = "auto";
+    host.innerHTML = `
+      <div class="vb">
+        <div class="vb-top">
+          <div class="vb-now"><span class="vb-val">${fc}%</span><span class="vb-lab">forecast 36-month volatility</span></div>
+          <div class="vb-util ok"><span class="pct">${r.realised_vol != null ? r.realised_vol + "%" : "—"}</span><small>realised, full window</small></div>
+        </div>
+        <div class="vb-stats">
+          <div class="vb-stat"><b>${r.realised_vol != null ? (fc - r.realised_vol >= 0 ? "+" : "") + (fc - r.realised_vol).toFixed(1) + "pp" : "—"}</b><span>Forecast vs realised</span></div>
+          <div class="vb-stat"><b>None set</b><span>Volatility limit</span></div>
+          <div class="vb-stat"><b>Measured</b><span>Not a budget</span></div>
+        </div>
+        <p class="read" style="margin-top:.5rem">No volatility limit is approved for this portfolio, so none is
+          shown. The forecast and realised figures are measured; a proposed limit framework is in
+          <em>docs/methodology/Risk_Limit_Framework_Proposal.md</em> and is not active.</p>
+      </div>`;
+    return;
+  }
   const max = Math.max(budget * 1.45, fc * 1.1);
   const pct = (v) => Math.max(0, Math.min(100, (v / max) * 100));
   const over = fc > budget;
@@ -453,7 +488,7 @@ function renderVolBudget(r) {
     <div class="vb">
       <div class="vb-top">
         <div class="vb-now"><span class="vb-val">${fc}%</span><span class="vb-lab">forecast 36-month volatility</span></div>
-        <div class="vb-util ${over ? "warn" : "ok"}"><span class="pct">${util}%</span><small>of budget</small></div>
+        <div class="vb-util ${over ? "warn" : "ok"}"><span class="pct">${util}%</span><small>of the cap</small></div>
       </div>
       <div class="vb-track">
         <div class="vb-zone-ok" style="width:${pct(budget)}%"></div>
@@ -463,8 +498,8 @@ function renderVolBudget(r) {
       </div>
       <div class="vb-scale"><span>0%</span><span>${max.toFixed(0)}%</span></div>
       <div class="vb-stats">
-        <div class="vb-stat"><b>${budget}%</b><span>Stance budget</span></div>
-        <div class="vb-stat"><b>${headroom >= 0 ? "+" : ""}${headroom.toFixed(1)}pp</b><span>${headroom >= 0 ? "Headroom" : "Over budget"}</span></div>
+        <div class="vb-stat"><b>${budget}%</b><span>Volatility cap</span></div>
+        <div class="vb-stat"><b>${headroom >= 0 ? "+" : ""}${headroom.toFixed(1)}pp</b><span>${headroom >= 0 ? "Headroom" : "Over the cap"}</span></div>
         <div class="vb-stat"><b>${over ? "Binding" : "Within"}</b><span>Envelope</span></div>
       </div>
     </div>`;
@@ -1069,8 +1104,11 @@ function renderRiskDrill(rbs) {
 function renderRiskDetail(rd) {
   if (!el("risk-detail-stats")) return;
   const daa = rd.DAA, saa = rd.SAA;
+  // Payload keys stay DAA/SAA so the v3.8 book still renders; `labels` names the pair for whichever
+  // portfolio is selected ("as held" vs its policy book) instead of asserting a DAA/SAA comparison.
+  const LA = (rd.labels && rd.labels.active) || "DAA", LB = (rd.labels && rd.labels.base) || "SAA";
   el("risk-detail-stats").innerHTML = `
-    <div class="bigstat"><div class="bigstat-v">${daa.vol}%</div><div class="bigstat-l">DAA portfolio vol</div><div class="bigstat-h">SAA ${saa.vol}%</div></div>
+    <div class="bigstat"><div class="bigstat-v">${daa.vol}%</div><div class="bigstat-l">${LA} portfolio vol</div><div class="bigstat-h">${LB} ${saa.vol}%</div></div>
     <div class="bigstat"><div class="bigstat-v">${daa.effective_bets}</div><div class="bigstat-l">Effective risk bets</div><div class="bigstat-h">1 / Σ risk-share²</div></div>
     <div class="bigstat"><div class="bigstat-v">${daa.top3_risk}%</div><div class="bigstat-l">Top-3 sleeve risk share</div><div class="bigstat-h">concentration check</div></div>`;
   if (el("risk-detail-narrative")) el("risk-detail-narrative").innerHTML = rd.narrative;
@@ -1096,8 +1134,8 @@ function renderRiskDetail(rd) {
   if (el("saa-daa-risk-chart")) {
     const labels = daa.sleeves.map(s => s.sleeve);
     Plotly.newPlot("saa-daa-risk-chart", [
-      { type: "bar", orientation: "h", name: "SAA", x: saa.sleeves.map(s => s.risk), y: labels, marker: { color: "#5b8c9f" } },
-      { type: "bar", orientation: "h", name: "DAA", x: daa.sleeves.map(s => s.risk), y: labels, marker: { color: C.navy } },
+      { type: "bar", orientation: "h", name: LB, x: saa.sleeves.map(s => s.risk), y: labels, marker: { color: "#5b8c9f" } },
+      { type: "bar", orientation: "h", name: LA, x: daa.sleeves.map(s => s.risk), y: labels, marker: { color: C.navy } },
     ], { ...BASE, barmode: "group", margin: { l: 110, r: 10, t: 22, b: 26 },
       legend: { orientation: "h", y: 1.16, font: { size: 10 } },
       yaxis: { ...BASE.yaxis, autorange: "reversed" }, xaxis: { ...BASE.xaxis, ticksuffix: "%" } }, CFG);
@@ -1109,11 +1147,12 @@ function renderForwardStress(sf) {
   if (!el("fwd-scenario-chart")) return;
   if (el("fwd-narrative")) el("fwd-narrative").innerHTML = sf.narrative;
   const sc = sf.scenarios;
+  const FA = (sf.labels && sf.labels.active) || "DAA", FB = (sf.labels && sf.labels.base) || "SAA";
   Plotly.newPlot("fwd-scenario-chart", [
-    { type: "bar", name: "SAA", x: sc.map(s => s.name), y: sc.map(s => s.saa), marker: { color: "#5b8c9f" },
-      hovertemplate: "SAA %{y:.1f}%<extra></extra>" },
-    { type: "bar", name: "DAA", x: sc.map(s => s.name), y: sc.map(s => s.daa), marker: { color: C.navy },
-      hovertemplate: "DAA %{y:.1f}%<extra></extra>" },
+    { type: "bar", name: FB, x: sc.map(s => s.name), y: sc.map(s => s.saa), marker: { color: "#5b8c9f" },
+      hovertemplate: FB + " %{y:.1f}%<extra></extra>" },
+    { type: "bar", name: FA, x: sc.map(s => s.name), y: sc.map(s => s.daa), marker: { color: C.navy },
+      hovertemplate: FA + " %{y:.1f}%<extra></extra>" },
   ], { ...BASE, barmode: "group", margin: { l: 44, r: 10, t: 24, b: 60 },
     legend: { orientation: "h", y: 1.16, font: { size: 10 } }, yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
 
@@ -1126,7 +1165,7 @@ function renderForwardStress(sf) {
       [...el("fwd-pick").children].forEach(ch => ch.classList.toggle("sel", +ch.dataset.i === i));
       const shockTxt = Object.entries(s.shocks).map(([f, v]) => `${f} ${v > 0 ? "+" : ""}${(v * 100).toFixed(0)}%`).join(" · ");
       el("fwd-detail-head").innerHTML = `<strong>${s.name}</strong> — ${s.desc}. Shocks: ${shockTxt}.
-        Portfolio impact: SAA <b>${s.saa}%</b> · DAA <b>${s.daa}%</b>.`;
+        Portfolio impact: ${FA} <b>${s.daa}%</b> · ${FB} <b>${s.saa}%</b>.`;
       const rows = s.sleeves;
       Plotly.newPlot("fwd-detail-chart", [{ type: "bar", orientation: "h",
         x: rows.map(r => r.contrib), y: rows.map(r => r.sleeve),
@@ -1153,7 +1192,7 @@ function renderForwardStress(sf) {
       const port = (w) => sleeves.reduce((a, s) => a + w[s] * sl[s], 0) * 100;
       const pd = port(sf.daa_weights), ps = port(sf.saa_weights);
       el("custom-out").innerHTML = `<div class="bigstat"><div class="bigstat-v">${pd.toFixed(1)}%</div>
-        <div class="bigstat-l">DAA impact</div><div class="bigstat-h">SAA ${ps.toFixed(1)}%</div></div>`;
+        <div class="bigstat-l">${FA} impact</div><div class="bigstat-h">${FB} ${ps.toFixed(1)}%</div></div>`;
       const rows = sleeves.map(s => ({ y: sf.sleeve_labels[s], x: +(sf.daa_weights[s] * sl[s] * 100).toFixed(2) }));
       Plotly.newPlot("custom-chart", [{ type: "bar", orientation: "h", x: rows.map(r => r.x), y: rows.map(r => r.y),
         marker: { color: rows.map(r => r.x >= 0 ? C.pos : C.neg) }, hovertemplate: "%{y}: %{x:.2f}%<extra></extra>" }],
@@ -1328,9 +1367,14 @@ function render9x9(m) {
     el("matrix-grid").innerHTML = `<table class="dtbl matrix-tbl"><thead><tr><th>Portfolio / benchmark</th>`
       + m.columns.map(c => `<th class="num">${c}</th>`).join("") + `</tr></thead><tbody>`
       + m.grid.map(row => {
-          const hl = row.name === "DAA" ? "hl" : "";
-          const tag = row.kind === "portfolio" ? `<span class="kindtag">${row.name === "DAA" ? "dynamic" : "strategic"}</span>` : "";
-          return `<tr class="${hl}"><td><span class="swatch" style="background:${CMP_COLOR[row.name]}"></span><b>${row.name}</b> ${tag}</td>`
+          // highlight the portfolio actually selected, not a hardcoded book
+          const me = (window.PORTFOLIO_DATA && window.PORTFOLIO_DATA.portfolio || {}).name;
+          const hl = row.name === me ? "hl" : "";
+          const tag = row.kind === "portfolio"
+            ? `<span class="kindtag">${row.name === me ? "selected" : "portfolio"}</span>`
+            : row.kind === "reference" ? `<span class="kindtag">reference</span>` : "";
+          const sw = CMP_COLOR[row.name] || (m.colors && m.colors[row.name]) || "#9aa7b3";
+          return `<tr class="${hl}"><td><span class="swatch" style="background:${sw}"></span><b>${row.name}</b> ${tag}</td>`
             + row.cells.map(c => `<td class="num" style="background:${shade(c.rank)}">${c.value == null ? "–" : c.value + c.suffix}</td>`).join("")
             + `</tr>`;
         }).join("") + `</tbody></table>`;
@@ -1704,6 +1748,63 @@ function renderAttributionTimeline(a) {
       + `mechanism behind the drawdown reduction. Weights are from the walk-forward backtest.`;
 }
 
+// ================= Provenance band =================
+// Every performance series on the platform declares what it is, visibly and next to the chart rather
+// than in a footnote. Two pages say "performance" and mean different things: the long series is a
+// backtest of today's weights applied to history, the live NAV starts 2026-07-15. Blurring those is
+// the thing this band exists to prevent.
+const BASIS_CLASS = { live: "pv-live", backtest: "pv-back", "walk-forward backtest": "pv-wf",
+  simulated: "pv-sim" };
+
+function provenanceBand(prov, names) {
+  if (!prov || !prov.series) return "";
+  const rows = names.map(n => [n, prov.series[n]]).filter(([, v]) => v);
+  if (!rows.length) return "";
+  return `<div class="provenance">`
+    + (prov.headline ? `<p class="pv-head">${prov.headline}</p>` : "")
+    + rows.map(([n, v]) => `
+      <div class="pv-row">
+        <span class="pv-tag ${BASIS_CLASS[v.basis] || "pv-back"}">${v.basis}</span>
+        <span class="pv-name">${n}</span>
+        <span class="pv-meta"><b>Window</b> ${v.window} · <b>Weights</b> ${v.weights}
+          · <b>Rebalance</b> ${v.rebalance} · <b>Costs</b> ${v.costs}</span>
+        ${v.note ? `<span class="pv-note">${v.note}</span>` : ""}
+        ${v.limitation ? `<span class="pv-note pv-warn"><b>Limitation:</b> ${v.limitation}</span>` : ""}
+      </div>`).join("")
+    + `</div>`;
+}
+
+// Page copy that names the portfolio: every .pf-name span is filled with whichever portfolio is
+// selected, so a heading can never describe a different product than the one on screen.
+function mountPortfolioName(d) {
+  const nm = (d.portfolio && d.portfolio.name) || null;
+  if (!nm) return;
+  document.querySelectorAll(".pf-name").forEach(n => { n.textContent = nm; });
+  const kind = (d.portfolio && d.portfolio.managed) === "active" ? "actively run" : "policy weights";
+  document.querySelectorAll(".pf-kind").forEach(n => { n.textContent = kind; });
+}
+
+function mountProvenance(d) {
+  const prov = d.provenance;
+  if (!prov) return;
+  const me = (d.portfolio && d.portfolio.name) || null;
+  const comparisonNames = ((d.comparison && d.comparison.order) || [])
+    .map(k => (k === "DAA" ? me : k === "SAA" ? null : k)).filter(Boolean);
+  const targets = [
+    ["growth-chart", [me, ...comparisonNames, "Live NAV"]],
+    ["nav-chart", [me, "Live NAV"]],
+    ["cmp-chart", [me, ...comparisonNames]],
+  ];
+  targets.forEach(([id, names]) => {
+    const host = el(id);
+    if (!host || host.parentNode.querySelector(".provenance")) return;
+    const uniq = [...new Set(names.filter(Boolean))];
+    const html = provenanceBand(prov, uniq);
+    if (!html) return;
+    host.insertAdjacentHTML("afterend", html);
+  });
+}
+
 async function main() {
   try {
     const d = await load();
@@ -1733,6 +1834,8 @@ async function main() {
     if (el("hero-verdict")) renderHero(d);
     if (el("overview-insight")) renderOverviewInsight(d);
     if (el("scenario-strip")) renderScenarios(d.scenarios);
+    mountPortfolioName(d);
+    mountProvenance(d);
     if (el("status-footer")) el("status-footer").textContent =
       `Generated ${d.generated} from the live portfolio-construction pipeline and its walk-forward backtest. `
       + `Net of cost; exploratory-tier data (see repo notes).`;

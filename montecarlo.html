@@ -13,9 +13,9 @@
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
   <button class="navtoggle" aria-label="Toggle navigation"><span class="bars"><span></span></span>Menu</button>
   <nav class="appnav">
-    <a href="index.html">Overview</a>
+    <a href="portfolios.html">The range</a>
     <a href="live.html">Live NAV</a>
-    <a href="portfolios.html">Portfolios</a>
+    <a href="index.html">Portfolio</a>
     <a href="methodology.html">Methodology v3.8</a>
     <a href="construction.html">Construction</a>
     <a href="holdings.html">Holdings</a>
@@ -36,7 +36,7 @@
     <h1>Monte Carlo — forward outcomes</h1>
     <p>Not "what did it do" but <strong>"what is the range of what it could do"</strong>. Ten thousand
       simulated 10-year futures, <strong>block-bootstrapped from the realised return history</strong> so the
-      fat left tail and crisis clustering survive — for the dynamic book (DAA), the static policy (SAA), and
+      fat left tail and crisis clustering survive — for <span class="pf-name">this portfolio</span>, its own policy book, and
       60/40. <span class="tile-sub" id="mc-window"></span></p>
   </div>
 
@@ -55,7 +55,7 @@
   <!-- Headline target probabilities (DAA) + scenario cases -->
   <section class="grid grid-2-1">
     <article class="tile tile-feature">
-      <div class="tile-head"><h2>Probability of reaching target outcomes — dynamic book</h2>
+      <div class="tile-head"><h2>Probability of reaching target outcomes — <span class="pf-name">this portfolio</span></h2>
         <span class="tile-sub">per $1 invested over the 10-year horizon</span></div>
       <div class="statrow" id="mc-stats" style="grid-template-columns:repeat(2,1fr)"></div>
     </article>
@@ -82,10 +82,10 @@
     </article>
     <article class="tile">
       <div class="tile-head"><h2>Strategy comparison — median &amp; cone</h2>
-        <span class="tile-sub">median (line) + 5–95% cone for DAA / SAA / 60-40</span></div>
+        <span class="tile-sub">median (line) + 5–95% cone: as held / policy book / 60-40</span></div>
       <div id="mc-compare" class="chart chart-tall"></div>
       <p class="read">Where the strategies' outcome distributions diverge: 60/40 carries the highest median in
-        this US-led sample; DAA's cone is the tightest on the downside — its value is a narrower left tail.</p>
+        this US-led sample. Where the two differ, the actively run book's cone is the tighter on the downside — its value is a narrower left tail.</p>
     </article>
   </section>
 
@@ -109,16 +109,16 @@
   <section class="grid grid-2">
     <article class="tile">
       <div class="tile-head"><h2>Terminal-value distribution</h2>
-        <span class="tile-sub">DAA vs SAA · dotted line = median</span></div>
+        <span class="tile-sub">as held vs policy book · dotted line = median</span></div>
       <div id="mc-terminal" class="chart chart-md"></div>
-      <p class="read">Where the 10-year outcome lands. SAA's distribution has a slightly higher median but a
+      <p class="read">Where the 10-year outcome lands. The policy book's distribution has a slightly higher median but a
         heavier left shoulder — more paths finish poorly.</p>
     </article>
     <article class="tile">
       <div class="tile-head"><h2>Worst-drawdown distribution</h2>
-        <span class="tile-sub">DAA vs SAA · deepest peak-to-trough per path</span></div>
+        <span class="tile-sub">as held vs policy book · deepest peak-to-trough per path</span></div>
       <div id="mc-drawdown" class="chart chart-md"></div>
-      <p class="read">The dynamic book's mass sits at shallower drawdowns — the regime overlay truncates the
+      <p class="read">Where a portfolio is run actively its mass sits at shallower drawdowns — the regime overlay truncates the
         left tail, which is the entire case for running it.</p>
     </article>
   </section>
@@ -130,7 +130,7 @@
   <!-- Comparison table -->
   <section class="grid grid-1">
     <article class="tile tile-feature">
-      <div class="tile-head"><h2>Outcome summary — DAA vs SAA vs 60/40</h2>
+      <div class="tile-head"><h2>Outcome summary — as held vs policy book vs 60/40</h2>
         <span class="tile-sub">simulated distribution statistics</span></div>
       <div id="mc-table"></div>
       <p class="read" id="mc-table-read"></p>
