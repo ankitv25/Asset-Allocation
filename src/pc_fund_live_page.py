@@ -42,6 +42,29 @@ for f in FUNDS:
                          te=float((x - y).std() * np.sqrt(252)),
                          beta=float(np.cov(x, y)[0, 1] / np.var(y)))
 
+# ---- each portfolio's own reference ------------------------------------------------------------
+# A fund is measured against its own benchmark, not against whichever index is handy. The registry
+# declares references like "ACWI 40 / Agg 60"; ACWI and the Aggregate are both priced here, so the
+# blend is built from them and rebalanced daily. Alpha's reference is the S&P 500, already priced.
+_IDX = {'ACWI': 'MSCI ACWI', 'Agg': 'Bloomberg US Aggregate', 'S&P 500': 'S&P 500'}
+
+
+def reference_series(spec):
+    if spec in nav.columns:
+        return nav[spec]
+    parts = [q.strip().split() for q in spec.split('/')]
+    legs = [(_IDX[' '.join(q[:-1])], float(q[-1]) / 100.0) for q in parts]
+    if abs(sum(w for _, w in legs) - 1) > 1e-9:
+        raise SystemExit('reference %r does not weight to 100' % spec)
+    r = sum(nav[c].pct_change().fillna(0.0) * w for c, w in legs)
+    return N['nav0'] * (1 + r).cumprod()
+
+
+REF_OF = {f: FR.FUNDS[f.lower()]['reference'] for f in FUNDS}
+for _spec in sorted(set(REF_OF.values())):
+    if _spec not in nav.columns:
+        nav[_spec] = reference_series(_spec)
+
 # ---- standard period returns -------------------------------------------------------------------
 # Factsheet convention: discrete CUMULATIVE returns over calendar lookbacks, and no annualisation
 # under twelve months. A period the fund did not exist for is omitted, not shown part-filled — a
@@ -59,6 +82,39 @@ def period_returns(s):
 
 
 periods = {c: period_returns(nav[c]) for c in nav.columns}
+
+# Calendar-month returns. The first and last months are partial — the fund launched mid-July and
+# today is mid-month — so each is flagged rather than silently presented as a full month.
+_mk = nav.index.to_period('M')
+monthly = {}
+for c in nav.columns:
+    out = []
+    for per in sorted(set(_mk)):
+        seg = nav[c][_mk == per]
+        first = seg.index[0]
+        base = N['nav0'] if first == nav.index[0] else float(nav[c][nav.index < first].iloc[-1])
+        out.append(dict(month=str(per), ret=float(seg.iloc[-1] / base - 1),
+                        partial=bool(per == sorted(set(_mk))[0] or per == sorted(set(_mk))[-1]),
+                        days=int(len(seg))))
+    monthly[c] = out
+
+# Drawdown from the running high, and the latest one-day move — the two things a NAV page is asked
+# for that the table did not carry.
+drawdown = {c: [float(x) for x in (nav[c] / nav[c].cummax() - 1)] for c in nav.columns}
+day = {c: dict(chg=float(nav[c].iloc[-1] / nav[c].iloc[-2] - 1),
+               pts=float(nav[c].iloc[-1] - nav[c].iloc[-2]),
+               dd=float(nav[c].iloc[-1] / nav[c].max() - 1)) for c in nav.columns}
+
+# The NAV bridge, rolled from vehicles up to sleeves. fund_nav.py already proved it reconciles.
+SLEEVE = N['ticker_sleeve']
+bridge = {}
+for f in FUNDS:
+    b = N['bridge'][f]
+    by_sleeve = {}
+    for tk, v in b['holdings'].items():
+        by_sleeve[SLEEVE.get(tk, tk)] = by_sleeve.get(SLEEVE.get(tk, tk), 0.0) + v
+    bridge[f] = dict(vehicles=b['holdings'], sleeves=by_sleeve, dealing=b['dealing'],
+                     fee=b['fee'], total=b['total'])
 
 # How long the record actually is, so the page can state its own limits instead of the renderer
 # hard-coding a judgement. Twelve months is the floor for annualising a return; risk statistics are
@@ -86,7 +142,12 @@ facts = {f: dict(reference=FR.FUNDS[f.lower()]['reference'], horizon=FR.FUNDS[f.
          for f in FUNDS}
 
 D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
-         periods=periods, track=track, facts=facts,
+         periods=periods, track=track, facts=facts, monthly=monthly, ref_of=REF_OF,
+         ref_stats={f: dict(name=REF_OF[f],
+                            ret=float(nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1),
+                            excess=float(nav[f].iloc[-1] / nav[REF_OF[f]].iloc[-1] - 1))
+                    for f in FUNDS},
+         drawdown=drawdown, day=day, bridge=bridge,
          dates=N['dates'], series=N['series'], stats=stats, rel=rel,
          holdings=N['holdings'], trades=N['trades'], books=N['books'], ticker_sleeve=N['ticker_sleeve'],
          funds={f: S['funds'][f] for f in FUNDS}, labels=S['labels'], class_of=S['class_of'],

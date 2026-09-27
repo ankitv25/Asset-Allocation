@@ -54,7 +54,59 @@
     "NAV from Src/fund_nav.py · books from Src/pc_fs6_build.py · priced to " + fmtD(D.asof)
     + " · not a custodial record";
 
+  // ---------- NAV cards ----------
+  // The page is called Net asset value, so the net asset value is the first thing on it, as a number
+  // per portfolio. The chart answers "what has it been doing"; it cannot answer "what is it".
+  function spark(name) {
+    const y = D.series[name], n = y.length, lo = Math.min(...y), hi = Math.max(...y);
+    const rng = hi - lo || 1, W = 100, H = 30;
+    const pts = y.map((v, i) => `${(i / (n - 1) * W).toFixed(2)},${(H - (v - lo) / rng * H).toFixed(2)}`);
+    const base = (H - (D.nav0 - lo) / rng * H).toFixed(2);
+    const up = y[n - 1] >= D.nav0;
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      <line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="#c9ced6" stroke-width=".5"
+        stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/>
+      <polyline points="${pts.join(" ")}" fill="none" stroke="${up ? "#1d6b43" : "#b3402f"}"
+        stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+  }
+
+  function navCards() {
+    el("nav-cards").innerHTML = FUNDS.map((f) => {
+      const st = D.stats[f], dy = D.day[f], x = D.facts[f];
+      const ref = D.ref_stats[f];   // each portfolio against ITS OWN reference, not a house index
+      const stat = (v, l, c) => `<div class="pd-stat"><b class="${c || ""}">${v}</b><span>${l}</span></div>`;
+      return `<article class="pd-card nv-card" style="--pc:${COLOR[f]}">
+        <div class="pd-top"><div class="pd-name">${f}</div>
+          <span class="pd-kind ${x.managed === "active" ? "act" : "sta"}">${
+            x.managed === "active" ? "actively run" : "policy weights"}</span></div>
+        <div class="nv-head">
+          <div><div class="nv-nav">${st.nav.toFixed(2)}</div>
+            <div class="nv-unit">NAV per unit</div></div>
+          <div class="nv-day ${cls(dy.chg)}">${pp(dy.chg)}<div class="nv-unit" style="font-weight:500">on the day</div></div>
+        </div>
+        <div class="nv-spark">${spark(f)}</div>
+        <div class="pd-stats">
+          ${stat(pp(st.ret), "since launch", cls(st.ret))}
+          ${stat(pp(ref.excess), "vs " + ref.name, cls(ref.excess))}
+          ${stat(pct(dy.dd, 1), "from its high", dy.dd < -0.0001 ? "neg" : "")}
+          ${stat(st.up + "/" + st.n, "days up")}
+        </div></article>`;
+    }).join("");
+  }
+
   // ---------- NAV chart ----------
+  // Three views of the same series: the level, the same thing rebased to zero so the spread is
+  // readable, and the fall from each portfolio's own high — which the level chart cannot show.
+  const VIEWS = { nav: "Daily NAV since inception", cum: "Cumulative return", dd: "Drawdown from high" };
+  let view = "nav";
+  function viewChips() {
+    el("nav-views").innerHTML = Object.entries(VIEWS).map(([k, v]) =>
+      `<button class="chip${k === view ? " sel" : ""}" data-v="${k}">${v}</button>`).join("");
+    el("nav-views").querySelectorAll(".chip").forEach((b) => {
+      b.onclick = () => { view = b.dataset.v; viewChips(); navChart(); };
+    });
+  }
+
   function chips() {
     el("nav-chips").innerHTML = [...FUNDS, ...BENCH].map((n) =>
       `<button class="chip${on.has(n) ? " sel" : ""}" data-n="${n}">${n}</button>`).join("");
@@ -63,15 +115,23 @@
     });
   }
   function navChart() {
+    const yOf = (n) => view === "nav" ? D.series[n]
+      : view === "cum" ? D.series[n].map((v) => 100 * (v / D.nav0 - 1))
+        : D.drawdown[n].map((v) => 100 * v);
+    const unit = view === "nav" ? "NAV per unit" : view === "cum" ? "Return since launch, %" : "Drawdown, %";
+    const fmt = view === "nav" ? ":.2f" : ":+.2f";
     const tr = [...FUNDS, ...BENCH].filter((n) => on.has(n)).map((n) => ({
-      x: D.dates, y: D.series[n], name: n, type: "scatter", mode: "lines",
+      x: D.dates, y: yOf(n), name: n, type: "scatter", mode: "lines",
       line: { color: COLOR[n], width: FUNDS.includes(n) ? 2.2 : 1.3, dash: FUNDS.includes(n) ? "solid" : "dot" },
-      hovertemplate: "%{y:.2f}<extra>" + n + "</extra>"
+      hovertemplate: "%{y" + fmt + "}" + (view === "nav" ? "" : "%") + "<extra>" + n + "</extra>"
     }));
+    el("nav-chart-title").textContent = VIEWS[view];
+    const zero = view === "nav" ? D.nav0 : 0;
     Plotly.react("nav-chart", tr, Object.assign({}, BASE, {
       showlegend: false, hovermode: "x unified",
-      yaxis: Object.assign({}, BASE.yaxis, { title: { text: "NAV per unit", font: { size: 10 } } }),
-      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: D.nav0, y1: D.nav0,
+      yaxis: Object.assign({}, BASE.yaxis, { title: { text: unit, font: { size: 10 } },
+        ticksuffix: view === "nav" ? "" : "%" }),
+      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: zero, y1: zero,
         line: { color: "#c9ced6", width: 1, dash: "dot" } }]
     }), CFG);
     const led = FUNDS.slice().sort((a, b) => D.stats[b].ret - D.stats[a].ret);
@@ -111,6 +171,34 @@
       the convention is ${T.min_months_for_risk_stats} months before a risk statistic is quoted as an
       estimate, so read it as a description of this window and nothing more.`;
   }
+  function monthlyTable() {
+    const months = D.monthly[FUNDS[0]].map((m) => m.month);
+    el("monthly-sub").textContent =
+      `calendar months · first and last are partial · ${months.length} so far`;
+    const head = months.map((m) => {
+      const p = D.monthly[FUNDS[0]].find((x) => x.month === m);
+      const d = new Date(m + "-01T00:00:00");
+      return `<th class="num">${d.toLocaleDateString("en-GB", { month: "short" })}${
+        p.partial ? '<span class="z">*</span>' : ""}</th>`;
+    }).join("");
+    const row = (n) => {
+      const isF = FUNDS.includes(n);
+      const cells = D.monthly[n].map((m) =>
+        `<td class="num ${cls(m.ret)}">${pp(m.ret)}</td>`).join("");
+      return `<tr class="${isF ? "hl" : ""}"><td class="${isF ? "strong" : "z"}">${n}</td>${cells}</tr>`;
+    };
+    // The references each portfolio is actually measured against, so the month-by-month comparison
+    // is like-for-like rather than everything against the S&P.
+    const REFS = [...new Set(FUNDS.map((f) => D.ref_of[f]))].filter((r) => !BENCH.includes(r));
+    el("monthly-table").innerHTML = `<table class="dtbl"><thead><tr><th>Fund or benchmark</th>
+      ${head}</tr></thead><tbody>${FUNDS.map(row).join("")}${BENCH.map(row).join("")}
+      ${REFS.map(row).join("")}</tbody></table>
+      <p class="read">The last rows are the blended references the portfolios are measured against,
+      rebalanced daily from MSCI ACWI and the Bloomberg Aggregate. <strong>*</strong> partial month — the portfolios launched on
+      ${fmtD(D.inception)} and the current month is priced to ${fmtD(D.asof)}. Monthly figures are
+      cumulative within the month, net of fee and dealing.</p>`;
+  }
+
   function relTable() {
     el("rel-sub").textContent = `cumulative excess · tracking error and beta on `
       + `${T.trading_days - 1} daily observations, indicative only`;
@@ -205,6 +293,59 @@
     el("mandate-table").innerHTML = h + "</tbody></table>";
   }
 
+  // ---------- what moved the NAV ----------
+  // fund_nav.py scales each day's contribution by the NAV level it was earned on and refuses to write
+  // a bridge that does not reconcile, so these pieces sum to the NAV exactly. The page states the sum
+  // rather than asking the reader to trust it.
+  let bfund = "SAA";
+  function bridgeChips() {
+    el("bridge-chips").innerHTML = FUNDS.map((f) =>
+      `<button class="chip${f === bfund ? " sel" : ""}" data-f="${f}">${f}</button>`).join("");
+    el("bridge-chips").querySelectorAll(".chip").forEach((b) => {
+      b.onclick = () => { bfund = b.dataset.f; bridgeChips(); bridgePanel(); };
+    });
+  }
+  function bridgePanel() {
+    const B = D.bridge[bfund];
+    const lab = (k) => (D.labels && D.labels[k]) ? D.labels[k] : k;
+    const items = Object.entries(B.sleeves).map(([k, v]) => [lab(k), v])
+      .concat([["Dealing", B.dealing], ["Fee", B.fee]])
+      .sort((a, b) => b[1] - a[1]);
+    el("bridge-sub").textContent =
+      `${bfund} · in points of NAV · sums to ${pp(B.total / 100)} since ${fmtD(D.inception)}`;
+
+    Plotly.react("bridge-chart", [{
+      type: "bar", orientation: "h",
+      y: items.map((i) => i[0]).reverse(), x: items.map((i) => i[1]).reverse(),
+      marker: { color: items.map((i) => i[1] >= 0 ? "#2f7d5e" : "#b3402f").reverse() },
+      hovertemplate: "%{y}: %{x:+.3f} pts<extra></extra>"
+    }], Object.assign({}, BASE, {
+      showlegend: false, bargap: 0.3,
+      margin: { l: 132, r: 18, t: 6, b: 28 },
+      xaxis: Object.assign({}, BASE.xaxis, { title: { text: "points of NAV", font: { size: 10 } },
+        zeroline: true, zerolinecolor: "#b8c0ca" }),
+      yaxis: Object.assign({}, BASE.yaxis, { automargin: true })
+    }), CFG);
+
+    const r = (n, v, c) => `<tr class="${c || ""}"><td>${n}</td>
+      <td class="num ${cls(v)}">${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(3)}</td></tr>`;
+    const veh = Object.entries(B.vehicles).sort((a, b) => b[1] - a[1]);
+    el("bridge-table").innerHTML = `<h3 class="mini-head">By vehicle</h3>
+      <table class="dtbl"><thead><tr><th>Vehicle</th><th class="num">Points</th></tr></thead><tbody>
+      ${veh.map(([k, v]) => r(k + ' <span class="z">' + lab(D.ticker_sleeve[k] || "") + "</span>", v)).join("")}
+      ${r("Dealing", B.dealing)}${r("Fee", B.fee)}
+      ${r("<strong>Net asset value</strong>", B.total, "hl")}</tbody></table>`;
+
+    const top = items.filter((i) => i[1] > 0)[0], worst = items[items.length - 1];
+    el("bridge-read").innerHTML =
+      `${bfund} is ${pp(B.total / 100)} since launch. <strong>${top[0]}</strong> is the largest
+       positive contributor at ${top[1] >= 0 ? "+" : "−"}${Math.abs(top[1]).toFixed(2)} points and
+       <strong>${worst[0]}</strong> the largest drag at ${worst[1] >= 0 ? "+" : "−"}${
+        Math.abs(worst[1]).toFixed(2)}. Costs took ${Math.abs(B.dealing + B.fee).toFixed(3)} points —
+       ${Math.abs(B.fee).toFixed(3)} of it the management fee. Contributions are measured on the NAV
+       level each day's return was earned on, so the column adds to the NAV exactly.`;
+  }
+
   function disclosure() {
     const items = [
       ["Past performance", `Past performance is not a guide to future performance. The record is
@@ -230,6 +371,6 @@
       `<div class="vi"><div class="vi-l">${h}</div><div class="vi-v">${b}</div></div>`).join("");
   }
 
-  chips(); factsTable(); navChart(); perfTable(); relTable(); fundChips(); holdTable();
-  mandateTable(); disclosure();
+  navCards(); viewChips(); chips(); factsTable(); navChart(); perfTable(); monthlyTable();
+  relTable(); bridgeChips(); bridgePanel(); fundChips(); holdTable(); mandateTable(); disclosure();
 })();

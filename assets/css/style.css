@@ -607,3 +607,21 @@ table.blotter tr:hover td { background: #f6f9fc; }
 /* A column of tiles inside one grid cell — stops a tall tile leaving its neighbour's column empty */
 .stack{display:flex;flex-direction:column;gap:1rem;min-width:0}
 .stack > .tile{margin:0}
+
+/* ---- Live NAV cards -------------------------------------------------------------------------
+   An extension of .pd-card (above), not a second card language: same shell, same colour variable,
+   but the NAV itself is the headline because that is what the page is for. */
+.nv-card{cursor:default}
+.nv-card:hover{transform:none;box-shadow:0 1px 3px rgba(14,34,51,.06)}
+.nv-head{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+.nv-nav{font-size:1.72rem;font-weight:700;letter-spacing:-.02em;color:var(--ink,#1b2733);
+  font-variant-numeric:tabular-nums;line-height:1.05}
+.nv-unit{font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#46535f);
+  font-weight:600}
+.nv-day{font-size:.78rem;font-weight:650;font-variant-numeric:tabular-nums}
+.nv-day.pos{color:#1d6b43}.nv-day.neg{color:#b3402f}
+.nv-spark{margin:.15rem 0 .1rem}
+.nv-spark svg{display:block;width:100%;height:38px;overflow:visible}
+/* Five portfolios, so give them five columns rather than letting auto-fit orphan the last one. */
+@media (min-width:1180px){ .nv-grid{grid-template-columns:repeat(5,1fr)} }
+.nv-grid .pd-stat b{font-size:.8rem}

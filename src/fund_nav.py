@@ -108,7 +108,7 @@ def run():
     px = px.loc[px.index >= INCEPTION]
     ret = px.pct_change(fill_method=None).fillna(0.0)
     days = ret.index
-    out, holdings, trades = {}, {}, {}
+    out, holdings, trades, bridge = {}, {}, {}, {}
     for f in funds:
         # the weight the fund targets on each day
         if f in monthly:
@@ -123,6 +123,11 @@ def run():
             raise SystemExit(f'{f}: launch weights sum to {w0.sum():.4f}, not 1')
         held = w0.reindex(px.columns).fillna(0.0)
         nav, rows, tr = [], [], []
+        # What actually moved the NAV. Each day's contribution is scaled by the NAV level it was
+        # earned on, so the pieces reconcile to the NAV exactly rather than approximately:
+        #   sum(contribution) - dealing - fee == NAV_end - NAV0
+        contrib = pd.Series(0.0, index=px.columns)
+        cost_pts = fee_pts = 0.0
         for i, d in enumerate(days):
             t = tgt[d].reindex(px.columns).fillna(0.0)
             if abs(t.sum() - 1) > 0.005:
@@ -132,7 +137,11 @@ def run():
                 turn = float((t - held).abs().sum())
                 held = t.copy()
             r = float((held * ret.loc[d]).sum()) - turn * COST - FEE_YR / 252
-            nav.append((nav[-1] if nav else NAV0) * (1 + r))
+            prev = nav[-1] if nav else NAV0
+            contrib += prev * held * ret.loc[d]
+            cost_pts += prev * turn * COST
+            fee_pts += prev * FEE_YR / 252
+            nav.append(prev * (1 + r))
             rows.append(held.copy())
             if turn > 1e-9:
                 tr.append(dict(date=str(d.date()), turnover=round(100 * turn, 2)))
@@ -142,15 +151,23 @@ def run():
         out[f] = s
         holdings[f] = {k: float(v) for k, v in rows[-1].items() if v > 0.0005}
         trades[f] = tr
+        bridge[f] = dict(holdings={k: float(v) for k, v in contrib.items() if abs(v) > 1e-9},
+                         dealing=-float(cost_pts), fee=-float(fee_pts),
+                         total=float(s.iloc[-1] - NAV0))
+        chk = sum(bridge[f]['holdings'].values()) + bridge[f]['dealing'] + bridge[f]['fee']
+        if abs(chk - bridge[f]['total']) > 1e-6:
+            raise SystemExit(f'{f}: NAV bridge does not reconcile ({chk:.8f} vs '
+                             f'{bridge[f]["total"]:.8f}) — do not publish an attribution that does '
+                             f'not add up to the NAV')
     for bn, t in BENCH.items():
         out[bn] = NAV0 * (1 + ret[t]).cumprod()
     nav = pd.DataFrame(out)
     nav.index = [str(d.date()) for d in nav.index]
-    return nav, holdings, trades, books
+    return nav, holdings, trades, books, bridge
 
 
 if __name__ == '__main__':
-    nav, holdings, trades, books = run()
+    nav, holdings, trades, books, bridge = run()
     print(f'  inception {INCEPTION.date()} · {len(nav)} trading days through {nav.index[-1]}')
     for c in nav.columns:
         s = nav[c]
@@ -160,7 +177,7 @@ if __name__ == '__main__':
     nav.to_csv(os.path.join(OUT, 'fund_nav.csv'))
     json.dump(dict(inception=str(INCEPTION.date()), nav0=NAV0, dates=list(nav.index),
                    series={c: [round(float(x), 4) for x in nav[c]] for c in nav.columns},
-                   holdings=holdings, trades=trades,
+                   holdings=holdings, trades=trades, bridge=bridge,
                    books={f: {k: float(v) for k, v in books[f].items() if v > 0.0005} for f in books},
                    ticker_sleeve=TICKER_SLEEVE),
               open(os.path.join(OUT, 'fund_nav.json'), 'w'), indent=1)

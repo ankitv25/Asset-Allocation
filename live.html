@@ -64,11 +64,14 @@
     <span class="section-title">Net asset value</span>
     <span class="section-q">Where does each portfolio stand today?</span></div>
 
+  <div class="prod-grid nv-grid" id="nav-cards" style="margin-bottom:1rem"></div>
+
   <section class="grid grid-1">
     <article class="tile tile-feature">
-      <div class="tile-head"><h2>Daily NAV since inception</h2>
+      <div class="tile-head"><h2 id="nav-chart-title">Daily NAV since inception</h2>
         <span class="tile-sub" id="nav-sub"></span></div>
-      <div class="chips" id="nav-chips" style="margin:.5rem 0 .7rem"></div>
+      <div class="chips" id="nav-views" style="margin:.5rem 0 .35rem"></div>
+      <div class="chips" id="nav-chips" style="margin:0 0 .7rem"></div>
       <div id="nav-chart" class="chart chart-xl"></div>
       <p class="read" id="nav-read"></p>
     </article>
@@ -78,12 +81,20 @@
     <span class="section-title">Performance and risk</span>
     <span class="section-q">What did it cost in volatility to earn that?</span></div>
 
-  <section class="grid grid-2">
+  <section class="grid grid-1">
     <article class="tile">
       <div class="tile-head"><h2>Discrete returns</h2>
         <span class="tile-sub" id="perf-sub"></span></div>
       <div id="perf-table"></div>
       <p class="read" id="perf-read"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Month by month</h2>
+        <span class="tile-sub" id="monthly-sub"></span></div>
+      <div id="monthly-table"></div>
     </article>
     <article class="tile">
       <div class="tile-head"><h2>Against the benchmarks</h2>
@@ -95,6 +106,23 @@
   </section>
 
   <div class="section-head"><span class="section-num">04</span>
+    <span class="section-title">What moved the NAV</span>
+    <span class="section-q">Every point of it, traced to the holding that earned or cost it.</span></div>
+
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Contribution since inception</h2>
+        <span class="tile-sub" id="bridge-sub"></span></div>
+      <div class="chips" id="bridge-chips" style="margin:.5rem 0 .7rem"></div>
+      <div class="grid grid-2" style="gap:1rem">
+        <div id="bridge-chart" class="chart chart-lg"></div>
+        <div><div id="bridge-table"></div></div>
+      </div>
+      <p class="read" id="bridge-read"></p>
+    </article>
+  </section>
+
+  <div class="section-head"><span class="section-num">05</span>
     <span class="section-title">What is actually held</span>
     <span class="section-q">Every line, and when it last traded.</span></div>
 
@@ -112,7 +140,7 @@
     </article>
   </section>
 
-  <div class="section-head"><span class="section-num">05</span>
+  <div class="section-head"><span class="section-num">06</span>
     <span class="section-title">How each portfolio is different</span>
     <span class="section-q">Five mandates, five different books — not one book with a dial.</span></div>
 
@@ -124,7 +152,7 @@
     </article>
   </section>
 
-  <div class="section-head"><span class="section-num">06</span>
+  <div class="section-head"><span class="section-num">07</span>
     <span class="section-title">Basis of these figures</span>
     <span class="section-q">What the NAV is, and what it is not.</span></div>
 
