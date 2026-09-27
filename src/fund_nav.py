@@ -108,7 +108,7 @@ def run():
     px = px.loc[px.index >= INCEPTION]
     ret = px.pct_change(fill_method=None).fillna(0.0)
     days = ret.index
-    out, holdings, trades, bridge = {}, {}, {}, {}
+    out, holdings, trades, bridge, daily_w = {}, {}, {}, {}, {}
     for f in funds:
         # the weight the fund targets on each day
         if f in monthly:
@@ -151,6 +151,10 @@ def run():
         out[f] = s
         holdings[f] = {k: float(v) for k, v in rows[-1].items() if v > 0.0005}
         trades[f] = tr
+        # The weight actually held on each day. Attribution that uses today's weights for a window
+        # in which the book was rebalanced attributes the return to a book that was not held.
+        W = pd.DataFrame(rows, index=days)
+        daily_w[f] = {c: [round(float(x), 6) for x in W[c]] for c in W.columns if W[c].abs().max() > 5e-4}
         bridge[f] = dict(holdings={k: float(v) for k, v in contrib.items() if abs(v) > 1e-9},
                          dealing=-float(cost_pts), fee=-float(fee_pts),
                          total=float(s.iloc[-1] - NAV0))
@@ -163,11 +167,11 @@ def run():
         out[bn] = NAV0 * (1 + ret[t]).cumprod()
     nav = pd.DataFrame(out)
     nav.index = [str(d.date()) for d in nav.index]
-    return nav, holdings, trades, books, bridge
+    return nav, holdings, trades, books, bridge, daily_w
 
 
 if __name__ == '__main__':
-    nav, holdings, trades, books, bridge = run()
+    nav, holdings, trades, books, bridge, daily_w = run()
     print(f'  inception {INCEPTION.date()} · {len(nav)} trading days through {nav.index[-1]}')
     for c in nav.columns:
         s = nav[c]
@@ -177,7 +181,7 @@ if __name__ == '__main__':
     nav.to_csv(os.path.join(OUT, 'fund_nav.csv'))
     json.dump(dict(inception=str(INCEPTION.date()), nav0=NAV0, dates=list(nav.index),
                    series={c: [round(float(x), 4) for x in nav[c]] for c in nav.columns},
-                   holdings=holdings, trades=trades, bridge=bridge,
+                   holdings=holdings, trades=trades, bridge=bridge, daily_weights=daily_w,
                    books={f: {k: float(v) for k, v in books[f].items() if v > 0.0005} for f in books},
                    ticker_sleeve=TICKER_SLEEVE),
               open(os.path.join(OUT, 'fund_nav.json'), 'w'), indent=1)

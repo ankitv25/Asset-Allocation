@@ -105,6 +105,13 @@ day = {c: dict(chg=float(nav[c].iloc[-1] / nav[c].iloc[-2] - 1),
                pts=float(nav[c].iloc[-1] - nav[c].iloc[-2]),
                dd=float(nav[c].iloc[-1] / nav[c].max() - 1)) for c in nav.columns}
 
+# Factor attribution, if factor_attrib.py has run. It is optional the same way pit_backtest and
+# style_box are: the page degrades to the holdings bridge alone rather than failing.
+_fa = os.path.join(NAVD, 'factor_attrib.json')
+factor = json.load(open(_fa)) if os.path.exists(_fa) else None
+if factor is None:
+    print('  note: factor_attrib.json absent — the exposure view will not render')
+
 # The NAV bridge, rolled from vehicles up to sleeves. fund_nav.py already proved it reconciles.
 SLEEVE = N['ticker_sleeve']
 bridge = {}
@@ -147,7 +154,7 @@ D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
                             ret=float(nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1),
                             excess=float(nav[f].iloc[-1] / nav[REF_OF[f]].iloc[-1] - 1))
                     for f in FUNDS},
-         drawdown=drawdown, day=day, bridge=bridge,
+         drawdown=drawdown, day=day, bridge=bridge, factor=factor,
          dates=N['dates'], series=N['series'], stats=stats, rel=rel,
          holdings=N['holdings'], trades=N['trades'], books=N['books'], ticker_sleeve=N['ticker_sleeve'],
          funds={f: S['funds'][f] for f in FUNDS}, labels=S['labels'], class_of=S['class_of'],

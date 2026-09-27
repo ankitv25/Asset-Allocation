@@ -19,6 +19,7 @@ reads, and it degrades gracefully (prints a note) if either is absent.
 ```
 /usr/bin/python3 Src/pc_fs6_build.py                    # books + backtest (only if the strategy changed)
 /usr/bin/python3 Src/fund_nav.py                        # daily NAV from market closes
+/usr/bin/python3 Src/factor_attrib.py                   # factor attribution of the live NAV
 /usr/bin/python3 Src/pit_backtest.py                    # walk-forward series (slow-ish, cacheable)
 /usr/bin/python3 Src/style_box.py                       # 3x3 style box (fetches 9 ETFs, cached)
 /usr/bin/python3 Src/build_portfolios_dashboard_data.py # Portfolios page payload
@@ -37,6 +38,7 @@ The common case. Two steps:
 
 ```
 /usr/bin/python3 Src/fund_nav.py
+/usr/bin/python3 Src/factor_attrib.py
 /usr/bin/python3 Src/pc_fund_live_page.py
 ```
 
@@ -81,6 +83,7 @@ root, and the inputs themselves are not redistributed here:
 | `fs5_signals`, `portfolio_dcs_signal` | MRS composite history | via [Macro-Regime-Score](https://github.com/ankitv25/Macro-Regime-Score) |
 | `pc_fs6_build` | upstream solver output, peer landscape | no |
 | `build_portfolio_books_data` | `validation/fund_suite_v6/`, `validation/fund_nav/` | no |
+| `factor_attrib` | the live NAV feed, plus long price history for the factor legs | no |
 | `verify_dashboard` | this repo's pages, `module_contract.json`, `data/portfolio_books.json` | **yes** |
 
 External data the chain reaches for at runtime: FRED CSV endpoints (keyless), Yahoo daily closes via

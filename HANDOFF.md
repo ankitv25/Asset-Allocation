@@ -128,3 +128,31 @@ render**; no `undefined` / `NaN` in visible text.
    `data/portfolio.json` 932 KB; splitting per portfolio and lazy-loading would help first paint.
 6. **The Methodology page still describes the v3.8 lineage only.** Deliberate — it is the lineage the
    books were built from. Documenting the current five there is a content decision.
+
+## Added 2026-09-26 — factor attribution of the live NAV
+
+`src/factor_attrib.py`. The page could say which holding moved the NAV; it could not say what the book
+was **exposed to**. Holdings-based, not a fund-level regression: thirteen factors on fifty-one daily
+observations would estimate nothing, so the exposure is not estimated at all — it is the real daily
+weights (`fund_nav` now persists them) times each vehicle's betas, fitted on 2,194 days from 2018.
+
+```
+NAV move = cash + Σ (exposure × factor return) + costs + residual      (reconciles exactly, or it refuses to write)
+```
+
+**Two modelling errors found by measuring rather than assuming, both worth keeping in mind:**
+
+1. **Cash is not a factor.** Every book holds 100% of its money and earns the bill rate on all of it.
+   With no cash leg, Certain's 26% T-bill position read as unexplained return. Attribute on excess
+   returns and carry cash as its own line.
+2. **One rate factor cannot span a curve.** With only long Treasuries over cash, the bond-heavy books
+   fell apart — Certain's residual was −0.86 on a +0.14 total, and the intermediate/TIPS/credit
+   vehicles fitted at R² 0.79–0.83. Splitting into **Rates** (IEF − cash) and **Curve** (VGLT − IEF)
+   took Certain's residual to −0.22 and those vehicles to R² 0.95+.
+
+The residual is published, never spread over the factors. `SGOV` fits at R² 0.000 by construction —
+it *is* the cash leg, and that is the correct reading, not a failure.
+
+What it shows: the range takes **no size or style bet** (exposures ≈ 0.00), which is what `style_box.py`
+already said about positioning — now with the price of that non-decision attached. PC-22 remains
+unimplemented; this makes the cost of leaving it unimplemented visible rather than theoretical.

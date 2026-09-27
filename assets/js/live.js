@@ -315,9 +315,75 @@
     el("bridge-chips").innerHTML = FUNDS.map((f) =>
       `<button class="chip${f === bfund ? " sel" : ""}" data-f="${f}">${f}</button>`).join("");
     el("bridge-chips").querySelectorAll(".chip").forEach((b) => {
-      b.onclick = () => { bfund = b.dataset.f; bridgeChips(); bridgePanel(); };
+      b.onclick = () => { bfund = b.dataset.f; bridgeChips(); facPanel(); bridgePanel(); };
     });
   }
+  // ---------- what the book was EXPOSED to ----------
+  // The holdings bridge says which line moved the NAV. This says what the book was positioned in and
+  // what that position paid. Exposures are not estimated from the fund's own 51 days — that would be
+  // noise — they are the real daily weights times each vehicle's betas, fitted on years of history.
+  // Whatever the factors do not explain is shown as a residual rather than spread over them.
+  function facPanel() {
+    const FA = D.factor;
+    if (!FA) { el("fac-sub").textContent = "factor attribution not available"; return; }
+    const A = FA.funds[bfund], w = FA.window;
+    el("fac-sub").textContent = `${bfund} · ${FA.factor_defs.length} factors · `
+      + `betas fitted on ${w.beta_obs} days from ${w.beta_start} · points of NAV`;
+
+    const rows = A.factors.map((f) => [f.name, f.contrib, f])
+      .concat([["Cash", A.cash, null], ["Costs", A.costs, null], ["Unexplained", A.residual, null]])
+      .sort((a, b) => b[1] - a[1]);
+
+    Plotly.react("fac-chart", [{
+      type: "bar", orientation: "h",
+      y: rows.map((r) => r[0]).reverse(), x: rows.map((r) => r[1]).reverse(),
+      marker: { color: rows.map((r) => r[2] === null ? (r[1] >= 0 ? "#6f8ea6" : "#c08a80")
+        : (r[1] >= 0 ? "#2f7d5e" : "#b3402f")).reverse() },
+      hovertemplate: "%{y}: %{x:+.3f} pts<extra></extra>"
+    }], L({
+      showlegend: false, bargap: 0.28, margin: { l: 96, r: 18, t: 6, b: 28 },
+      xaxis: { type: "linear", title: { text: "points of NAV", font: { size: 10 } },
+        zeroline: true, zerolinecolor: "#b8c0ca" },
+      yaxis: { type: "category", automargin: true }
+    }), CFG);
+
+    const num = (v, d = 3) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(d)}`;
+    const fr = A.factors.map((f) => `<tr><td>${f.name}<div class="z" style="font-size:.66rem">${
+      f.blurb}</div></td><td class="num">${f.exposure >= 0 ? "" : "−"}${
+      Math.abs(f.exposure).toFixed(2)}</td><td class="num ${cls(f.fret)}">${pp(f.fret, 1)}</td>
+      <td class="num ${cls(f.contrib)}">${num(f.contrib)}</td></tr>`).join("");
+    el("fac-table").innerHTML = `<table class="dtbl"><thead><tr><th>Factor</th>
+      <th class="num">Exposure</th><th class="num">Factor</th><th class="num">Points</th></tr></thead>
+      <tbody>${fr}
+      <tr><td>Cash<div class="z" style="font-size:.66rem">earned on the whole book</div></td>
+        <td class="num z">1.00</td><td class="num z">—</td>
+        <td class="num ${cls(A.cash)}">${num(A.cash)}</td></tr>
+      <tr><td>Costs<div class="z" style="font-size:.66rem">fee and dealing</div></td>
+        <td class="num z">—</td><td class="num z">—</td>
+        <td class="num ${cls(A.costs)}">${num(A.costs)}</td></tr>
+      <tr><td>Unexplained<div class="z" style="font-size:.66rem">what the factors do not account for</div></td>
+        <td class="num z">—</td><td class="num z">—</td>
+        <td class="num ${cls(A.residual)}">${num(A.residual)}</td></tr>
+      <tr class="hl"><td><strong>Net asset value</strong></td><td class="num z">—</td>
+        <td class="num z">—</td><td class="num ${cls(A.total)}">${num(A.total)}</td></tr>
+      </tbody></table>`;
+
+    const byAbs = A.factors.slice().sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
+    const sz = A.factors.find((f) => f.name === "Size"), va = A.factors.find((f) => f.name === "Value");
+    el("fac-read").innerHTML =
+      `<strong>${byAbs[0].name}</strong> is the exposure that mattered most for ${bfund}
+       (${num(byAbs[0].contrib, 2)} points, from an exposure of ${byAbs[0].exposure.toFixed(2)} to a
+       factor that returned ${pp(byAbs[0].fret, 1)}), then <strong>${byAbs[1].name}</strong> at
+       ${num(byAbs[1].contrib, 2)}. On the style dimensions the methodology reserves for PC-22, this
+       book takes essentially no bet: <strong>size ${sz.exposure.toFixed(2)}</strong> and
+       <strong>value ${va.exposure.toFixed(2)}</strong>. Small beat big by ${pp(sz.fret, 1)} and value
+       by ${pp(va.fret, 1)} over the window, so not taking those bets was worth
+       ${num(sz.contrib + va.contrib, 2)} points — a non-decision with a visible price, which is the
+       argument for deciding it deliberately rather than by default.
+       <strong>${num(A.residual, 2)}</strong> is unexplained: vehicle behaviour the thirteen factors
+       do not span, shown rather than folded into them.`;
+  }
+
   function bridgePanel() {
     const B = D.bridge[bfund];
     const lab = (k) => (D.labels && D.labels[k]) ? D.labels[k] : k;
@@ -385,5 +451,5 @@
   }
 
   navCards(); viewChips(); chips(); factsTable(); navChart(); perfTable(); monthlyTable();
-  relTable(); bridgeChips(); bridgePanel(); fundChips(); holdTable(); mandateTable(); disclosure();
+  relTable(); bridgeChips(); facPanel(); bridgePanel(); fundChips(); holdTable(); mandateTable(); disclosure();
 })();
