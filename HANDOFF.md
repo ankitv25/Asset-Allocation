@@ -219,3 +219,15 @@ steps, the launch line actually dashed, x-axis ending on the last price. Magnitu
 hue — identity colours mark which portfolio only (Alpha's registry colour is the loss red).
 The mobile menu toggle was never wired on this page (it does not load `app.js`); it is now.
 Nothing in the payload or the build chain changed; `live.js` renders only what `live_nav.js` publishes.
+
+### Same day — modern skin for Live NAV (scoped to `body.lv-page`)
+
+One palette, each colour with one job: slate for text and structure, one blue (`#2563eb`) for
+magnitude and interaction, emerald/red for gain and loss only, registry identity colours only as the
+marker of which portfolio. Chart colours live in one `P` object in `live.js`. Cards are borderless
+with soft depth; section headers are titles, not numbered chapters; every card's explanatory note
+collapses to two lines with Read more (content unchanged). Measured, not assumed: every text colour
+is ≥ 4.5:1 on every background it sits on (the first draft's faint grey was 2.6:1). Table headers and
+rows that select a portfolio are keyboard-operable. Tooltips carry the series name inside the box —
+Plotly draws a separate `<extra>` name outside it in the series colour, unreadable for pale identity
+colours. Other pages are untouched; the same skin can be widened to them by changing the scope.

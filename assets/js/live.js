@@ -26,15 +26,22 @@
 
   if (!D) { el("appbar-status").textContent = "live_nav.js data missing"; return; }
 
-  const INK = "#1b2733", MUTED = "#6b7783", GRID = "#eef1f5", AXIS = "#e3e8ee";
+  // One palette for the page. Gain/loss are polarity, the accent is magnitude, slate is reference;
+  // identity colours (from the registry) mark which portfolio and nothing else.
+  const P = { ink: "#0f172a", muted: "#64748b", grid: "#eef2f7", axis: "#e2e8f0",
+    gain: "#059669", loss: "#dc2626", gainQuiet: "#9fd3c0", lossQuiet: "#f3b1ab",
+    accent: "#2563eb", ref: "#94a3b8", refLight: "#cbd5e1", zero: "#94a3b8" };
+  const INK = P.ink, MUTED = P.muted, GRID = P.grid, AXIS = P.axis;
   // Magnitude (a weight, a share, a month's return) is drawn in one neutral platform hue. Identity
   // colours mark WHICH portfolio — swatches, lines — and are not reused as bar fills: Alpha's registry
   // colour is the platform's loss red, so its weights and a rising month read as losses.
-  const MAG = "#2f6f9f";
-  const FONT = { family: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", size: 11, color: "#46535f" };
+  const MAG = P.accent;
+  const FONT = { family: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", size: 11, color: "#64748b" };
   const BASE = { font: FONT, margin: { l: 46, r: 14, t: 8, b: 30 }, paper_bgcolor: "transparent",
     plot_bgcolor: "transparent", separators: ".,",
-    hoverlabel: { bgcolor: "#ffffff", bordercolor: "#dbe2ea", font: { size: 11, color: INK }, align: "left" },
+    // Light tooltip on purpose: a dark box leaves the series name outside it in the series colour,
+    // which is unreadable for the pale identity colours.
+    hoverlabel: { bgcolor: "#ffffff", bordercolor: "#cbd5e1", font: { size: 12, color: "#0f172a" }, align: "left" },
     xaxis: { gridcolor: GRID, zeroline: false, linecolor: AXIS, ticks: "", tickfont: { size: 10 } },
     yaxis: { gridcolor: GRID, zeroline: false, linecolor: AXIS, ticks: "", tickfont: { size: 10 } } };
   const CFG = { displayModeBar: false, responsive: true };
@@ -260,7 +267,9 @@
     const dates = D.dates.slice(i0), y = ser(f).slice(i0);
     const r = ser(refName) ? ser(refName).slice(i0) : null;
     const last = dates[dates.length - 1], perLab = period === "SI" ? "since launch" : "last " + period;
-    const hoverName = (n) => `<extra>${n}</extra>`;
+    // The name goes INSIDE the tooltip; as a separate "extra" it is drawn outside the box in the
+    // series colour, unreadable for the pale identity colours.
+    const hoverName = (n) => `  <b>${n}</b><extra></extra>`;
     let tr = [], lay, ann = [];
 
     if (mode === "dd") {
@@ -268,18 +277,18 @@
       const uw = (v) => { let m = -Infinity; return v.map((x) => { m = Math.max(m, x); return x / m - 1; }); };
       const fy = uw(y);
       tr.push({ x: dates, y: fy, name: f, type: "scatter", mode: "lines", fill: "tozeroy",
-        fillcolor: "rgba(120,134,150,0.16)", line: { color: COLOR[f], width: 2 },
+        fillcolor: "rgba(220,38,38,0.08)", line: { color: COLOR[f], width: 2 },
         hovertemplate: "%{y:.2%}" + hoverName(f) });
       if (r) tr.push({ x: dates, y: uw(r), name: refName, type: "scatter", mode: "lines",
-        line: { color: "#8b97a3", width: 1.5, dash: "dot" }, hovertemplate: "%{y:.2%}" + hoverName(refName) });
+        line: { color: P.ref, width: 1.5, dash: "dot" }, hovertemplate: "%{y:.2%}" + hoverName(refName) });
       const lo = Math.min(...fy, ...(r ? uw(r) : [0]));
       lay = { yaxis: { tickformat: ".1%", range: [lo * 1.25, Math.abs(lo) * 0.08], gridcolor: GRID,
-        zeroline: true, zerolinecolor: "#9aa5b1", zerolinewidth: 1 } };
+        zeroline: true, zerolinecolor: P.zero, zerolinewidth: 1 } };
       el("nav-chart-title").textContent = `${f} — fall from its high`;
       el("nav-sub").textContent = `${perLab} · ${dates.length} trading days · reference dotted`;
       const worst = Math.min(...fy), wi = fy.indexOf(worst);
       ann.push({ x: dates[wi], y: worst, text: `<b>${pct(worst, 1)}</b> ${fmtD(dates[wi])}`, showarrow: true,
-        arrowhead: 0, arrowcolor: "#9aa5b1", ax: 0, ay: 22, font: { size: 11, color: INK },
+        arrowhead: 0, arrowcolor: P.zero, ax: 0, ay: 22, font: { size: 11, color: INK },
         bgcolor: "rgba(255,255,255,.9)" });
       el("nav-read").innerHTML = `The deepest fall from a high for <strong>${f}</strong> over this window was
         <strong>${pct(worst, 1)}</strong>, reached on ${fmtD(dates[wi])}; it stands
@@ -293,7 +302,7 @@
       const rr = showRef ? r.map((v) => y[0] * v / r[0]) : null;
       tr.push({ x: dates, y: y, name: f, type: "scatter", mode: "lines",
         line: { color: COLOR[f], width: 2.4, shape: "linear" },
-        fill: showRef ? "none" : "tonexty", fillcolor: "rgba(47,111,159,0.07)",
+        fill: showRef ? "none" : "tonexty", fillcolor: "rgba(37,99,235,0.06)",
         hovertemplate: "%{y:.2f}" + hoverName(f) });
       if (!showRef) {
         // An invisible floor under the line so the area fill stops at the axis rather than at zero.
@@ -302,7 +311,7 @@
           line: { width: 0 }, hoverinfo: "skip", showlegend: false });
       }
       if (showRef) tr.push({ x: dates, y: rr, name: refName + " (rebased)", type: "scatter", mode: "lines",
-        line: { color: "#8b97a3", width: 1.7, dash: "dot" }, hovertemplate: "%{y:.2f}" + hoverName(refName) });
+        line: { color: P.ref, width: 1.7, dash: "dot" }, hovertemplate: "%{y:.2f}" + hoverName(refName) });
       const vals = y.concat(rr || [], [D.nav0]);
       const ax = niceAxis(vals);
       lay = { yaxis: { range: ax.range, dtick: ax.dtick, tickformat: tickFmtFor(ax.dtick) === ".0f" ? ".0f" : ".1f",
@@ -454,16 +463,16 @@
     const mk = (arr, name, color) => ({
       type: "bar", name: name, x: xs, y: arr.map((m) => m.ret), marker: { color: color },
       text: arr.map((m) => pp(m.ret, 1)), textposition: "outside", cliponaxis: false,
-      textfont: { size: 10, color: INK }, hovertemplate: "%{y:+.2%}<extra>" + name + "</extra>" });
+      textfont: { size: 10, color: INK }, hovertemplate: "%{y:+.2%}  <b>" + name + "</b><extra></extra>" });
     const allv = mf.map((m) => m.ret).concat(mr.map((m) => m.ret), [0]);
     const pad = (Math.max(...allv) - Math.min(...allv)) * 0.25 || 0.01;
-    Plotly.react("mm-chart", [mk(mf, f, MAG), mk(mr, ref, "#b8c0ca")], L({
+    Plotly.react("mm-chart", [mk(mf, f, MAG), mk(mr, ref, P.refLight)], L({
       barmode: "group", bargap: 0.35, bargroupgap: 0.08, showlegend: true,
       legend: { orientation: "h", x: 0, y: 1.14, font: { size: 11 } },
       margin: { l: 46, r: 10, t: 28, b: 28 },
       xaxis: { type: "category", showgrid: false },
       yaxis: { tickformat: ".0%", range: [Math.min(...allv) - pad, Math.max(...allv) + pad],
-        zeroline: true, zerolinecolor: "#9aa5b1" }
+        zeroline: true, zerolinecolor: P.zero }
     }), CFG);
     const m2 = Object.fromEntries(mr.map((m) => [m.month, m.ret]));
     el("mm-table").innerHTML = `<table class="dtbl lv-tbl"><thead><tr><th>Month</th><th class="num">${f}</th>
@@ -591,8 +600,8 @@
       type: "waterfall", orientation: "h", y: ys, x: xs, base: D.nav0,
       measure: steps.map(() => "relative").concat(["total"]),
       connector: { line: { color: "#c9d1da", width: 1, dash: "dot" } },
-      increasing: { marker: { color: "#2f7d5e" } }, decreasing: { marker: { color: "#b3402f" } },
-      totals: { marker: { color: COLOR[f] } },
+      increasing: { marker: { color: P.gain } }, decreasing: { marker: { color: P.loss } },
+      totals: { marker: { color: P.accent } },
       text: steps.map((s) => sgn(s[1], 2)).concat([`${(D.nav0 + B.total).toFixed(2)} (${sgn(B.total, 2)})`]),
       // On a phone the values would collide with the category labels; the table beside it has them.
       textposition: narrow("bridge-chart") ? "none" : "outside", cliponaxis: false, textfont: { size: 10, color: INK },
@@ -600,7 +609,7 @@
     }], L({
       showlegend: false, bargap: 0.3, margin: { l: narrow("bridge-chart") ? 120 : 160, r: 70, t: 6, b: 34 },
       xaxis: { type: "linear", range: [lo - pad, hi + pad], title: { text: "NAV per unit — launch at " + D.nav0.toFixed(2), font: { size: 10 } },
-        tickformat: ".1f", showgrid: true, nticks: narrow("bridge-chart") ? 4 : 8 },
+        tickformat: ".1f", showgrid: true, nticks: narrow("bridge-chart") ? 3 : 8, tickangle: 0 },
       yaxis: { type: "category", autorange: "reversed", automargin: true, tickfont: { size: 11 } },
       shapes: [{ type: "line", yref: "paper", y0: 0, y1: 1, x0: D.nav0, x1: D.nav0,
         line: { color: "#8a93a1", width: 1, dash: "dash" } }]
@@ -643,15 +652,15 @@
     Plotly.react("fac-chart", [{
       type: "bar", orientation: "h",
       y: rows.map((r) => r[0]).reverse(), x: rows.map((r) => r[1]).reverse(),
-      marker: { color: rows.map((r) => !r[2] ? (r[1] >= 0 ? "#8fa9bd" : "#cfa39a")
-        : (r[1] >= 0 ? "#2f7d5e" : "#b3402f")).reverse() },
+      marker: { color: rows.map((r) => !r[2] ? (r[1] >= 0 ? P.gainQuiet : P.lossQuiet)
+        : (r[1] >= 0 ? P.gain : P.loss)).reverse() },
       text: rows.map((r) => sgn(r[1], 2)).reverse(), textposition: narrow("fac-chart") ? "none" : "outside", cliponaxis: false,
       textfont: { size: 10, color: INK },
       hovertemplate: "%{y}: %{x:+.3f} pts<extra></extra>"
     }], L({
       showlegend: false, bargap: 0.3, margin: { l: 96, r: 40, t: 6, b: 30 },
       xaxis: { type: "linear", range: [-mx * 1.3, mx * 1.3], title: { text: "points of NAV", font: { size: 10 } },
-        zeroline: true, zerolinecolor: "#9aa5b1" },
+        zeroline: true, zerolinecolor: P.zero },
       yaxis: { type: "category", automargin: true, tickfont: { size: 11 } }
     }), CFG);
 
@@ -716,18 +725,18 @@
     if (rangeBench) BENCH.filter((b) => ser(b)).forEach((b) => tr.push({
       x: dates, y: ser(b).slice(i0),
       name: b, type: "scatter", mode: "lines", line: { color: "#aab3bd", width: 1.3, dash: "dot" },
-      hovertemplate: "%{y:.2f}<extra>" + b + "</extra>" }));
+      hovertemplate: "%{y:.2f}  " + b + "<extra></extra>" }));
     others.concat([fund]).forEach((f) => tr.push({
       x: dates, y: ser(f).slice(i0), name: f, type: "scatter", mode: "lines",
       line: { color: f === fund ? COLOR[f] : hexA(COLOR[f], 0.55), width: f === fund ? 3 : 1.6 },
-      hovertemplate: "%{y:.2f}<extra>" + f + "</extra>" }));
+      hovertemplate: "%{y:.2f}  <b>" + f + "</b><extra></extra>" }));
     const vals = tr.reduce((a, t) => a.concat(t.y), [D.nav0]);
     const ax = niceAxis(vals, 0.12);
     const ends = prep(tr.map((t) => ({ y: t.y[t.y.length - 1], n: t.name, bench: BENCH.includes(t.name) })));
     declutter(ends, ax.range[1] - ax.range[0], 0.055);
     const ann = ends.map((e) => ({
       x: last, y: e.ly, xref: "x", yref: "y", xanchor: "left", xshift: 8, showarrow: false,
-      text: e.bench ? `<span style="color:#8b97a3">${e.n} ${e.y.toFixed(2)}</span>`
+      text: e.bench ? `<span style="color:${P.ref}">${e.n} ${e.y.toFixed(2)}</span>`
         : `<span style="color:${COLOR[e.n]}">■</span> ${e.n === fund ? "<b>" + e.n + " " + e.y.toFixed(2) + "</b>" : e.n + " " + e.y.toFixed(2)}`,
       font: { size: 11, color: INK } }));
     ann.push({ xref: "paper", x: 0, y: D.nav0, xanchor: "left", yanchor: "bottom", showarrow: false,
@@ -769,9 +778,14 @@
   const fundTh = (f) => `<th class="num lv-fh${f === fund ? " lv-sel" : ""}" data-f="${f}" style="--pc:${COLOR[f]}"
     title="Show ${f}"><span class="lv-dot" style="--pc:${COLOR[f]}"></span>${f}</th>`;
   const selCol = (f) => (f === fund ? " lv-sel" : "");
+  // Headers and rows that select a portfolio work from the keyboard too, not only the mouse.
   function bindHeads(host) {
     el(host).querySelectorAll("[data-f]").forEach((n) => {
-      n.onclick = () => { select(n.dataset.f); el("lv-hero").scrollIntoView({ behavior: "smooth", block: "start" }); };
+      const go = () => { select(n.dataset.f); el("lv-hero").scrollIntoView({ behavior: "smooth", block: "start" }); };
+      n.tabIndex = 0; n.setAttribute("role", "button");
+      n.setAttribute("aria-label", `Show ${n.dataset.f}`);
+      n.onclick = go;
+      n.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
     });
   }
 
@@ -955,6 +969,29 @@
       + " · not a custodial record";
   }
 
+  // ---------- notes ----------
+  // The reasoning under each card stays on the page but collapses to two lines with a toggle, so
+  // the numbers lead and the explanation is one click away rather than a wall of prose.
+  function notes() {
+    document.querySelectorAll("main .read").forEach((p) => {
+      let btn = p.nextElementSibling && p.nextElementSibling.classList.contains("lv-more") ? p.nextElementSibling : null;
+      p.classList.add("lv-clamp");
+      const open = p.classList.contains("open");
+      p.classList.remove("open");
+      const long = p.scrollHeight > p.clientHeight + 2;
+      if (open) p.classList.add("open");
+      if (!long) { if (btn) btn.remove(); return; }
+      if (!btn) {
+        btn = document.createElement("button"); btn.className = "lv-more"; btn.type = "button";
+        btn.onclick = () => { p.classList.toggle("open"); const o = p.classList.contains("open");
+          btn.textContent = o ? "Show less" : "Read more"; btn.setAttribute("aria-expanded", String(o)); };
+        p.insertAdjacentElement("afterend", btn);
+      }
+      btn.textContent = p.classList.contains("open") ? "Show less" : "Read more";
+      btn.setAttribute("aria-expanded", String(p.classList.contains("open")));
+    });
+  }
+
   // ---------- layout: charts take the height their neighbour needs ----------
   // A chart beside a long table or a taller tile otherwise leaves a block of empty panel under it.
   function fitChart(id, target, min, max) {
@@ -968,13 +1005,20 @@
     const nav = el("nav-chart"), navTile = nav && nav.closest(".tile"), side = navTile && navTile.nextElementSibling;
     if (side) fitChart("nav-chart", nav.offsetHeight + side.offsetHeight - navTile.offsetHeight, 400, 640);
     // Attribution charts match the table they sit beside.
+    // ...but bar thickness stays constant: a taller chart gets wider gaps, not fatter bars.
     ["bridge", "fac"].forEach((k) => {
-      const t = el(k + "-table");
+      const t = el(k + "-table"), c = el(k + "-chart");
       if (t) fitChart(k + "-chart", t.offsetHeight, 340, 900);
+      if (c && c.data && c.data[0]) {
+        const rows = (c.data[0].y || []).length || 1;
+        const band = (c.offsetHeight - 40) / rows;
+        const gap = Math.max(0.25, Math.min(0.72, 1 - 22 / band));
+        Plotly.relayout(c, { bargap: gap });
+      }
     });
   }
   let fitT;
-  window.addEventListener("resize", () => { clearTimeout(fitT); fitT = setTimeout(fitAll, 150); });
+  window.addEventListener("resize", () => { clearTimeout(fitT); fitT = setTimeout(() => { notes(); fitAll(); }, 150); });
 
   // ---------- orchestration ----------
   // Each panel runs independently. They were once one statement: when one threw, every panel after it
@@ -991,12 +1035,12 @@
   function run(list, broke) {
     list.forEach(([name, fn]) => { try { fn(); } catch (e) { if (broke) broke.push(name); console.error("[live] " + name + ":", e); } });
   }
-  function renderProduct() { run(PRODUCT); syncNav(); try { fitAll(); } catch (e) { console.error(e); } }
-  function renderRangeSelection() { run(RANGE_SEL); }
+  function renderProduct() { run(PRODUCT); syncNav(); try { notes(); fitAll(); } catch (e) { console.error(e); } }
+  function renderRangeSelection() { run(RANGE_SEL); try { notes(); } catch (e) { console.error(e); } }
 
   const broke = [];
   run(ONCE, broke); run(PRODUCT, broke); run(RANGE_SEL, broke); syncNav();
-  try { fitAll(); } catch (e) { console.error("[live] layout:", e); }
+  try { notes(); fitAll(); } catch (e) { console.error("[live] layout:", e); }
   if (broke.length && el("status-footer")) {
     el("status-footer").textContent =
       `Error: ${broke.length} panel(s) failed to render — ${broke.join(", ")}.`;
