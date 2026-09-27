@@ -1826,15 +1826,19 @@ function mountProvenance(d) {
 // (Src/style_box.py); descriptive only, it sets no target or limit.
 function renderStyleBox(sb) {
   if (!el("stylebox-grid")) return;
-  let mode = "weight";                                    // weight | active
+  let mode = "weight";                                    // weight | active | paid
+  // `paid` is only offered once style_box.py has priced the corners over the live NAV window. The box
+  // said where the sleeve sits; it could not say what sitting there was worth.
+  const priced = !!(sb.live && sb.live.corner_returns && sb.live_contrib);
 
-  const cell = (i, j) => (mode === "weight" ? sb.grid[i][j] : sb.active[i][j]);
+  const cell = (i, j) => (mode === "weight" ? sb.grid[i][j]
+    : mode === "active" ? sb.active[i][j] : sb.live_contrib[i][j]);
   const shade = (v) => {
     if (mode === "weight") {
       const a = Math.min(Math.abs(v) / 70, 1);
       return `rgba(48,131,180,${(0.06 + a * 0.82).toFixed(3)})`;
     }
-    const a = Math.min(Math.abs(v) / 25, 1);
+    const a = Math.min(Math.abs(v) / (mode === "active" ? 25 : 0.25), 1);
     return v >= 0 ? `rgba(47,125,94,${(0.05 + a * 0.75).toFixed(3)})`
                   : `rgba(192,57,43,${(0.05 + a * 0.75).toFixed(3)})`;
   };
@@ -1844,11 +1848,15 @@ function renderStyleBox(sb) {
       <div class="sbx-rowlab">${sz}</div>` + sb.styles.map((st, j) => {
         const v = cell(i, j);
         const dom = sb.dominant && sb.dominant[0] === i && sb.dominant[1] === j;
-        const strong = Math.abs(v) >= (mode === "weight" ? 28 : 12);
+        const strong = Math.abs(v) >= (mode === "weight" ? 28 : mode === "active" ? 12 : 0.12);
+        const cr = priced ? sb.live.corner_returns[i][j] : null;
         return `<div class="sbx-cell${dom ? " sbx-dom" : ""}" style="background:${shade(v)};
             color:${strong ? "#fff" : "#1b2733"}"
-            title="${sz} ${st} — ${sb.corners[sz + "/" + st] || ""}">
-          <span class="sbx-v">${mode === "active" && v > 0 ? "+" : ""}${v.toFixed(1)}<i>%</i></span>
+            title="${sz} ${st} — ${sb.corners[sz + "/" + st] || ""}${cr === null ? "" :
+              ` · the box itself returned ${cr >= 0 ? "+" : "−"}${Math.abs(cr).toFixed(2)}% since launch`}">
+          <span class="sbx-v">${mode === "paid"
+            ? `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}<i>pts</i>`
+            : `${mode === "active" && v > 0 ? "+" : ""}${v.toFixed(1)}<i>%</i>`}</span>
           <span class="sbx-c">${sz} ${st}</span>
         </div>`;
       }).join("")).join("");
@@ -1859,8 +1867,26 @@ function renderStyleBox(sb) {
         ${rows}
       </div>`;
     if (el("stylebox-read")) {
+      const paidRead = () => {
+        const R = sb.live.corner_returns, S = sb.sizes, T = sb.styles;
+        const flat = [];
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+          if (R[i][j] === R[i][j]) flat.push([S[i] + " " + T[j], R[i][j]]);
+        }
+        flat.sort((a, b) => b[1] - a[1]);
+        const hi = flat[0], lo = flat[flat.length - 1];
+        const sgn = (x, d = 2) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(d)}`;
+        return `Points of NAV each box contributed since ${sb.live.meta.start}: the sleeve's weight `
+          + `times the box's weight times what that box returned. The nine did not move together — `
+          + `<strong>${hi[0]}</strong> returned ${sgn(hi[1])}% and <strong>${lo[0]}</strong> `
+          + `${sgn(lo[1])}%, a spread of ${(hi[1] - lo[1]).toFixed(1)} points while the total market `
+          + `did ${sgn(sb.live.meta.market)}%. This sleeve sits where its index vehicles put it, and `
+          + `that unchosen position was worth <strong>${sgn(sb.live_total)}</strong> points. PC-22, `
+          + `the tilt layer the methodology reserves for this dimension, is still unbuilt.`;
+      };
       el("stylebox-read").innerHTML = mode === "weight"
         ? sb.narrative
+        : mode === "paid" ? paidRead()
         : `Active against the <strong>${sb.market.name}</strong>, cell by cell. Green is overweight, `
           + `red underweight. The whole range holds only large-cap trackers, so the visible bet is a `
           + `<strong>${sb.size_active >= 0 ? "+" : ""}${sb.size_active.toFixed(2)}</strong> size tilt `
@@ -1892,7 +1918,8 @@ function renderStyleBox(sb) {
   if (el("stylebox-toggle")) {
     el("stylebox-toggle").innerHTML =
       `<button class="chip sel" data-m="weight">Style mix</button>` +
-      `<button class="chip" data-m="active">Active vs market</button>`;
+      `<button class="chip" data-m="active">Active vs market</button>` +
+      (priced ? `<button class="chip" data-m="paid">What it paid</button>` : "");
     el("stylebox-toggle").querySelectorAll(".chip").forEach(b => {
       b.onclick = () => {
         mode = b.dataset.m;

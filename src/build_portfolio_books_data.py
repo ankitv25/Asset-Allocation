@@ -1027,7 +1027,8 @@ def build_one(key, R, cash, suite, nav_live, corr_panel):
         sb = dict(f_, sizes=STYLE['sizes'], styles=STYLE['styles'],
                   window=STYLE['window'], n_months=STYLE['n_months'],
                   market=STYLE['market'], corners=STYLE['corners'],
-                  method=STYLE['method'], limitation=STYLE['limitation'])
+                  method=STYLE['method'], limitation=STYLE['limitation'],
+                  live=STYLE.get('live'))
         d_ = f_['dominant']
         _mg = STYLE['market']['grid']
         _mkt_size = sum(_mg[0]) / 100 - sum(_mg[2]) / 100
