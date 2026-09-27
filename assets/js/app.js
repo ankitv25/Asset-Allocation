@@ -242,12 +242,17 @@ function initNav() {
 initNav();
 
 async function load() {
-  // Prefer the embedded global (data/portfolio.js) so the page works by
-  // double-click (file://). Fall back to fetch when served over http.
+  // The payload is an embedded global so the page works by double-click (file://) — there is no
+  // fetch. A page that ships a payload script MUST have the global: if it does not, the script
+  // failed to load and rendering anything would render the wrong book, so fail loudly.
   if (window.PORTFOLIO_DATA) return window.PORTFOLIO_DATA;
-  const r = await fetch("data/portfolio.json");
-  if (!r.ok) throw new Error(`portfolio.json ${r.status}`);
-  return r.json();
+  if (document.querySelector('script[src*="portfolio_books"]')) {
+    throw new Error("payload script did not load (data/portfolio_books.js)");
+  }
+  // A page with no payload script is static copy — Methodology is one. It used to fall back to
+  // fetching the legacy single-book data/portfolio.json, which OVERWROTE that page's own static KPI
+  // ribbon with a portfolio's numbers. That file is no longer published; nothing here needs it.
+  return null;
 }
 
 // ---------------- KPIs ----------------
@@ -1907,6 +1912,7 @@ function renderStyleBox(sb) {
 async function main() {
   try {
     const d = await load();
+    if (!d) return;                       // static page, nothing data-driven to render
     if (el("appbar-status")) el("appbar-status").textContent = `as of ${d.decision_month}`;
     if (el("kpi-ribbon")) renderKpis(d);
     if (el("alloc-donut")) renderAllocation(d.positioning);
