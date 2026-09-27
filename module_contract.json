@@ -1,0 +1,161 @@
+{
+  "_doc": "Element-id -> payload-path contract. If a page carries the element, every portfolio payload must carry the path, or the tile renders blank and silent. app.js guards optional modules with `if (d.x)`, which throws nothing -- this file is what makes that class of loss visible. Verified by Src/verify_dashboard.py.",
+  "elements": {
+    "kpi-ribbon": [
+      "kpis"
+    ],
+    "alloc-donut": [
+      "positioning.weights"
+    ],
+    "pos-board": [
+      "positioning.bets",
+      "construction.blocks"
+    ],
+    "holdings-treemap": [
+      "construction.sleeves"
+    ],
+    "sleeve-evidence": [
+      "construction.sleeves",
+      "positioning.weights"
+    ],
+    "universe": [
+      "construction.universe"
+    ],
+    "constraint-chart": [
+      "construction.constraints"
+    ],
+    "cons-drill-donut": [
+      "construction.sleeves"
+    ],
+    "vol-gauge": [
+      "risk.forecast_vol"
+    ],
+    "corr-heatmap": [
+      "diversification.matrix",
+      "diversification.labels"
+    ],
+    "nav-chart": [
+      "track_record.nav",
+      "track_record.metrics"
+    ],
+    "cmp-metrics": [
+      "comparison.metrics"
+    ],
+    "growth-chart": [
+      "comparison.series"
+    ],
+    "roll-ret-chart": [
+      "comparison.rolling"
+    ],
+    "perf-attr-sleeve-table": [
+      "attribution.return_attr.sleeves"
+    ],
+    "risk-detail-narrative": [
+      "risk_detail.narrative"
+    ],
+    "risk-detail-stats": [
+      "risk_detail"
+    ],
+    "sleeve-risk-table": [
+      "risk_detail"
+    ],
+    "block-risk-chart": [
+      "risk_detail"
+    ],
+    "saa-daa-risk-chart": [
+      "risk_detail"
+    ],
+    "risk-drill-donut": [
+      "risk.risk_by_sleeve"
+    ],
+    "stress-chart": [
+      "stress.episodes"
+    ],
+    "fwd-scenario-chart": [
+      "stress_forward.scenarios"
+    ],
+    "fwd-narrative": [
+      "stress_forward.narrative"
+    ],
+    "fwd-pick": [
+      "stress_forward.scenarios"
+    ],
+    "fwd-detail-chart": [
+      "stress_forward.scenarios"
+    ],
+    "custom-sliders": [
+      "stress_forward.factors",
+      "stress_forward.betas"
+    ],
+    "custom-chart": [
+      "stress_forward.sleeve_blocks"
+    ],
+    "attr-layer-chart": [
+      "attribution.active_attr.layers"
+    ],
+    "attr-cum-chart": [
+      "attribution.active_attr.cumulative"
+    ],
+    "attr-tilt-chart": [
+      "attribution.timeline.series"
+    ],
+    "attr-drill-chart": [
+      "attribution.return_attr.cumulative"
+    ],
+    "matrix-scatter": [
+      "matrix.scatter"
+    ],
+    "matrix-grid": [
+      "matrix.grid",
+      "matrix.columns"
+    ],
+    "matrix-read": [
+      "matrix.narrative"
+    ],
+    "mc-fan": [
+      "monte_carlo.fan"
+    ],
+    "holdings-table": [
+      "construction.sleeves"
+    ],
+    "hero-verdict": [
+      "track_record.verdict"
+    ],
+    "scenario-strip": [
+      "scenarios.map"
+    ],
+    "stylebox-grid": [
+      "style_box.grid",
+      "style_box.active"
+    ],
+    "stylebox-stats": [
+      "style_box.size_score",
+      "style_box.r2"
+    ],
+    "stylebox-read": [
+      "style_box.narrative"
+    ]
+  },
+  "stale_vocabulary": {
+    "_doc": "Page copy frozen at an earlier era. Each entry is a regex that must not appear in a page the selector drives, because the copy would describe a product other than the one on screen. HTML comments are stripped before matching.",
+    "patterns": [
+      "the three (books|versions|candidates)",
+      "best of the three",
+      "three versions vs",
+      "Four mandates",
+      "Full System",
+      "nothing here is live-approved",
+      "every version is in-sample",
+      "SPY.satellite",
+      "DAA (vs|minus) SAA",
+      "SAA (vs|->|\u2192) DAA",
+      "the dynamic book \\(DAA\\)",
+      "\\(DAA\\)",
+      "\\(SAA\\)",
+      "DAA / SAA",
+      "DAA vs SAA",
+      "static (strategic )?policy \\(SAA\\)",
+      "approved budget"
+    ]
+  }
+}

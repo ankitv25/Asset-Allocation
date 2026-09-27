@@ -1,255 +1,186 @@
-# Multi-Asset Portfolio Analytics Platform
+# Summer Portfolio Platform — five products, one renderer
 
 > Part of the multi-asset research platform → **[ankitv25.github.io](https://ankitv25.github.io)**
-
-An institutional portfolio-analytics dashboard for a regime-aware, multi-asset
-strategy. It is **interpretation-first**: every page leads with a generated
-read-through (computed from the numbers, never hardcoded prose) and uses charts
-as evidence, not decoration.
+> · regime backbone: **[Macro-Regime-Score](https://github.com/ankitv25/Macro-Regime-Score)**
 
 **Live:** https://ankitv25.github.io/Asset-Allocation/
-**Source of truth:** the private research repo, `Research/Portfolio_Construction/dashboard/`.
-Opens by double-click (`file://`) — data is embedded (`data/portfolio.js`) and
-Plotly is vendored locally; no fetch / CDN / ES-modules.
+
+An institutional multi-asset platform for **five portfolios** — Certain · Endowment · SAA · DAA ·
+Alpha — each with its own sleeve set, its own construction constraints and its own benchmark. Eleven
+pages, all interpretation-first: every page leads with a read-through computed from the numbers, and
+uses charts as evidence rather than decoration.
+
+This repository is the **published mirror**: the site that is served, the code that builds it, the
+methodology it implements, and the current engineering handoff. The private research repo remains the
+source of truth — see [What is here, and what is not](#what-is-here-and-what-is-not).
 
 ---
 
-## The platform (8 pages)
+## The five products
 
-| Page | Answers | Highlights |
-|---|---|---|
-| **Overview** | What is the book doing, and why? | lead **insight banner** (generated), allocation, positioning, **enlarged construction view + sleeve-thesis evidence cards**, vol-budget component, diversification, **date-picker Growth-of-$1**, stress |
-| **Construction** | How is it built, bottom-up? | universe → **full-width sleeve hierarchy → evidence-card thesis** → BL optimization → constraint bands → strategic→dynamic bridge |
-| **Holdings** | What exactly do I own? | **sortable / searchable / CSV-exportable instrument blotter** with per-line rationale + a **data-vintage panel** |
-| **Performance** | Has it worked? | SAA vs DAA + benchmarks, **true date-picker Growth-of-$1 rebase**, drawdown, rolling 12m metrics |
-| **Attribution** | Where did return/risk come from? **What did the dynamic process add?** | layer waterfall, **attribution over time** (cumulative active + growth-tilt decision log), market-state/sleeve/risk/benchmark attribution, **9×9 matrix** |
-| **Risk** | What risk am I taking? | **vol-budget thermometer**, MCTR, concentration, block & SAA-vs-DAA risk, **enlarged correlation/diversification** |
-| **Stress** | How does it behave in crises? | historical episodes, forward factor-shock scenarios, interactive custom builder |
-| **Monte Carlo** | What is the *range* of outcomes? | 10k block-bootstrap paths (DAA/SAA/60-40), **probability bands**, terminal-value & drawdown **distributions**, **target-outcome probabilities** |
+Each fund declares its own sleeve set. A holding a fund does not believe in is bounded to zero rather
+than left for the optimiser to discover — which is why the table below is mostly dashes.
 
-SAA = static strategic policy. DAA = full dynamic system (regime overlay +
-tactical tilts + risk budget). The platform's central question, answered on the
-Attribution page: **what did the dynamic allocation process add beyond the
-strategic policy?**
+| | Horizon | Role | Reference | Run |
+|---|---|---|---|---|
+| **Certain** | 3+ years | Capital preservation — purchasing power first | ACWI 40 / Agg 60 | static |
+| **Endowment** | 10+ years | Long-horizon real-asset tier | ACWI 60 / Agg 40 | static |
+| **SAA** | 20+ years | House policy portfolio — the strategic anchor | ACWI 80 / Agg 20 | static |
+| **DAA** | 20+ years | The policy portfolio run actively | ACWI 80 / Agg 20 | active |
+| **Alpha** | 10+ years | Equity-level risk, run actively | S&P 500 | active |
 
----
+| Holding (%) | Certain | Endowment | SAA | DAA |
+|---|---:|---:|---:|---:|
+| US equity | 9.0 | 23.5 | 35.0 | 35.9 |
+| Developed ex-US equity | 5.0 | 4.5 | 7.0 | 8.4 |
+| Emerging-market equity | – | 6.0 | 9.0 | 10.4 |
+| US Treasuries (intermediate) | 22.0 | 8.0 | 6.0 | 3.7 |
+| US Treasuries (long) | – | 15.0 | 20.0 | 17.1 |
+| IG corporate credit | 8.0 | 5.0 | – | – |
+| TIPS | 16.0 | 8.0 | – | – |
+| Listed real estate | – | 4.0 | – | – |
+| Listed infrastructure | – | 7.0 | – | – |
+| Broad commodities | 4.0 | 5.0 | 3.0 | 4.0 |
+| Gold | 7.0 | 8.0 | 8.0 | 8.8 |
+| Managed futures (trend) | – | – | 8.0 | 7.4 |
+| Swiss franc | 3.0 | – | – | – |
+| Cash (T-bills) | 26.0 | 6.0 | 4.0 | 4.3 |
 
-## Current status / session handoff (2026-06-24, usability audit + recent-first headline)
+Alpha is equity-led against the S&P 500 and carries its own ~14% volatility budget rather than the
+policy portfolio's; its book is in the build record. DAA and Alpha are the two actively run books —
+they re-read five engines (valuation from a live CMA, trend, relative strength, regime, and the size
+of the diversifier sleeve) at each month end.
 
-Acting on owner feedback (clipping/scale/readability + "don't headline decades of history").
+### Record — a backtest of today's weights, 1997–2026
 
-- **Recent-first headline.** The portfolio's *current* construction is what's being evaluated,
-  so the default headline is now **Since 2022** (7.5% CAGR · 10.3% vol · max DD −15.1%, vs
-  60/40 −17.0% — the live book actually beats 60/40 on drawdown in its design era). A
-  **performance-window toggle** (Since 2022 · 3Y · 5Y · Full history) under the KPI ribbon
-  re-renders the headline KPI, hero highlights and the Growth-of-$1 rebase together. Full
-  history (incl. the authoritative rf-based Sharpe 0.56) stays one click away for validation.
-  Recent-window CAGR/vol/max-DD/growth are risk-free-independent and computed exactly client-side.
-- **Growth-of-$1 scale fixed.** It was defaulting to a log scale over 18 years, whose SI tick
-  labels rendered as "$10M"-style nonsense. Now **linear by default** with clean `$` ticks
-  (`exponentformat:"none"`), rebased to the recent window, rangeslider dropped (redundant with
-  the date picker); log is still a toggle. Endpoint callouts shortened to the $-value (names
-  in the legend) so they no longer clip the right edge.
-- **Sleeve thesis cards** rebuilt: cleaner header/metric/holdings-chips/rationale layout, and
-  **the whole card is now clickable** → opens that sleeve's drill-down on the Construction page
-  (`#slv=` deep link, auto-scrolled).
-- **Holdings composition donut overlap fixed** — explicit pie domain + reserved legend area so
-  the legend never sits on the donut in the narrow column.
-- **Commentary added** to previously abstract charts: Rolling-12m 3-up and Calendar-year returns
-  now carry a generated read with the takeaway.
+Not the live track record. These are **today's** weights carried back over history, net of dealing
+costs and a 15bp annual fee, from the build record
+`validation/fund_suite_v6/fund_suite_v6.json` (2026-09-20). The funds' actual track record starts
+15 July 2026 and is on the [Live NAV](https://ankitv25.github.io/Asset-Allocation/live.html) page.
 
----
+| | CAGR | Vol | Sharpe | Worst loss |
+|---|---:|---:|---:|---:|
+| Certain | 4.94 | 4.1 | 0.67 | −10.0 |
+| Endowment | 7.28 | 8.1 | 0.64 | −24.3 |
+| SAA | 7.81 | 8.8 | 0.65 | −25.5 |
+| DAA | 8.09 | 8.3 | 0.72 | −20.8 |
+| Alpha | 9.34 | 13.5 | 0.57 | −44.0 |
+| ACWI 40 / Agg 60 | 6.04 | 7.3 | 0.54 | −23.6 |
+| ACWI 60 / Agg 40 | 6.94 | 10.0 | 0.50 | −35.6 |
+| ACWI 80 / Agg 20 | 7.73 | 13.0 | 0.47 | −46.1 |
+| S&P 500 | 9.69 | 15.4 | 0.54 | −50.8 |
+| MSCI ACWI | 8.41 | 16.0 | 0.45 | −55.0 |
 
-## Prior status / session handoff (2026-06-24, graph storytelling — on-chart annotations)
+### Live NAV
 
-Following the storytelling/graph audit (`../docs/audits/Dashboard_Storytelling_Graph_Audit_2026-06-24.md`),
-the audit's #1 lift — **put the punchline on the chart** — is now a reusable `app.js` standard:
-
-- **Crisis bands** (`crisisOverlay`) — faint red GFC / COVID / 2022 bands, clipped to the
-  visible window and labelled once, on every time-axis line: Growth-of-$1 (+ drawdown),
-  rolling 12m, cumulative active value-add (Performance + Attribution), cumulative
-  contribution by sleeve. Each line now reads against the episodes the book is built to survive.
-- **Endpoint callouts** (`endpointLabel`) — a bordered "DAA $2.34" marker at each series'
-  last point (rank-sorted to avoid overlap) on Growth-of-$1 and the cumulative-active charts.
-- **Reference lines** (`refLine`) — the "budget line" pattern: a dotted DAA through-cycle
-  average on the rolling-vol panel, and a **breakeven $1** marker + labelled medians on the
-  Monte Carlo terminal-value histogram.
-
-The rest of the audit is now **fully discharged**:
-- **One number voice** — `fmtSign` / `fmtBp` / `fmtUsd` (real − glyph, explicit +, one
-  place for unit + decimals) route the signed chart text, stat tiles, stress table, hero,
-  Overview insight and Monte-Carlo dollar columns; precision unchanged.
-- **Tighter reads** — Allocation / stress / risk-drill / attribution-drill reads cut to a
-  single claim → number → so-what sentence.
-- **Ranked-bar toggle** — `donut()` flips between donut and a ranked horizontal bar
-  (Allocation, Holdings); click-to-drill works in both modes.
-- **Benchmark ghost** — Performance underwater chart draws a faint 60/40 drawdown behind
-  the book (+ crisis bands) so the shallower-tail claim is visual.
+All five launched **15 July 2026 at NAV 100.00 per unit**, priced daily from dividend-adjusted market
+closes, net of a 15bp annual fee and 10bp per side. The NAV is recomputed from inception on every run
+rather than appended, and ingestion **exits** if any vehicle is missing prices or a day's weights do
+not sum to 1 — see [UPDATING.md](UPDATING.md) for why that check is not theoretical.
 
 ---
 
-## Prior status / session handoff (2026-06-24, iteration 6 — experience elevation)
-
-A presentation-layer pass to match the depth of the analytics, plus a depth pass on
-the two pages that were thinnest.
-
-- **Design system / story spine** — a global elevation in `style.css`: wider denser
-  canvas, refined app-bar + active-pill nav, accent-railed KPI strip, polished tiles
-  (title tick, hover lift), and two reusable patterns: a **`.hero` verdict band**
-  (regime→stance + the comparisons that matter) and **numbered `.section-head` chapters**.
-  The Overview now reads as a guided story (01 Positioning → 06 Resilience).
-- **Monte Carlo, deepened into a complete area** — added **sample-path dispersion**
-  (spaghetti, strategy toggle), a **cross-strategy median+cone comparison**, and a
-  **bull/base/bear + CVaR scenario table**. Engine emits `sample_paths` + `scenarios`.
-  Honest story sharpens: DAA's bear case ends **$1.21 vs SAA $0.98**; worst-5% tail
-  **$1.06 vs $0.79**.
-- **Performance, deepened** — new "Where the return came from" section: per-sleeve
-  **contribution table** (avg weight × return, additive, reconciles to total), an
-  **asset-class** breakdown (Equity / Fixed Income / Real Assets / Cash), **cumulative
-  contribution by sleeve**, and **cumulative active value-add (DAA vs SAA) over time**.
-- **Growth-number consistency fix** — the Outlook scenario strip used the raw PC16
-  `STANCE_MATRIX` (Neutral = 69.4% growth), contradicting the live book's 55.3%
-  (the live engine runs off a BL-anchored ~52% baseline, not PC16). `build_scenarios`
-  now anchors the map to the live book and expresses regimes as stance *deltas*, so the
-  current regime reads **55.3%** like everywhere else; the attribution-timeline hover no
-  longer surfaces the backtest's absolute growth.
-
----
-
-## Prior status / session handoff (2026-06-23, iteration 5)
-
-**Built this session (iteration 5)** — completing the documented roadmap:
-- **Monte Carlo page** (new `montecarlo.html`, 8th page) + engine
-  `Src/portfolio_monte_carlo.py`: 10,000-path **stationary block bootstrap**
-  (6-month blocks) of the realised monthly returns, **paired** across DAA/SAA/60-40
-  so cross-strategy probabilities are coherent. Surfaces **probability bands**
-  (5–95% / 25–75% fan, strategy toggle), terminal-value & worst-drawdown
-  **distributions**, and **target-outcome probabilities** (P(2x), P(loss),
-  P(DD>20%)). Honest result, consistent with the rest of the platform: DAA's
-  median outcome ≈ SAA's, but it **halves the probability of a >20% drawdown
-  (31% vs 59%)** — the edge is the left tail, not the median.
-- **Attribution over time** (Attribution page): cumulative active value-add and
-  a **growth-tilt decision log** (DAA−SAA growth weight, month by month, with
-  adverse-regime shading) — shows the stance cutting growth −25/−30pp into 2008,
-  2020, 2022. From a new `timeline` block in the attribution engine (reconciliation
-  still PASS).
-
-**Still open (future):** deeper per-episode stress narratives + scenario libraries ·
-fixed-income analytics (duration/curve/credit) · CRSP/WRDS data-tier · owner gates
-G-2 (CMA sign-off + valuation feed) / G-4 (real cash series).
-
----
-
-## Prior status / session handoff (2026-06-23, iteration 4)
-
-**Built this session (iteration 4)** — continuing the documented roadmap + a UX/quality pass:
-- **Working mobile navigation** — a hamburger toggle opens a full-width dropdown nav
-  (previously `.appnav` was simply hidden ≤1000px, leaving no way to switch pages).
-  KPI ribbon drops to 2 columns and the appbar de-clutters on narrow screens.
-- **True date-picker Growth-of-$1** — a real `<input type=date>` (plus quick chips)
-  **rebases every series to $1 from the chosen date**; refactored into one reusable
-  `mountRebaseGrowth` used on both Performance and the Overview (the Overview chart
-  was previously raw, non-rebasing NAV).
-- **Holdings blotter** (new `holdings.html`) — sortable / searchable / **CSV-export**
-  instrument-level book with per-line rationale + a **data-vintage panel**. Built
-  from data already in `portfolio.json` (no pipeline rerun).
-- **Insight-first pass** — every page now opens with a `page-intro` (the question it
-  answers) and, on Overview/Construction/Holdings, a generated **insight banner**
-  (interpretation before charts). Charts sized up (`chart-md` 250→290, etc.).
-- **Sleeve thesis redesigned as evidence cards** (MRS Pillar-Evidence style): two rows
-  of weight · live-tilt · key-holdings · rationale, moved **below** an **enlarged
-  full-width construction treemap** (`chart-tree-xl`, 560px) on Overview + Construction.
-- **Volatility-vs-budget redesigned** — a purpose-built thermometer component
-  (forecast vs budget zones, utilisation %, headroom, binding flag) replacing the
-  placeholder Plotly gauge.
-- **Correlation/diversification given more weight** — enlarged feature tile on Risk + Overview.
-- **Data-consistency fix (correctness):** `growth_weight` now derives from the governed
-  `SLEEVE_BLOCK` (registry) source of truth — Real Assets is a *Diversifier*, so the
-  headline "growth assets %" reconciles exactly with the block bar (**61.5% → 55.3%**).
-  Fixed in `Src/build_portfolio_dashboard_data.py`; data regenerated.
-
-**Still open (roadmap, not done this session):** attribution *over time* (decision-log
-time series / per-month drill-down) · deeper per-episode stress narratives + scenario
-libraries · fixed-income analytics (duration/curve/credit) · **Monte Carlo** (10k paths,
-SAA & DAA, probability bands, drawdown & target-probability — future enhancement) ·
-**push iteration 4 to the public `ankitv25/Asset-Allocation` Pages repo** (needs a local
-clone + auth — see "Refresh + deploy").
-
----
-
-## Prior status / session handoff (2026-06-23, iteration 3)
-
-**Built this session**
-- **Attribution Engine 3** (`Src/portfolio_attribution.py`) — return, risk,
-  sleeve, asset-class, **SAA-vs-DAA** (by sleeve *and* by dynamic layer),
-  benchmark-relative (factor lens), and regime/market-state attribution. One
-  exact additive framework; reconciliation asserted in code. Reports in
-  `reports/attribution/`.
-- **Attribution page** (`attribution.html`) — surfaces the engine: a value-add
-  **waterfall** (regime / tilt / risk-budget / cost / compounding → net active),
-  active-by-sleeve, return & risk attribution, a market-state bar (where the
-  value is earned), and benchmark-relative bars.
-- **9×9 cross-sectional matrix** — risk-return scatter (bubble = max drawdown) +
-  a heat-shaded metric grid placing SAA, DAA, S&P 500, 60/40, Equal-Weight and
-  All-Equity on the same axes.
-- **Rebased Growth-of-$1** — pick any start date and the series **rebase to $1**
-  from that point (not just pan the timeline); log/linear toggle.
-- **Design** — page intros with the question each page answers, feature-tile
-  accents, wider layout on large screens, KPI ribbon fitted to content.
-- **Methodology correction (flagged):** the backtest now charges the static
-  benchmarks (SAA, 60/40) their **real rebalancing turnover** instead of a flat
-  2bp/month proxy that overstated their cost ~3.4×. Effect: SAA Sharpe 0.44→0.46,
-  60/40 0.63→0.65; **FullSystem unchanged**. The DAA-vs-SAA active is now a
-  consistent **+18bp/yr** (compound, net) — its value is drawdown reduction
-  (~38%→~20% max DD), not a return premium. See
-  `docs/handoffs/Attribution_Engine_Handoff.md`.
-
-**Key numbers (net of cost, 2008–2026)**
-- DAA: 7.1% CAGR · 10.2% vol · 0.57 Sharpe · **−19.7% max DD** (best tail of any option).
-- DAA vs SAA: +0.10 Sharpe, **−18pp max DD**, +18bp/yr compound active.
-- DAA vs 60/40: −0.9%/yr (a lower-equity-beta / US-dominance reality, not a layer fix).
-
-**What the next build should do**
-1. **Holdings blotter** — sortable/exportable instrument-level book (weights,
-   P&L contribution) with a data-vintage panel.
-2. **Attribution over time** — a decision-log time series (how stance/tilts
-   evolved) and per-month attribution drill-down, not just full-window.
-3. **Deeper stress narratives** — per-episode "what happened / which sleeves lost
-   / which protected / the recovery", and forward scenario libraries.
-4. **Fixed-income analytics** — duration / curve / credit decomposition.
-5. **Benchmark & window selectors**; stronger mobile responsiveness.
-
-**Open owner gates (before live capital)** — G-2 (CMA sign-off + live valuation
-feed), G-4 (real cash series), Yahoo→CRSP data-tier, and confirm the corrected
-static-benchmark cost basis above.
-
----
-
-## Files
+## Three layers, eleven pages
 
 ```
-dashboard/
-  index.html  construction.html  performance.html
-  attribution.html  risk.html  stress.html      # 6 pages, shared header/nav
-  assets/css/style.css                           # institutional design system
-  assets/js/app.js                               # page-aware; renderers guarded by element id
-  assets/vendor/plotly.min.js                    # vendored (offline)
-  data/portfolio.js  data/portfolio.json         # generated payload (data + narrative)
-  .nojekyll  README.md
+RANGE      portfolios.html        which of the five, and why — the cards are the entry points
+  │
+PRODUCT    index.html?p=<key>     what THIS portfolio is
+  │
+ANALYSIS   7 deep pages ?p=<key>  prove it
 ```
 
-## Refresh + deploy
+| Page | Answers |
+|---|---|
+| **Portfolios** | Which of the five, and why — the range, side by side |
+| **Overview** | What is this portfolio doing, and why? |
+| **Construction** | How is it built, bottom-up — universe → sleeves → optimisation → bands |
+| **Holdings** | What exactly do I own, with a per-line rationale and a data-vintage panel |
+| **Performance** | Has it worked — against its own reference, with the basis declared |
+| **Attribution** | Where did return and risk come from, and what did the active process add |
+| **Risk** | What risk am I taking — MCTR, concentration, correlation, the 3×3 style box |
+| **Stress** | How does it behave in crises — historical episodes and forward factor shocks |
+| **Monte Carlo** | What is the *range* of outcomes — 10k block-bootstrap paths |
+| **Live NAV** | The actual priced track record since 15 Jul 2026 |
+| **Methodology** | The research lineage the books were built from |
 
-```bash
-# in the private research repo — rebuild data, then mirror to the public repo
-python3 Src/pc_full_system_backtest.py            # if the strategy/cost model changed
-python3 Src/portfolio_attribution.py              # refresh attribution reports
-python3 Src/build_portfolio_dashboard_data.py     # regenerate data/portfolio.{json,js}
-cp -R Research/Portfolio_Construction/dashboard/. <clone-of-Asset-Allocation>/
-cd <clone-of-Asset-Allocation> && git add -A && git commit -m "Refresh dashboard" && git push
-# GitHub Pages redeploys on push (~1 min).
+Attribution is labelled **active only** for Certain / Endowment / SAA and explains why rather than
+rendering zero rows — their active return is zero *by construction*, not by underperformance.
+
+### The design decision that makes this work
+
+`assets/js/app.js` reads `window.PORTFOLIO_DATA` and renders **by element id**.
+`assets/js/portfolio-select.js` binds one of five payloads to that global *before* app.js runs. So all
+eight selector-driven pages render any of the five portfolios **without the renderer changing** — it
+was never modified to add a portfolio. Selection persists via `?p=<key>` and `localStorage`.
+
+The site opens by double-click (`file://`): data is embedded as JS (`data/portfolio_books.js`), Plotly
+is vendored locally, and there is no fetch, CDN or ES-module anywhere.
+
+---
+
+## Two class taxonomies, on purpose
+
+The portfolios' own classes (Equity / Defensive / Real assets / Diversifiers / Cash) drive the
+optimiser. The platform's six (Equities / FixedIncome / Commodities / RealEstate / Cash /
+AltsInsurance) drive the shared components. The crosswalk is `fund_registry.PLATFORM_CLASS`; gold →
+Commodities and Swiss franc → Cash are owner-confirmed.
+
+## Risk limits are three different objects
+
+Never merged into the word "budget":
+
+- **Construction constraint** — the vol / CDaR / drawdown caps the optimiser was actually held to,
+  read live from the build record. Where a declared cap was infeasible, `pc_fs6_build` loosens it via
+  `fs4_core.solve_fund` and records what it used: Endowment's declared 16% CDaR / 22% drawdown was
+  infeasible and solved at **20% / 27.5%**.
+- **Mandate limit** — an owner decision in the record. One exists: SAA −22%.
+- **Measured** — forecast and realised, no frame.
+
+Nothing renders as a limit unless it traces to an approved source; contract C3 fails the build
+otherwise.
+
+---
+
+## What is here, and what is not
+
+**Here**
+
+| | |
+|---|---|
+| `*.html`, `assets/` | the eleven pages served, the renderer, the vendored Plotly |
+| `data/` | the payloads the pages read — the five books, the range, the live NAV |
+| `src/` | the 22-module build chain that produces those payloads |
+| `methodology/` | the approved methodology the code implements |
+| `docs/` | the information architecture and the architecture audit |
+| `HANDOFF.md` | the current engineering handoff — read this before changing anything |
+| `UPDATING.md` | how to refresh the data and re-verify |
+| `module_contract.json` | element id → payload path, the contract C1 enforces |
+
+**Not here, deliberately**
+
+- **Raw third-party inputs.** The daily price panel, the World Bank commodity file and the
+  Fama-French factor file are not redistributed. The upstream solver stage (`fs2_core` / `fs3_core`)
+  therefore **cannot be run from this mirror** — it is published to be read and audited, not to be
+  re-executed. The stages that consume already-derived inputs are noted in
+  [UPDATING.md](UPDATING.md).
+- **Intermediate validation output** beyond what the pages need.
+- **The wider platform** — the full handoff archive, the research lineage and the other work streams
+  stay in the private repo.
+
+`src/verify_dashboard.py` **is** runnable here, against this mirror, and is the check that matters:
+
+```
+python3 src/verify_dashboard.py --dash .
 ```
 
-## Data / scope caveats
-All figures are net of cost on exploratory-tier (Yahoo) data; the cash sleeve is
-a FRED T-bill proxy (G-4). Caveats are shown in the narratives, not hidden.
+## Requirements
+
+`python3` with the packages in [requirements.txt](requirements.txt). `verify_dashboard.py` is
+stdlib-only and needs none of them.
+
+---
+
+*Not investment advice. The 1997–2026 series is a backtest of current weights, not a track record;
+the live NAV is 15 Jul 2026 onward and is far too short to be one either. NAV is priced from market
+closes and is not a custodial record.*

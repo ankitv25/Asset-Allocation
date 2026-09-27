@@ -1,12 +1,130 @@
-# Dashboard handoff — see README.md
+# Handoff — five products, restored analytics, style box
 
-This file is superseded. The dashboard is now an **8-page analytics platform**
-(iteration 5: + Monte Carlo simulation page & attribution-over-time; iteration 4
-added the Holdings blotter, mobile nav, date-picker Growth-of-$1, evidence-card
-sleeve thesis), not the original single page.
+**State: done and deployed.** https://ankitv25.github.io/Asset-Allocation/
+**As of 2026-09-21.** Mirrors the private repo's
+`Research/Portfolio_Construction/docs/handoffs/Five_Product_Platform_Handoff_2026-09-21.md`.
 
-- **Front door / current status / next build:** [`README.md`](README.md) (this folder).
-- **Technical handoff (architecture, data layer, how to extend):**
-  `../docs/handoffs/Dashboard_Platform_Handoff.md`.
-- **Attribution Engine 3:** `../docs/handoffs/Attribution_Engine_Handoff.md`.
-- **Session rollup:** `../docs/status/Session_Handoff_2026-06-23.md`.
+This replaces the June 2026 handoff, which described an eight-page single-book platform and was three
+months stale. Read this before changing anything in this repository.
+
+## What a reader should know first
+
+- **Three analytical modules were once missing and nobody was told.** `matrix`, `risk_detail` and
+  `stress_forward` were omitted on the reasoning that they belonged to the older v3.8 book. `app.js`
+  guards them with `if (d.x)`, so a missing payload key renders **nothing and throws nothing**: nine
+  tiles on attribution / risk / stress were blank while the page check reported clean. All three are
+  built per portfolio now. **Do not "safely omit" a guarded module again** — that is what contract C1
+  exists for.
+- **Risk limits are three objects, never merged into "budget".** Construction constraint (what the
+  optimiser was held to, read from the build record) · mandate limit (an owner decision; one exists,
+  SAA −22%) · measured (forecast and realised). See the README.
+- **Caps come from the build record, not the declaration.** `pc_fs6_build` loosens an infeasible cap
+  via `fs4_core.solve_fund` and records what it used. Endowment's declared 16% CDaR / 22% drawdown was
+  infeasible and was solved at **20% / 27.5%**. Showing the declared −22% made its realised −24.3%
+  look like an overshoot when it was inside the real cap.
+- **Two things share the word "performance".** The 1997–2026 series is a **backtest of today's
+  weights**; the **live NAV** starts 15 Jul 2026. Every series declares basis / window / weights /
+  rebalance / costs in a band beside the chart.
+- **The 3×3 style box is descriptive only** — no target, no band, no limit.
+
+## Architecture
+
+```
+RANGE      portfolios.html        which of the five, and why
+  │
+PRODUCT    index.html?p=<key>     what THIS portfolio is
+  │
+ANALYSIS   7 deep pages ?p=<key>  prove it
+```
+
+`?p=` is carried through the nav and the sleeve drill-down. `app.js` renders by element id from
+`window.PORTFOLIO_DATA`; `portfolio-select.js` binds one of five payloads to it before app.js runs, so
+the renderer takes a new portfolio without being edited. Full write-up in
+[`docs/Five_Product_IA.md`](docs/Five_Product_IA.md).
+
+## The build chain
+
+```
+src/fund_registry.py         identity: name, role, horizon, benchmark, managed flag, class crosswalk
+src/sleeve_registry.py       sleeve thesis / role / risk character, per-vehicle role + rationale
+        │
+src/pc_fs6_build.py          books + backtest        ──> validation/fund_suite_v6/
+src/fund_nav.py              priced daily NAV        ──> validation/fund_nav/
+src/pit_backtest.py          walk-forward books, PIT covariance
+src/style_box.py             the 3x3, returns-based style analysis
+        │
+        ├── src/build_portfolios_dashboard_data.py  ──> data/portfolios.js      (Portfolios page)
+        ├── src/build_portfolio_books_data.py       ──> data/portfolio_books.js (the 8 deep pages)
+        └── src/pc_fund_live_page.py                ──> data/live_nav.js        (Live NAV page)
+```
+
+Refresh order and the interpreter to use are in [`UPDATING.md`](UPDATING.md).
+
+## Verification standard
+
+The old standard (`#status-footer` for "Error:" + count `<svg>`) **cannot see silent module loss**:
+other tiles on the same page still draw an SVG, and a missing module is not an exception. Two layers:
+
+**1. Contracts — `python3 src/verify_dashboard.py --dash .`** (fast, no browser, gates the deploy)
+
+| | Checks |
+|---|---|
+| C1 | module presence — if a page carries an element id, every portfolio payload carries the path that fills it |
+| C2 | stale page copy — no selector-driven page may describe a different product or a superseded book |
+| C3 | parameter provenance — no risk limit renders without a source |
+| C4 | series provenance — every performance series declares what it is |
+| C5 | sleeve narrative — no sleeve renders as a bare label |
+
+**2. Render check — headless browser, 45 page × portfolio combinations.** Dump the DOM and assert:
+`#status-footer` has no "Error:"; charts drew; every contracted container is **non-empty after
+render**; no `undefined` / `NaN` in visible text.
+
+> Counting charts: match **`svg-container`**, not `class="svg-container"` — Plotly emits
+> `class="user-select-none svg-container"`.
+
+## Traps worth knowing
+
+- **Plotly mutates the layout you hand it.** It writes `type`, `range`, `autorange` back onto the axis
+  objects. A shared `BASE.xaxis` means the first date-axis chart stamps `type:"date"` onto every chart
+  after it — that is what collapsed the asset-class bars onto one date and stacked them to 500%.
+  `BASE`'s axes are **getters returning a fresh object**; `portfolios.js` builds layouts via `L()`.
+  Never hand Plotly a shared nested layout.
+- **`json.dump` writes a bare `NaN`.** Invalid JSON, but legal JavaScript — so `portfolios.js` loaded
+  it and compounded it into "Growth of $1: **$NaN**". Always `allow_nan=False`. The funds start
+  **1997-06**; the panel had been padded back to 1995-01, so the stated common window was wrong too.
+- **Don't `dropna()` across sleeves a fund cannot hold.** It cost the walk-forward a decade and gave
+  Endowment no series at all.
+- **`suite['impl']` is an implementation string, not a rationale.** Using it for the sleeve thesis and
+  every instrument rationale reduced the sleeve cards to their own ticker printed three times.
+  Narrative comes from `src/sleeve_registry.py`.
+- **Diff the payload schema before writing one.** The `portfolio.json` contract is ~403 paths deep.
+  Guessing one missing field per render cycle wastes hours; a path-by-path diff against the reference
+  gives the whole list at once.
+
+## Known limitations — stated on the pages, not hidden
+
+1. **The walk-forward is not fully point-in-time.** Risk is re-estimated at each rebalance; the return
+   view is not, because `fs3_core.model()` builds its CMA from a current snapshot and there are no
+   historical CMA vintages. It answers "how much does the book depend on the covariance window?", not
+   "would we have chosen this in 2008?".
+2. **Custom-scenario slider betas are estimates.** The scenario set itself is the approved
+   `fund_suite_v6.scenarios_def` and the per-fund impacts match it to 0.1pp.
+3. **The style box runs 2010-10 →**, bounded by the inception of the vehicles the funds hold, and
+   infers style from returns rather than looking through to holdings.
+4. **Live NAV is a few dozen trading days.** Not a track record; the page says so.
+
+## Open / next
+
+1. **`methodology/Risk_Limit_Framework_Proposal.md` needs an owner decision.** NOT ACTIVE. Until then
+   the platform shows measured risk and construction constraints only.
+2. **Endowment's declared CDaR is infeasible at every walk-forward date**, not just on the full
+   window. A fact about the fund's construction, not a bug — worth a decision.
+3. **PC-22 remains unimplemented as a tilt layer.** The style box makes visible that the range takes
+   no size or style bet (+0.10 size vs the total market, ~0 style). Whether to use that dimension is a
+   methodology call.
+4. **Write the payload contract down.** `module_contract.json` covers element ids, not the full ~403
+   path payload schema.
+5. **Payload size.** `data/portfolio_books.js` is 2.9 MB for five portfolios and
+   `data/portfolio.json` 932 KB; splitting per portfolio and lazy-loading would help first paint.
+6. **The Methodology page still describes the v3.8 lineage only.** Deliberate — it is the lineage the
+   books were built from. Documenting the current five there is a content decision.

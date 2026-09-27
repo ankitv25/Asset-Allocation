@@ -1,0 +1,6 @@
+# The build chain. verify_dashboard.py is stdlib-only and needs none of this.
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+yfinance>=0.2.40
+openpyxl>=3.1
