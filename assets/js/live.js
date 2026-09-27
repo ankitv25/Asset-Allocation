@@ -46,17 +46,19 @@
   // makes "priced to" one of its four hero tiles, and the terms already have their own panel in
   // section 01. It also does not headline which portfolio is ahead: ranking five books on 2.4 months
   // is noise, and printing it first invites the decision the record cannot support. So the range is
-  // shown as a range, low to high, with no winner named.
+  // shown as a range, low to high, with no winner named. Launch date and track-record length were
+  // dropped from here too: both already sit in the terms panel below, and a date is not a metric.
   const navs = FUNDS.map((f) => D.stats[f].nav).sort((a, b) => a - b);
   const rets = FUNDS.map((f) => D.stats[f].ret).sort((a, b) => a - b);
+  const dds = FUNDS.map((f) => D.stats[f].maxdd).sort((a, b) => a - b);
   el("kpi-ribbon").innerHTML = [
     { l: "NAV per unit", v: `${navs[0].toFixed(2)} – ${navs[navs.length - 1].toFixed(2)}`,
       s: `${FUNDS.length} portfolios · priced ${fmtD(D.asof)}` },
     { l: "Since launch", v: `${pp(rets[0], 1)} to ${pp(rets[rets.length - 1], 1)}`,
       s: "net of fee and dealing · not annualised" },
-    { l: "Ongoing charge", v: F0.fee_bps + "bp a year", s: F0.dealing_bps + "bp per side dealt" },
-    { l: "Launched", v: fmtD(D.inception),
-      s: `${T.months.toFixed(1)} months · ${T.trading_days} trading days` }
+    { l: "From its high", v: `${pp(dds[dds.length - 1], 1)} to ${pp(dds[0], 1)}`,
+      s: "deepest fall since launch" },
+    { l: "Ongoing charge", v: F0.fee_bps + "bp a year", s: F0.dealing_bps + "bp per side dealt" }
   ].map((k) => `<div class="kpi${k.perf ? " kpi-perf" : ""}"><div class="kpi-label">${k.l}</div>
       <div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join("");
 
