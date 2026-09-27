@@ -193,3 +193,29 @@ Certain drew in SAA's colour, SAA in DAA's, DAA in a benchmark's. Colours are no
 - Size/style is credited to the 3×3 style box, not to PC-22, which is the sector tilt layer.
 
 Payload trimmed 66 KB → 46 KB by removing blocks nothing rendered.
+
+## 2026-09-27 (later) — Live NAV rebuilt as five product pages
+
+The owner's objection: the five could not be analysed or even seen — five small cards, then 5-across
+tables, with four independent chip rows choosing the portfolio. Now:
+
+- **Switcher** (sticky under the app bar): the five as tabs with NAV and move on the day. One selection
+  drives every panel, is carried in `?p=<key>`, and uses the same `summer.portfolio` key as
+  `portfolio-select.js`, so the nav's deep-page links follow it.
+- **Product page for the selected portfolio**: hero (objective, identity, NAV, since launch, vs its own
+  reference, from its high), key-facts strip, links into that portfolio's deep pages; NAV chart with
+  three views (NAV / against its reference / from its high) and a period selector; **Where it sits in
+  the range** (each characteristic as a track across the five); returns vs reference with an explicit
+  difference row; risk vs the three benchmarks; month by month vs reference; holdings with weight and
+  since-launch contribution in one row; exposure bar lists (asset class / platform class / sleeve,
+  geography); dealing log; long-run backtest labelled as such; the holdings bridge as a waterfall from
+  100.00 to today's NAV; factor attribution.
+- **The range side by side**: all five on one axis (selected highlighted, every line named, click to
+  select, benchmarks toggle), characteristics, discrete and monthly returns, mandates, terms — table
+  headers and rows select a portfolio.
+
+Chart fixes: weekends and holidays removed from the date axis (they drew as flat ramps), round tick
+steps, the launch line actually dashed, x-axis ending on the last price. Magnitude bars use one neutral
+hue — identity colours mark which portfolio only (Alpha's registry colour is the loss red).
+The mobile menu toggle was never wired on this page (it does not load `app.js`); it is now.
+Nothing in the payload or the build chain changed; `live.js` renders only what `live_nav.js` publishes.

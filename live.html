@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="assets/css/style.css" />
 <script src="assets/vendor/plotly.min.js"></script>
 </head>
-<body class="app">
+<body class="app lv-page">
 
 <header class="appbar">
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
@@ -28,35 +28,162 @@
   <div class="appbar-status" id="appbar-status">Loading…</div>
 </header>
 
-<div class="kpi-ribbon" id="kpi-ribbon"></div>
+<!-- The five portfolios as a product switcher: one selection drives every panel on the page. -->
+<nav class="lv-switch" id="lv-switch" aria-label="Choose portfolio"></nav>
 
 <main class="db">
 
-  <div class="page-intro">
+  <div class="page-intro lv-intro">
     <h1>Live NAV</h1>
-    <p>Five portfolios, launched together on <strong>15 July 2026</strong> at a NAV of 100.00 per unit.
-      Each is priced every trading day from the closing prices of what it holds, net of a 15bp annual fee
-      and 10bp per side of dealing — <strong>the NAV is what a holder would actually have</strong>.</p>
+    <p>Five portfolios, launched together on <strong>15 July 2026</strong> at a NAV of 100.00 per unit and
+      priced every trading day from the closing prices of what they hold, net of a 15bp annual fee and 10bp
+      per side of dealing — <strong>the NAV is what a holder would actually have</strong>. Pick a portfolio
+      above; the range is compared side by side in section 04.</p>
   </div>
+
+  <!-- ============ PRODUCT: the selected portfolio ============ -->
+  <section class="lv-hero" id="lv-hero" aria-live="polite"></section>
+  <div class="lv-facts" id="lv-facts"></div>
+  <nav class="lv-toc" id="lv-toc">
+    <a href="#s-perf">Performance</a><a href="#s-port">Portfolio</a><a href="#s-attr">What moved the NAV</a>
+    <a href="#s-range">The range side by side</a><a href="#s-basis">Basis of these figures</a>
+  </nav>
+
+  <div class="section-head" id="s-perf"><span class="section-num">01</span>
+    <span class="section-title">Performance</span>
+    <span class="section-q" id="perf-q">How has it done, and at what risk?</span></div>
+
+  <section class="grid lv-grid-main">
+    <article class="tile tile-feature lv-accent">
+      <div class="tile-head"><h2 id="nav-chart-title">NAV per unit</h2>
+        <span class="tile-sub" id="nav-sub"></span></div>
+      <div class="lv-controls">
+        <div class="chips lv-seg" id="nav-modes" role="group" aria-label="Chart view"></div>
+        <div class="chips lv-seg" id="nav-views" role="group" aria-label="Period"></div>
+      </div>
+      <div id="nav-chart" class="chart" style="height:400px"></div>
+      <p class="read" id="nav-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Where it sits in the range</h2>
+        <span class="tile-sub">this portfolio against the other four</span></div>
+      <div id="pos-meters"></div>
+      <p class="read" id="pos-read"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Returns</h2>
+        <span class="tile-sub" id="ret-sub"></span></div>
+      <div id="ret-table"></div>
+      <p class="read" id="ret-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Risk and the benchmarks</h2>
+        <span class="tile-sub" id="risk-sub"></span></div>
+      <div id="risk-stats"></div>
+      <div id="rel-table"></div>
+      <p class="read" id="risk-read"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Month by month</h2>
+        <span class="tile-sub" id="mm-sub"></span></div>
+      <div class="lv-split">
+        <div id="mm-chart" class="chart" style="height:260px"></div>
+        <div id="mm-table"></div>
+      </div>
+    </article>
+  </section>
+
+  <div class="section-head" id="s-port"><span class="section-num">02</span>
+    <span class="section-title">Portfolio</span>
+    <span class="section-q">Every line it holds, and what each has earned since launch.</span></div>
+
+  <section class="grid lv-grid-port">
+    <article class="tile">
+      <div class="tile-head"><h2>Holdings</h2>
+        <span class="tile-sub" id="hold-sub"></span></div>
+      <div id="hold-table"></div>
+      <p class="read" id="hold-read"></p>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Exposure</h2>
+        <span class="tile-sub" id="expo-sub"></span></div>
+      <div class="chips lv-seg" id="expo-views" role="group" aria-label="Exposure view" style="margin-bottom:.8rem"></div>
+      <div id="expo-class"></div>
+      <h3 class="mini-head" style="margin-top:1.1rem">Equity geography</h3>
+      <div id="expo-geo"></div>
+      <p class="read" id="expo-read"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile">
+      <div class="tile-head"><h2>Dealing log</h2>
+        <span class="tile-sub">every trade since launch, as turnover of the book</span></div>
+      <div id="trade-table"></div>
+    </article>
+    <article class="tile">
+      <div class="tile-head"><h2>Long-run evidence <span class="lv-tag">backtest</span></h2>
+        <span class="tile-sub">1997–2026, today's weights — not this record</span></div>
+      <div id="bt-table"></div>
+    </article>
+  </section>
+
+  <div class="section-head" id="s-attr"><span class="section-num">03</span>
+    <span class="section-title">What moved the NAV</span>
+    <span class="section-q">Every point of it, traced to the holding that earned or cost it.</span></div>
+
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>By holding</h2>
+        <span class="tile-sub" id="bridge-sub"></span></div>
+      <div class="lv-split">
+        <div id="bridge-chart" class="chart chart-lg"></div>
+        <div><div id="bridge-table"></div></div>
+      </div>
+      <p class="read" id="bridge-read"></p>
+    </article>
+  </section>
+
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>By exposure</h2>
+        <span class="tile-sub" id="fac-sub"></span></div>
+      <div class="lv-split">
+        <div id="fac-chart" class="chart chart-lg"></div>
+        <div><div id="fac-table"></div></div>
+      </div>
+      <p class="read" id="fac-read"></p>
+    </article>
+  </section>
+
+  <!-- ============ RANGE: all five side by side ============ -->
+  <div class="section-head" id="s-range"><span class="section-num">04</span>
+    <span class="section-title">The range side by side</span>
+    <span class="section-q">Five mandates, five different books — not one book with a dial.</span></div>
 
   <div class="insight">
     <div class="ic">🧭</div>
     <div>
-      <h3>What you are looking at</h3>
+      <h3>What the five are</h3>
       <p id="funds-insight"></p>
     </div>
   </div>
 
-  <div class="section-head"><span class="section-num">01</span>
-    <span class="section-title">Portfolio terms</span>
-    <span class="section-q">What is each portfolio, on what terms?</span></div>
-
   <section class="grid grid-1">
-    <article class="tile">
-      <div class="tile-head"><h2>Terms and identity</h2>
-        <span class="tile-sub" id="facts-sub"></span></div>
-      <div id="facts-table"></div>
-      <p class="read" id="facts-read"></p>
+    <article class="tile tile-feature">
+      <div class="tile-head"><h2>All five portfolios — NAV per unit</h2>
+        <span class="tile-sub" id="range-sub"></span></div>
+      <div class="lv-controls">
+        <div class="chips lv-seg" id="range-views" role="group" aria-label="Range chart options"></div>
+      </div>
+      <div id="range-chart" class="chart" style="height:400px"></div>
+      <p class="read" id="range-read"></p>
     </article>
   </section>
 
@@ -69,111 +196,19 @@
     </article>
   </section>
 
-  <div class="section-head"><span class="section-num">02</span>
-    <span class="section-title">Net asset value</span>
-    <span class="section-q">Where does each portfolio stand today?</span></div>
-
-  <div class="prod-grid nv-grid" id="nav-cards" style="margin-bottom:1rem"></div>
-
-  <section class="grid grid-1">
-    <article class="tile tile-feature">
-      <div class="tile-head"><h2 id="nav-chart-title">Daily NAV since inception</h2>
-        <span class="tile-sub" id="nav-sub"></span></div>
-      <div class="chips" id="nav-views" style="margin:.5rem 0 .35rem"></div>
-      <div class="chips" id="nav-chips" style="margin:0 0 .7rem"></div>
-      <div id="nav-chart" class="chart" style="height:370px"></div>
-      <p class="read" id="nav-read"></p>
-    </article>
-  </section>
-
-  <div class="section-head"><span class="section-num">03</span>
-    <span class="section-title">Performance and risk</span>
-    <span class="section-q">What did it cost in volatility to earn that?</span></div>
-
-  <section class="grid grid-1">
+  <section class="grid grid-2">
     <article class="tile">
       <div class="tile-head"><h2>Discrete returns</h2>
         <span class="tile-sub" id="perf-sub"></span></div>
       <div id="perf-table"></div>
       <p class="read" id="perf-read"></p>
     </article>
-  </section>
-
-  <section class="grid grid-2">
     <article class="tile">
       <div class="tile-head"><h2>Month by month</h2>
         <span class="tile-sub" id="monthly-sub"></span></div>
       <div id="monthly-table"></div>
     </article>
-    <article class="tile">
-      <div class="tile-head"><h2>Against the benchmarks</h2>
-        <span class="tile-sub" id="rel-sub"></span></div>
-      <div id="rel-table"></div>
-      <p class="read">Two months is far too short to judge a strategy. It is here because it is the real
-        record; the case for these funds is their construction, set out in Methodology and Construction.</p>
-    </article>
   </section>
-
-  <div class="section-head"><span class="section-num">04</span>
-    <span class="section-title">What moved the NAV</span>
-    <span class="section-q">Every point of it, traced to the holding that earned or cost it.</span></div>
-
-  <section class="grid grid-1">
-    <article class="tile tile-feature">
-      <div class="tile-head"><h2>By exposure</h2>
-        <span class="tile-sub" id="fac-sub"></span></div>
-      <div class="chips" id="bridge-chips" style="margin:.5rem 0 .7rem"></div>
-      <div class="grid grid-2" style="gap:1rem">
-        <div id="fac-chart" class="chart chart-lg"></div>
-        <div><div id="fac-table"></div></div>
-      </div>
-      <p class="read" id="fac-read"></p>
-    </article>
-  </section>
-
-  <section class="grid grid-1">
-    <article class="tile">
-      <div class="tile-head"><h2>By holding</h2>
-        <span class="tile-sub" id="bridge-sub"></span></div>
-      <div class="grid grid-2" style="gap:1rem">
-        <div id="bridge-chart" class="chart chart-lg"></div>
-        <div><div id="bridge-table"></div></div>
-      </div>
-      <p class="read" id="bridge-read"></p>
-    </article>
-  </section>
-
-  <div class="section-head"><span class="section-num">05</span>
-    <span class="section-title">What is actually held</span>
-    <span class="section-q">Every line, and when it last traded.</span></div>
-
-  <section class="grid grid-1">
-    <article class="tile">
-      <div class="tile-head"><h2>Holdings and dealing</h2>
-        <span class="tile-sub" id="hold-sub"></span></div>
-      <div class="chips" id="fund-chips" style="margin:.5rem 0 .7rem"></div>
-      <div class="grid grid-2" style="gap:1rem">
-        <div><div id="hold-table"></div></div>
-        <div><h3 class="mini-head">Dealing log</h3><div id="trade-table"></div>
-          <h3 class="mini-head" style="margin-top:.9rem">Long-run evidence</h3><div id="bt-table"></div></div>
-      </div>
-      <p class="read" id="hold-read"></p>
-    </article>
-    <article class="tile">
-      <div class="tile-head"><h2>Exposure</h2>
-        <span class="tile-sub" id="expo-sub"></span></div>
-      <div class="grid grid-2" style="gap:1rem">
-        <div id="expo-class" class="chart chart-md"></div>
-        <div id="expo-geo" class="chart chart-md"></div>
-      </div>
-      <div id="expo-table" style="margin-top:.6rem"></div>
-      <p class="read" id="expo-read"></p>
-    </article>
-  </section>
-
-  <div class="section-head"><span class="section-num">06</span>
-    <span class="section-title">How each portfolio is different</span>
-    <span class="section-q">Five mandates, five different books — not one book with a dial.</span></div>
 
   <section class="grid grid-1">
     <article class="tile">
@@ -183,7 +218,16 @@
     </article>
   </section>
 
-  <div class="section-head"><span class="section-num">07</span>
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Terms and identity</h2>
+        <span class="tile-sub" id="facts-sub"></span></div>
+      <div id="facts-table"></div>
+      <p class="read" id="facts-read"></p>
+    </article>
+  </section>
+
+  <div class="section-head" id="s-basis"><span class="section-num">05</span>
     <span class="section-title">Basis of these figures</span>
     <span class="section-q">What the NAV is, and what it is not.</span></div>
 
