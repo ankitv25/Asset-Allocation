@@ -15,6 +15,19 @@
     yaxis: { gridcolor: "#eff2f6", zeroline: false, linecolor: "#e3e8ee", ticks: "", tickfont: { size: 10 } } };
   const CFG = { displayModeBar: false, responsive: true };
 
+  // Plotly MUTATES the layout object it is handed — it writes `type`, `range` and `autorange` back
+  // onto the axis objects. navChart was passing BASE.xaxis by reference, so once the NAV chart (date
+  // x-axis) had drawn, the contribution bars inherited type:"date" and rendered their points-of-NAV
+  // axis as timestamps around Dec 31 1969. Always hand Plotly freshly cloned axes. Same helper as
+  // portfolios.js, for the same reason.
+  const L = (extra) => {
+    const e = extra || {};
+    return Object.assign({}, BASE, e, {
+      xaxis: Object.assign({}, BASE.xaxis, e.xaxis || {}),
+      yaxis: Object.assign({}, BASE.yaxis, e.yaxis || {}),
+    });
+  };
+
   const FUNDS = D.fund_list, BENCH = D.bench_list;
   const T = D.track, F0 = D.facts[D.fund_list[0]];
   const COLOR = { Certain: "#3083b4", Endowment: "#2e7d32", SAA: "#0e2233", DAA: "#d68a13", Alpha: "#c0392b",
@@ -127,10 +140,10 @@
     }));
     el("nav-chart-title").textContent = VIEWS[view];
     const zero = view === "nav" ? D.nav0 : 0;
-    Plotly.react("nav-chart", tr, Object.assign({}, BASE, {
+    Plotly.react("nav-chart", tr, L({
       showlegend: false, hovermode: "x unified",
-      yaxis: Object.assign({}, BASE.yaxis, { title: { text: unit, font: { size: 10 } },
-        ticksuffix: view === "nav" ? "" : "%" }),
+      yaxis: { title: { text: unit, font: { size: 10 } },
+        ticksuffix: view === "nav" ? "" : "%" },
       shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: zero, y1: zero,
         line: { color: "#c9ced6", width: 1, dash: "dot" } }]
     }), CFG);
@@ -319,12 +332,12 @@
       y: items.map((i) => i[0]).reverse(), x: items.map((i) => i[1]).reverse(),
       marker: { color: items.map((i) => i[1] >= 0 ? "#2f7d5e" : "#b3402f").reverse() },
       hovertemplate: "%{y}: %{x:+.3f} pts<extra></extra>"
-    }], Object.assign({}, BASE, {
+    }], L({
       showlegend: false, bargap: 0.3,
       margin: { l: 132, r: 18, t: 6, b: 28 },
-      xaxis: Object.assign({}, BASE.xaxis, { title: { text: "points of NAV", font: { size: 10 } },
-        zeroline: true, zerolinecolor: "#b8c0ca" }),
-      yaxis: Object.assign({}, BASE.yaxis, { automargin: true })
+      xaxis: { type: "linear", title: { text: "points of NAV", font: { size: 10 } },
+        zeroline: true, zerolinecolor: "#b8c0ca" },
+      yaxis: { type: "category", automargin: true }
     }), CFG);
 
     const r = (n, v, c) => `<tr class="${c || ""}"><td>${n}</td>
