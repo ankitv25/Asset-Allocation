@@ -42,14 +42,21 @@
   const on = new Set([...FUNDS, "S&P 500"]);
 
   // ---------- ribbon ----------
-  // A factsheet ribbon states the terms and the length of the record. It deliberately does not
-  // headline which portfolio is ahead: ranking five books on 2.4 months is noise, and printing it as
-  // the first thing a reader sees invites exactly the decision the record cannot support.
+  // The ribbon carries NUMBERS. An as-at date is a caption, not a headline metric — no fund page
+  // makes "priced to" one of its four hero tiles, and the terms already have their own panel in
+  // section 01. It also does not headline which portfolio is ahead: ranking five books on 2.4 months
+  // is noise, and printing it first invites the decision the record cannot support. So the range is
+  // shown as a range, low to high, with no winner named.
+  const navs = FUNDS.map((f) => D.stats[f].nav).sort((a, b) => a - b);
+  const rets = FUNDS.map((f) => D.stats[f].ret).sort((a, b) => a - b);
   el("kpi-ribbon").innerHTML = [
-    { l: "Inception", v: fmtD(D.inception), s: "at " + D.nav0.toFixed(2) + " per unit" },
-    { l: "Priced to", v: fmtD(D.asof), s: "dividend-adjusted closes" },
-    { l: "Track record", v: T.months.toFixed(1) + " months", s: T.trading_days + " trading days" },
-    { l: "Ongoing charge", v: F0.fee_bps + "bp a year", s: F0.dealing_bps + "bp per side dealt" }
+    { l: "NAV per unit", v: `${navs[0].toFixed(2)} – ${navs[navs.length - 1].toFixed(2)}`,
+      s: `${FUNDS.length} portfolios · priced ${fmtD(D.asof)}` },
+    { l: "Since launch", v: `${pp(rets[0], 1)} to ${pp(rets[rets.length - 1], 1)}`,
+      s: "net of fee and dealing · not annualised" },
+    { l: "Ongoing charge", v: F0.fee_bps + "bp a year", s: F0.dealing_bps + "bp per side dealt" },
+    { l: "Launched", v: fmtD(D.inception),
+      s: `${T.months.toFixed(1)} months · ${T.trading_days} trading days` }
   ].map((k) => `<div class="kpi${k.perf ? " kpi-perf" : ""}"><div class="kpi-label">${k.l}</div>
       <div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join("");
 
@@ -315,7 +322,7 @@
     el("bridge-chips").innerHTML = FUNDS.map((f) =>
       `<button class="chip${f === bfund ? " sel" : ""}" data-f="${f}">${f}</button>`).join("");
     el("bridge-chips").querySelectorAll(".chip").forEach((b) => {
-      b.onclick = () => { bfund = b.dataset.f; bridgeChips(); facPanel(); bridgePanel(); };
+      b.onclick = () => { bfund = b.dataset.f; bridgeChips(); facPanel(); sbxPanel(); bridgePanel(); };
     });
   }
   // ---------- what the book was EXPOSED to ----------
@@ -382,6 +389,102 @@
        argument for deciding it deliberately rather than by default.
        <strong>${num(A.residual, 2)}</strong> is unexplained: vehicle behaviour the thirteen factors
        do not span, shown rather than folded into them.`;
+  }
+
+  // ---------- the 3x3 style box ----------
+  // Size (large / mid / small) down, style (value / blend / growth) across — the nine-box grid, for
+  // the portfolio's US equity sleeve. Three readings of the same grid: where the sleeve SITS, the
+  // active bet against the TOTAL US market, and what each box actually PAID over the live window.
+  // The third is the one that makes it attribution rather than positioning.
+  let sbxMode = "weight";
+  const SBX_MODES = { weight: "Where it sits", active: "Active vs total market", live: "What it paid" };
+
+  function sbxPanel() {
+    const SB = D.stylebox;
+    if (!SB || !SB.funds[bfund.toLowerCase()]) {
+      el("sbx-sub").textContent = "style box not available"; return;
+    }
+    const f = SB.funds[bfund.toLowerCase()], LV = SB.live;
+    const cellv = (i, j) => sbxMode === "weight" ? f.grid[i][j]
+      : sbxMode === "active" ? f.active[i][j] : f.live_contrib[i][j];
+    const shade = (v) => {
+      if (sbxMode === "weight") {
+        return `rgba(48,131,180,${(0.06 + Math.min(Math.abs(v) / 70, 1) * 0.82).toFixed(3)})`;
+      }
+      const cap = sbxMode === "active" ? 25 : 0.25;
+      const a = (0.05 + Math.min(Math.abs(v) / cap, 1) * 0.75).toFixed(3);
+      return v >= 0 ? `rgba(47,125,94,${a})` : `rgba(192,57,43,${a})`;
+    };
+    const fmt = (v) => sbxMode === "live"
+      ? `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}<i>pts</i>`
+      : `${sbxMode === "active" && v > 0 ? "+" : ""}${v.toFixed(1)}<i>%</i>`;
+
+    el("sbx-modes").innerHTML = Object.entries(SBX_MODES).map(([k, v]) =>
+      `<button class="chip${k === sbxMode ? " sel" : ""}" data-m="${k}">${v}</button>`).join("");
+    el("sbx-modes").querySelectorAll(".chip").forEach((b) => {
+      b.onclick = () => { sbxMode = b.dataset.m; sbxPanel(); };
+    });
+
+    el("sbx-grid").innerHTML = `<div class="sbx-corner"></div>`
+      + SB.styles.map((st) => `<div class="sbx-collab">${st}</div>`).join("")
+      + SB.sizes.map((sz, i) => `<div class="sbx-rowlab">${sz}</div>`
+        + SB.styles.map((st, j) => {
+          const v = cellv(i, j), dom = f.dominant[0] === i && f.dominant[1] === j;
+          const cr = LV ? LV.corner_returns[i][j] : null;
+          return `<div class="sbx-cell${dom ? " sbx-dom" : ""}" style="background:${shade(v)}"
+            title="${sz}/${st}${cr === null ? "" : ` · the box returned ${cr >= 0 ? "+" : "−"}${
+            Math.abs(cr).toFixed(2)}% since launch`}">
+            <span class="sbx-v">${fmt(v)}</span>
+            <span class="sbx-c">${sz}/${st}</span></div>`;
+        }).join("")).join("");
+
+    el("sbx-sub").textContent = `${bfund} · US equity sleeve ${f.us_equity_weight.toFixed(1)}% of the `
+      + `portfolio · R² ${f.r2.toFixed(3)}`;
+    el("sbx-legend").innerHTML = sbxMode === "weight"
+      ? `Share of the US equity sleeve in each box. Fitted by returns-based style analysis, not by
+         looking through to holdings.`
+      : sbxMode === "active"
+        ? `Percentage points against the <strong>total</strong> US market (${SB.market.ticker}), not a
+           large-cap index — measuring a large-cap book against a large-cap index reports no size bet
+           and hides the stance actually taken.`
+        : `Points of NAV each box contributed since ${fmtD(D.inception)}: the sleeve's weight times the
+           box's weight times what that box returned. Hover a cell for the box's own return.`;
+
+    const rows = [];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      if (f.grid[i][j] > 0.05 || Math.abs(f.active[i][j]) > 0.05) {
+        rows.push([`${SB.sizes[i]}/${SB.styles[j]}`, f.grid[i][j], f.active[i][j],
+          LV ? LV.corner_returns[i][j] : null, f.live_contrib ? f.live_contrib[i][j] : null]);
+      }
+    }
+    rows.sort((a, b) => b[1] - a[1]);
+    el("sbx-table").innerHTML = `<table class="dtbl"><thead><tr><th>Box</th>
+      <th class="num">Weight</th><th class="num">vs market</th><th class="num">Box return</th>
+      <th class="num">Points</th></tr></thead><tbody>${rows.map((r) =>
+      `<tr><td>${r[0]}</td><td class="num">${r[1].toFixed(1)}%</td>
+       <td class="num ${cls(r[2])}">${r[2] >= 0 ? "+" : "−"}${Math.abs(r[2]).toFixed(1)}</td>
+       <td class="num ${cls(r[3])}">${r[3] === null ? "—" : (r[3] >= 0 ? "+" : "−") + Math.abs(r[3]).toFixed(2) + "%"}</td>
+       <td class="num ${cls(r[4])}">${r[4] === null ? "—" : (r[4] >= 0 ? "+" : "−") + Math.abs(r[4]).toFixed(3)}</td></tr>`).join("")}
+      <tr class="hl"><td><strong>US equity sleeve</strong></td>
+        <td class="num">100.0%</td><td class="num z">—</td><td class="num z">—</td>
+        <td class="num ${cls(f.live_total)}">${f.live_total >= 0 ? "+" : "−"}${
+      Math.abs(f.live_total).toFixed(3)}</td></tr></tbody></table>`;
+
+    const best = LV ? [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
+      .filter(([i, j]) => LV.corner_returns[i][j] === LV.corner_returns[i][j])
+      .sort((a, b) => LV.corner_returns[b[0]][b[1]] - LV.corner_returns[a[0]][a[1]]) : [];
+    const hi = best[0], lo = best[best.length - 1];
+    el("sbx-read").innerHTML = LV ? `Over the live window the nine boxes did not move together:
+      <strong>${SB.sizes[hi[0]]}/${SB.styles[hi[1]]}</strong> returned
+      ${pp(LV.corner_returns[hi[0]][hi[1]] / 100, 2)} and
+      <strong>${SB.sizes[lo[0]]}/${SB.styles[lo[1]]}</strong> ${pp(LV.corner_returns[lo[0]][lo[1]] / 100, 2)},
+      a spread of ${(LV.corner_returns[hi[0]][hi[1]] - LV.corner_returns[lo[0]][lo[1]]).toFixed(1)}
+      points in ${T.months.toFixed(1)} months. ${bfund} sits
+      <strong>${(f.size_active * 100).toFixed(0)}bp</strong> larger and
+      <strong>${(f.style_active * 100).toFixed(0)}bp</strong> more growth than the total market, which
+      it did not choose — the sleeve holds broad index vehicles and the box is where they land. That
+      non-decision was worth ${pp(f.live_total / 100, 2)} to the NAV this window. PC-22, the tilt layer
+      the methodology formalises for exactly this dimension, remains unbuilt.` : "";
   }
 
   function bridgePanel() {
@@ -451,5 +554,5 @@
   }
 
   navCards(); viewChips(); chips(); factsTable(); navChart(); perfTable(); monthlyTable();
-  relTable(); bridgeChips(); facPanel(); bridgePanel(); fundChips(); holdTable(); mandateTable(); disclosure();
+  relTable(); bridgeChips(); facPanel(); sbxPanel(); bridgePanel(); fundChips(); holdTable(); mandateTable(); disclosure();
 })();

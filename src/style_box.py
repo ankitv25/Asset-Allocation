@@ -140,8 +140,34 @@ def main():
               f'size {size:+.2f} (mkt {m_size:+.2f})  style {style:+.2f} (mkt {m_style:+.2f})  '
               f'R2 {r2:.3f}')
 
+    # ---- what each box PAID over the live window -------------------------------------------------
+    # The box says where the equity sleeve sits. On its own that is positioning. Priced over the live
+    # NAV window it becomes attribution: each corner's return since inception, and the contribution of
+    # holding that corner at that weight. Daily corner prices are already cached here.
+    live_grid, live_meta = None, None
+    navf = os.path.join(NAVD, 'fund_nav.json')
+    if os.path.exists(navf):
+        nv = json.load(open(navf))
+        dpx = pd.read_csv(PX, index_col=0, parse_dates=True).sort_index()
+        d0, d1 = pd.Timestamp(nv['dates'][0]), pd.Timestamp(nv['dates'][-1])
+        seg = dpx.loc[(dpx.index >= d0) & (dpx.index <= d1)]
+        cret = {f'{c[0]}/{c[1]}': float(seg[c[2]].iloc[-1] / seg[c[2]].iloc[0] - 1)
+                for c in CORNERS if c[2] in seg.columns and seg[c[2]].notna().sum() > 2}
+        mret = float(seg[MARKET].iloc[-1] / seg[MARKET].iloc[0] - 1)
+        live_grid = [[round(100 * cret.get(f'{sz}/{st}', float('nan')), 3) for st in STYLES]
+                     for sz in SIZES]
+        live_meta = dict(start=str(d0.date()), end=str(d1.date()), market=round(100 * mret, 3))
+        for key in out:
+            g = out[key]['grid']
+            contrib = [[round(out[key]['us_equity_weight'] / 100 * g[i][j] / 100
+                              * 100 * cret.get(f'{SIZES[i]}/{STYLES[j]}', 0.0), 3)
+                        for j in range(3)] for i in range(3)]
+            out[key]['live_contrib'] = contrib
+            out[key]['live_total'] = round(sum(sum(r) for r in contrib), 3)
+
     payload = dict(
         generated=str(pd.Timestamp.today().date()),
+        live=dict(meta=live_meta, corner_returns=live_grid) if live_grid else None,
         window=f'{panel.index.min()} — {panel.index.max()}',
         n_months=len(panel),
         sizes=SIZES, styles=STYLES,

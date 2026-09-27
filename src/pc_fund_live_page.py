@@ -112,6 +112,13 @@ factor = json.load(open(_fa)) if os.path.exists(_fa) else None
 if factor is None:
     print('  note: factor_attrib.json absent — the exposure view will not render')
 
+# The 3x3 style box: where each portfolio's US equity sleeve sits on size and style, and — priced
+# over the live window by style_box.py — what each of the nine boxes actually paid.
+_sb = os.path.join(SUITE, 'style_box.json')
+stylebox = json.load(open(_sb)) if os.path.exists(_sb) else None
+if stylebox is None:
+    print('  note: style_box.json absent — the style box will not render')
+
 # The NAV bridge, rolled from vehicles up to sleeves. fund_nav.py already proved it reconciles.
 SLEEVE = N['ticker_sleeve']
 bridge = {}
@@ -154,7 +161,7 @@ D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
                             ret=float(nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1),
                             excess=float(nav[f].iloc[-1] / nav[REF_OF[f]].iloc[-1] - 1))
                     for f in FUNDS},
-         drawdown=drawdown, day=day, bridge=bridge, factor=factor,
+         drawdown=drawdown, day=day, bridge=bridge, factor=factor, stylebox=stylebox,
          dates=N['dates'], series=N['series'], stats=stats, rel=rel,
          holdings=N['holdings'], trades=N['trades'], books=N['books'], ticker_sleeve=N['ticker_sleeve'],
          funds={f: S['funds'][f] for f in FUNDS}, labels=S['labels'], class_of=S['class_of'],
