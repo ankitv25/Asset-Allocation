@@ -69,8 +69,10 @@
      lean. The <strong>DAA</strong> runs that book actively, sizing its trend sleeve to the macro state — which
      reads <strong>${D.regime.toLowerCase()}</strong> today. <strong>Alpha</strong> spends an equity-level
      volatility budget of its own. None of them holds mortgage bonds.`;
-  el("nav-sub").textContent = `rebased to ${D.nav0.toFixed(2)} at inception · net of a `
-    + `${F0.fee_bps}bp annual fee`;
+  const subOf = () => view === "growth"
+    ? `what $10,000 invested at launch is worth · net of fee and dealing · income reinvested`
+    : view === "cum" ? `cumulative return since launch · net of fee and dealing`
+      : `fall from each series' own running high`;
   el("appbar-status").textContent = "Funds · priced to " + fmtD(D.asof);
   el("status-footer").textContent =
     "NAV from Src/fund_nav.py · books from Src/pc_fs6_build.py · priced to " + fmtD(D.asof)
@@ -96,6 +98,8 @@
     el("nav-cards").innerHTML = FUNDS.map((f) => {
       const st = D.stats[f], dy = D.day[f], x = D.facts[f];
       const ref = D.ref_stats[f];   // each portfolio against ITS OWN reference, not a house index
+      // The since-launch NAV range — a fund page's 52-week high/low, for a fund too young to have one
+      const sr = D.series[f], rng = [Math.min(...sr), Math.max(...sr)];
       const stat = (v, l, c) => `<div class="pd-stat"><b class="${c || ""}">${v}</b><span>${l}</span></div>`;
       return `<article class="pd-card nv-card" style="--pc:${COLOR[f]}">
         <div class="pd-top"><div class="pd-name">${f}</div>
@@ -104,14 +108,20 @@
         <div class="nv-head">
           <div><div class="nv-nav">${st.nav.toFixed(2)}</div>
             <div class="nv-unit">NAV per unit</div></div>
-          <div class="nv-day ${cls(dy.chg)}">${pp(dy.chg)}<div class="nv-unit" style="font-weight:500">on the day</div></div>
+          <div class="nv-day ${cls(dy.chg)}">${dy.pts >= 0 ? "+" : "−"}${Math.abs(dy.pts).toFixed(2)}
+            (${pp(dy.chg)})<div class="nv-unit" style="font-weight:500">on the day</div></div>
         </div>
         <div class="nv-spark">${spark(f)}</div>
         <div class="pd-stats">
+          ${stat("$" + (10000 * st.nav / D.nav0).toFixed(0), "per $10,000", cls(st.ret))}
           ${stat(pp(st.ret), "since launch", cls(st.ret))}
-          ${stat(pp(ref.excess), "vs " + ref.name, cls(ref.excess))}
+          ${stat(pp(ref.excess), "vs reference", cls(ref.excess))}
           ${stat(pct(dy.dd, 1), "from its high", dy.dd < -0.0001 ? "neg" : "")}
-          ${stat(st.up + "/" + st.n, "days up")}
+        </div>
+        <div class="pd-dials" style="margin-top:.35rem">
+          <span class="pd-dial">holdings <b>${Object.keys(D.holdings[f]).length}</b></span>
+          <span class="pd-dial">range <b>${rng[0].toFixed(2)}–${rng[1].toFixed(2)}</b></span>
+          <span class="pd-dial">days up <b>${st.up}/${st.n}</b></span>
         </div></article>`;
     }).join("");
   }
@@ -119,8 +129,13 @@
   // ---------- NAV chart ----------
   // Three views of the same series: the level, the same thing rebased to zero so the spread is
   // readable, and the fall from each portfolio's own high — which the level chart cannot show.
-  const VIEWS = { nav: "Daily NAV since inception", cum: "Cumulative return", dd: "Drawdown from high" };
-  let view = "nav";
+  // Growth of $10,000 is the chart every fund page leads with, and the SEC requires it in annual
+  // reports for exactly this reason: a NAV level of 99.92 against 102.69 is unreadable, while the
+  // same information as "what $10,000 became" is not. The raw level view is gone.
+  const VIEWS = { growth: "Growth of $10,000", cum: "Cumulative return", dd: "Drawdown from high" };
+  let view = "growth";
+  let chartFund = "SAA";      // one fund against its own reference, the way a fund page plots it
+  let compareAll = false;
   function viewChips() {
     el("nav-views").innerHTML = Object.entries(VIEWS).map(([k, v]) =>
       `<button class="chip${k === view ? " sel" : ""}" data-v="${k}">${v}</button>`).join("");
@@ -130,38 +145,66 @@
   }
 
   function chips() {
-    el("nav-chips").innerHTML = [...FUNDS, ...BENCH].map((n) =>
-      `<button class="chip${on.has(n) ? " sel" : ""}" data-n="${n}">${n}</button>`).join("");
+    el("nav-chips").innerHTML = FUNDS.map((n) =>
+      `<button class="chip${!compareAll && n === chartFund ? " sel" : ""}" data-n="${n}">${n}</button>`)
+      .join("") + `<button class="chip${compareAll ? " sel" : ""}" data-n="__all">All five</button>`;
     el("nav-chips").querySelectorAll(".chip").forEach((b) => {
-      b.onclick = () => { const n = b.dataset.n; on.has(n) ? on.delete(n) : on.add(n); chips(); navChart(); };
+      b.onclick = () => {
+        if (b.dataset.n === "__all") { compareAll = true; } else { compareAll = false; chartFund = b.dataset.n; }
+        chips(); navChart();
+      };
     });
   }
   function navChart() {
-    const yOf = (n) => view === "nav" ? D.series[n]
-      : view === "cum" ? D.series[n].map((v) => 100 * (v / D.nav0 - 1))
-        : D.drawdown[n].map((v) => 100 * v);
-    const unit = view === "nav" ? "NAV per unit" : view === "cum" ? "Return since launch, %" : "Drawdown, %";
-    const fmt = view === "nav" ? ":.2f" : ":+.2f";
-    const tr = [...FUNDS, ...BENCH].filter((n) => on.has(n)).map((n) => ({
-      x: D.dates, y: yOf(n), name: n, type: "scatter", mode: "lines",
-      line: { color: COLOR[n], width: FUNDS.includes(n) ? 2.2 : 1.3, dash: FUNDS.includes(n) ? "solid" : "dot" },
-      hovertemplate: "%{y" + fmt + "}" + (view === "nav" ? "" : "%") + "<extra>" + n + "</extra>"
-    }));
-    el("nav-chart-title").textContent = VIEWS[view];
-    const zero = view === "nav" ? D.nav0 : 0;
+    const ser = (n) => D.series[n] || (D.ref_series && D.ref_series[n]);
+    const yOf = (n) => view === "growth" ? ser(n).map((v) => 10000 * v / D.nav0)
+      : view === "cum" ? ser(n).map((v) => 100 * (v / D.nav0 - 1))
+        : (D.drawdown[n] || []).map((v) => 100 * v);
+    const unit = view === "growth" ? "Value of $10,000" : view === "cum" ? "Return since launch, %" : "Drawdown, %";
+    const fmt = view === "growth" ? "$%{y:,.0f}" : "%{y:+.2f}%";
+
+    // One fund against its own reference — how a fund page plots it. "All five" compares the range.
+    const shown = compareAll || view === "dd" ? (compareAll ? FUNDS.slice() : [chartFund])
+      : [chartFund, D.ref_of[chartFund]];
+    const tr = shown.filter((n) => ser(n)).map((n, i) => {
+      const isRef = !compareAll && i === 1;
+      return {
+        x: D.dates, y: yOf(n), name: n, type: "scatter", mode: "lines",
+        line: { color: isRef ? "#9aa5b1" : (COLOR[n] || "#3083b4"),
+          width: isRef ? 1.4 : 2.6, dash: isRef ? "dot" : "solid" },
+        // NO fill: "tozeroy" drags the y-axis down to $0 and flattens a 2-month series into a
+        // straight line at the top of the panel. The axis must fit the data, not the origin.
+        hovertemplate: fmt + "<extra>" + n + "</extra>"
+      };
+    });
+    el("nav-chart-title").textContent = VIEWS[view]
+      + (compareAll ? " — all five" : ` — ${chartFund} vs ${D.ref_of[chartFund]}`);
+    el("nav-sub").textContent = subOf();
+    const zero = view === "growth" ? 10000 : 0;
     Plotly.react("nav-chart", tr, L({
       showlegend: false, hovermode: "x unified",
       yaxis: { title: { text: unit, font: { size: 10 } },
-        ticksuffix: view === "nav" ? "" : "%" },
+        ticksuffix: view === "growth" ? "" : "%", autorange: true,
+        tickprefix: view === "growth" ? "$" : "", tickformat: view === "growth" ? ",.0f" : "" },
       shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: zero, y1: zero,
         line: { color: "#c9ced6", width: 1, dash: "dot" } }]
     }), CFG);
-    const led = FUNDS.slice().sort((a, b) => D.stats[b].ret - D.stats[a].ret);
-    el("nav-read").innerHTML =
-      `${led[0]} leads at ${pp(D.stats[led[0]].ret)} and ${led[led.length - 1]} trails at
-       ${pp(D.stats[led[led.length - 1]].ret)}. The Bloomberg Aggregate is ${pp(D.stats["Bloomberg US Aggregate"].ret)}
-       over the same window, which is most of why the two conservative funds sit where they do — that is the
-       mandate working, not failing.`;
+    if (compareAll) {
+      const lo = FUNDS.slice().sort((a, b) => D.stats[a].ret - D.stats[b].ret);
+      el("nav-read").innerHTML =
+        `$10,000 at launch is worth $${(10000 * D.stats[lo[lo.length - 1]].nav / D.nav0).toFixed(0)} in
+         ${lo[lo.length - 1]} and $${(10000 * D.stats[lo[0]].nav / D.nav0).toFixed(0)} in ${lo[0]}. The
+         Bloomberg Aggregate is ${pp(D.stats["Bloomberg US Aggregate"].ret)} over the same window, which is
+         most of why the conservative books sit where they do — the mandate working, not failing.`;
+    } else {
+      const rs = D.ref_stats[chartFund], st = D.stats[chartFund];
+      el("nav-read").innerHTML =
+        `$10,000 in <strong>${chartFund}</strong> at launch is worth
+         <strong>$${(10000 * st.nav / D.nav0).toFixed(0)}</strong> today; the same in its reference
+         (${rs.name}) is $${(10000 * (1 + rs.ret)).toFixed(0)} — a difference of
+         <strong>${pp(rs.excess)}</strong>. ${T.months.toFixed(1)} months is far too short to judge a
+         strategy; it is here because it is the real record.`;
+    }
   }
 
   // ---------- tables ----------

@@ -157,6 +157,8 @@ facts = {f: dict(reference=FR.FUNDS[f.lower()]['reference'], horizon=FR.FUNDS[f.
 
 D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
          periods=periods, track=track, facts=facts, monthly=monthly, ref_of=REF_OF,
+         ref_series={r: [round(float(x), 4) for x in nav[r]]
+                     for r in sorted(set(REF_OF.values())) if r not in N['series']},
          ref_stats={f: dict(name=REF_OF[f],
                             ret=float(nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1),
                             excess=float(nav[f].iloc[-1] / nav[REF_OF[f]].iloc[-1] - 1))
