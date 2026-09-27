@@ -625,3 +625,22 @@ table.blotter tr:hover td { background: #f6f9fc; }
 /* Five portfolios, so give them five columns rather than letting auto-fit orphan the last one. */
 @media (min-width:1180px){ .nv-grid{grid-template-columns:repeat(5,1fr)} }
 .nv-grid .pd-stat b{font-size:.8rem}
+
+
+/* ---- Typography and table quality -------------------------------------------------------------
+   Section and tile headings sat 1.9px apart, so seven section heads and eleven tile heads read as
+   one level; explanatory copy was set SMALLER than the data it explains. Figures were set in a mono
+   family, which reads as a terminal dump beside proportional row labels — tabular numerals give the
+   same column alignment in the page's own typeface. */
+.section-title { font-size: 1.24rem; font-weight: 800; letter-spacing: -.015em; }
+.tile-head h2 { font-size: 1.02rem; }
+.read { font-size: 0.855rem; line-height: 1.62; }
+table.dtbl td.num, table.dtbl th.num, .pd-stat b, .kpi-value, .nv-nav, .nv-day {
+  font-family: inherit; font-variant-numeric: tabular-nums; }
+
+/* A ten-column table must not widen the body past the viewport: at phone width the KPI ribbon and
+   the NAV cards were being clipped mid-word by a table further down the page. */
+@media (max-width: 760px) {
+  table.dtbl { display: block; overflow-x: auto; white-space: nowrap; }
+  .section-title { font-size: 1.08rem; }
+}

@@ -121,7 +121,11 @@ def run():
         w0 = tgt[days[0]]
         if abs(w0.sum() - 1) > 0.005:
             raise SystemExit(f'{f}: launch weights sum to {w0.sum():.4f}, not 1')
-        held = w0.reindex(px.columns).fillna(0.0)
+        # Start from CASH, not from the target book. Seeding `held` to w0 made the day-one
+        # `turn = |t - held|` identically zero, so the 100% turnover of actually buying the book at
+        # launch was never charged: Certain and Alpha showed zero dealing cost for their entire life
+        # and every fund's since-inception return was overstated by about 10bp.
+        held = pd.Series(0.0, index=px.columns)
         nav, rows, tr = [], [], []
         # What actually moved the NAV. Each day's contribution is scaled by the NAV level it was
         # earned on, so the pieces reconcile to the NAV exactly rather than approximately:

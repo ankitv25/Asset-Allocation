@@ -156,3 +156,40 @@ it *is* the cash leg, and that is the correct reading, not a failure.
 What it shows: the range takes **no size or style bet** (exposures ≈ 0.00), which is what `style_box.py`
 already said about positioning — now with the price of that non-decision attached. PC-22 remains
 unimplemented; this makes the cost of leaving it unimplemented visible rather than theoretical.
+
+## 2026-09-27 — Live NAV page brought to standard, and a NAV pricing defect corrected
+
+**A pricing defect, found by independent validation and fixed.** `fund_nav.py` seeded `held` to the
+target book before the pricing loop, so the day-one `turn = |t − held|` was identically zero and the
+100% turnover of *buying* the book at launch was never charged. Certain and Alpha showed
+`dealing = 0.00000000` for their entire life and every portfolio's since-inception return was
+overstated by ~10bp. `held` now starts from cash. NAVs restated:
+
+| | was | now |
+|---|---:|---:|
+| Certain | 100.14 | 100.04 |
+| Endowment | 99.92 | 99.82 |
+| SAA | 101.27 | 101.17 |
+| DAA | 101.71 | 101.61 |
+| Alpha | 102.69 | 102.59 |
+
+**A cascade that blanked a third of the page.** `sbxPanel()` was still called after its markup moved
+to Attribution; it threw, and because the whole bootstrap was one statement, every panel after it —
+holdings, dealing log, mandates, **the entire disclosure block** — silently never rendered while the
+page still reported clean. Panels now run independently and a failure names itself in the footer.
+
+**Identity colours were wrong at the source.** The renderer's hand-copied colour map had drifted:
+Certain drew in SAA's colour, SAA in DAA's, DAA in a benchmark's. Colours are now published from
+`fund_registry` in the payload and must never be re-typed in a renderer.
+
+**Standing rules this page now honours** (see `docs/LIVE_NAV_REQUIREMENTS.md`, the cumulative ledger):
+- One selected portfolio drives every panel. There were three independent selections.
+- `excess` has one definition (arithmetic). The cards used a NAV ratio, the table a return difference.
+- The 20% vehicle cap claim is stated with its one real exception: Certain's single-vehicle T-bill
+  sleeve runs at 26%, which the cap cannot bind.
+- "Nothing is annualised" is scoped to returns; volatility, tracking error and backtest CAGR are.
+- The drawdown cap shown is the **construction constraint from the build record**, with Endowment's
+  loosened case flagged — `declared` in that record is the CDaR, not a drawdown, and is labelled so.
+- Size/style is credited to the 3×3 style box, not to PC-22, which is the sector tilt layer.
+
+Payload trimmed 66 KB → 46 KB by removing blocks nothing rendered.

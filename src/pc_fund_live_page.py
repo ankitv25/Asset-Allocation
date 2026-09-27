@@ -112,6 +112,39 @@ factor = json.load(open(_fa)) if os.path.exists(_fa) else None
 if factor is None:
     print('  note: factor_attrib.json absent — the exposure view will not render')
 
+# ---- exposure, on the platform's own taxonomies -------------------------------------------------
+# Two class views, because the platform deliberately keeps two and the crosswalk between them is an
+# owner-confirmed decision (fund_registry.PLATFORM_CLASS): the portfolios' methodology classes drive
+# the optimiser, the platform's six drive the shared components. Both are built from the LIVE
+# holdings, not the policy weights, so the page shows what is actually held today.
+#
+# Geography is given for the EQUITY sleeves only. US / developed ex-US / emerging is unambiguous
+# there. Assigning a geography to gold, broad commodities or a trend sleeve would be inventing a
+# mapping that appears in no approved document, so it is not done.
+GEO = {'US_EQ': 'United States', 'DM_EQ': 'Developed ex-US', 'EM_EQ': 'Emerging markets'}
+SLEEVE_OF = N['ticker_sleeve']
+exposure = {}
+for f in FUNDS:
+    h = N['holdings'][f]
+    tot = sum(h.values()) or 1.0
+    by_sleeve = {}
+    for t, w in h.items():
+        sl = SLEEVE_OF.get(t, t)
+        by_sleeve[sl] = by_sleeve.get(sl, 0.0) + w / tot
+    meth, plat = {}, {}
+    for sl, w in by_sleeve.items():
+        meth[S['class_of'].get(sl, 'Other')] = meth.get(S['class_of'].get(sl, 'Other'), 0.0) + w
+        plat[FR.PLATFORM_CLASS[sl]] = plat.get(FR.PLATFORM_CLASS[sl], 0.0) + w
+    eq = {GEO[sl]: w for sl, w in by_sleeve.items() if sl in GEO}
+    eq_tot = sum(eq.values())
+    exposure[f] = dict(
+        methodology={k: round(100 * v, 2) for k, v in meth.items()},
+        platform={k: round(100 * v, 2) for k, v in plat.items()},
+        sleeves={S['labels'].get(k, k): round(100 * v, 2)
+                 for k, v in sorted(by_sleeve.items(), key=lambda kv: -kv[1])},
+        equity_geography={k: round(100 * v / eq_tot, 2) for k, v in eq.items()} if eq_tot else {},
+        equity_weight=round(100 * eq_tot, 2))
+
 # ---- what separates five multi-asset books -----------------------------------------------------
 # Income yield, weighted from what each book actually holds today, and its sensitivity to the two
 # things that drive a multi-asset portfolio: equity direction and rates. The sensitivities come from
@@ -138,6 +171,16 @@ if os.path.exists(_vd):
                                                  round(gx('Rates') + gx('Curve'), 3)),
             gold=gx('Gold'), trend=gx('Trend'),
             n_holdings=len(h), vol=stats[f]['vol'], maxdd=stats[f]['maxdd'],
+            # CONSTRUCTION CONSTRAINT — the cap the optimiser was actually held to, read from the
+            # build record. Not a mandate limit and not a "budget": where a declared cap was
+            # infeasible, pc_fs6_build loosened it and recorded what it used, and that is what is
+            # shown. Endowment's declared 16% CDaR / 22% drawdown was solved at 20% / 27.5%.
+            dd_cap=-abs(float(S['info'][f]['ddcap'])) if S['info'][f].get('ddcap') else None,
+            # `declared` in the build record is the declared CDaR, not a declared drawdown — pairing
+            # it with the drawdown cap would put a mislabelled parameter on the page.
+            cdar_cap=abs(float(S['info'][f]['cdar'])) if S['info'][f].get('cdar') else None,
+            cdar_declared=abs(float(S['info'][f]['declared'])) if S['info'][f].get('declared') else None,
+            dd_loosened=bool(S['info'][f].get('loosened')),
             categories=sorted({VD[t]['category'] for t in h if VD[t]['category']}))
 else:
     print('  note: vehicle_data.json absent — characteristics will not render')
@@ -174,7 +217,8 @@ track = dict(trading_days=int(len(nav)), months=round(float(_months), 1),
 # The identity panel a factsheet leads with. Every value is read from the registry or the pricing
 # constants. There is deliberately no fund size, units in issue or ISIN: these funds are notional,
 # priced from market closes, and inventing a subscription record would be inventing a fund.
-facts = {f: dict(reference=FR.FUNDS[f.lower()]['reference'], horizon=FR.FUNDS[f.lower()]['horizon'],
+facts = {f: dict(color=FR.FUNDS[f.lower()]['color'],
+                 reference=FR.FUNDS[f.lower()]['reference'], horizon=FR.FUNDS[f.lower()]['horizon'],
                  role=FR.FUNDS[f.lower()]['role'], managed=FR.FUNDS[f.lower()]['managed'],
                  fee_bps=round(FN.FEE_YR * 1e4), dealing_bps=round(FN.COST * 1e4),
                  band_bps=round(FN.BAND * 1e4), vehicle_cap=FN.CAP,
@@ -191,17 +235,26 @@ D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
                      for r in sorted(set(REF_OF.values())) if r not in N['series']},
          ref_stats={f: dict(name=REF_OF[f],
                             ret=float(nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1),
-                            excess=float(nav[f].iloc[-1] / nav[REF_OF[f]].iloc[-1] - 1))
+                            # Arithmetic, matching the `rel` table's "Excess". The two were
+                            # different conventions — a NAV ratio here, a difference of cumulative
+                            # returns there — so one page showed one word with two meanings.
+                            excess=float((nav[f].iloc[-1] / N['nav0'] - 1)
+                                         - (nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1)))
                     for f in FUNDS},
-         drawdown=drawdown, day=day, bridge=bridge, factor=factor, stylebox=stylebox,
-         chars=chars,
+         day=day, bridge=bridge, factor=factor,
+         chars=chars, exposure=exposure,
+         # Colour is a portfolio's identity across the whole platform. It is published from the
+         # registry rather than re-typed in the renderer: the hand-copied map had drifted so far that
+         # Certain was drawn in SAA's colour, SAA in DAA's, and DAA in a benchmark's.
+         bench_colors={b['name']: b['color'] for b in FR.BENCHMARKS.values()},
+         methodology_classes=S['classes'], platform_classes=FR.PLATFORM_CLASSES,
          dates=N['dates'], series=N['series'], stats=stats, rel=rel,
          holdings=N['holdings'], trades=N['trades'], books=N['books'], ticker_sleeve=N['ticker_sleeve'],
          funds={f: S['funds'][f] for f in FUNDS}, labels=S['labels'], class_of=S['class_of'],
-         classes=S['classes'], info={f: S['info'][f] for f in FUNDS},
+         classes=S['classes'],
          backtest={f: S['table'][f + '|1997-2026'] for f in FUNDS},
          bench_list=BENCH, fund_list=FUNDS,
-         regime=S['regime']['state'], mf_by_state=S['mf_by_state'])
+         regime=S['regime']['state'])
 tpl = open(os.path.join(REP, 'fund_live_template.html')).read()
 open(os.path.join(REP, 'Summer_Funds_Live.html'), 'w').write(
     tpl.replace('/*__DATA__*/null', json.dumps(D, default=float, separators=(',', ':'))))
