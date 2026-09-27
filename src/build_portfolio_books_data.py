@@ -1073,7 +1073,12 @@ def build_one(key, R, cash, suite, nav_live, corr_panel):
                       else f'solved under a {dd_cap:.0f}% cap' if dd_cap
                       else f'benchmark {mb["maxdd"]:.1f}%'))]
 
-    return dict(generated=nav_live['dates'][-1], decision_month=nav_live['dates'][-1], kpis=kpis,
+    # `asof` is the last date the NAV was PRICED to; `built` is when this payload was generated. They
+    # are different facts and were previously one field called `generated`, which the footer then
+    # labelled "Generated <date>" — reporting a pricing date as a build date and hiding how stale the
+    # prices were. Names match build_portfolios_dashboard_data.py's meta block.
+    return dict(asof=nav_live['dates'][-1], built=pd.Timestamp.today().strftime('%Y-%m-%d'),
+                decision_month=nav_live['dates'][-1], kpis=kpis,
                 positioning=pos, construction=cons, diversification=div, risk=risk,
                 track_record=tr, comparison=comp, stress=stress, attribution=attr,
                 monte_carlo=mc, scenarios=scen, provenance=prov,

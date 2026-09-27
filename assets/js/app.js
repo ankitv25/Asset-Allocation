@@ -1449,7 +1449,8 @@ function renderHoldings(d) {
   if (el("holdings-vintage")) {
     const totalW = held.reduce((a, r) => a + r.holding, 0);
     el("holdings-vintage").innerHTML = [
-      ["As of (decision month)", d.decision_month], ["Data generated", d.generated],
+      ["As of (decision month)", d.decision_month], ["Priced to", d.asof || d.generated],
+      ["Payload built", d.built || "—"],
       ["Instruments held", `${held.length} of ${rows.length}`],
       ["Total weight", `${totalW.toFixed(1)}%`], ["Data tier", "Exploratory (Yahoo)"],
       ["Cash sleeve", "FRED T-bill proxy (G-4)"],
@@ -1936,7 +1937,9 @@ async function main() {
     mountPortfolioName(d);
     mountProvenance(d);
     if (el("status-footer")) el("status-footer").textContent =
-      `Generated ${d.generated} from the live portfolio-construction pipeline and its walk-forward backtest. `
+      `Priced to ${d.asof || d.generated}`
+      + (d.built ? ` · payload built ${d.built}` : ``)
+      + ` from the live portfolio-construction pipeline and its walk-forward backtest. `
       + `Net of cost; exploratory-tier data (see repo notes).`;
   } catch (e) {
     if (el("status-footer")) el("status-footer").textContent = `Error: ${e.message}`;
