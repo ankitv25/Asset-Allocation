@@ -16,6 +16,7 @@
   const CFG = { displayModeBar: false, responsive: true };
 
   const FUNDS = D.fund_list, BENCH = D.bench_list;
+  const T = D.track, F0 = D.facts[D.fund_list[0]];
   const COLOR = { Certain: "#3083b4", Endowment: "#2e7d32", SAA: "#0e2233", DAA: "#d68a13", Alpha: "#c0392b",
     "S&P 500": "#8a93a1", "MSCI ACWI": "#b0b8c2", "Bloomberg US Aggregate": "#c9ced6" };
   const pct = (x, d = 2) => (x * 100).toFixed(d) + "%";
@@ -28,12 +29,14 @@
   const on = new Set([...FUNDS, "S&P 500"]);
 
   // ---------- ribbon ----------
-  const best = FUNDS.slice().sort((a, b) => D.stats[b].ret - D.stats[a].ret)[0];
+  // A factsheet ribbon states the terms and the length of the record. It deliberately does not
+  // headline which portfolio is ahead: ranking five books on 2.4 months is noise, and printing it as
+  // the first thing a reader sees invites exactly the decision the record cannot support.
   el("kpi-ribbon").innerHTML = [
-    { l: "Inception", v: fmtD(D.inception), s: D.stats[FUNDS[0]].n + 1 + " trading days" },
-    { l: "Priced to", v: fmtD(D.asof), s: "daily market closes" },
-    { l: "Leading portfolio", v: best, s: pp(D.stats[best].ret) + " since inception", perf: true },
-    { l: "S&P 500", v: pp(D.stats["S&P 500"].ret), s: "same window" }
+    { l: "Inception", v: fmtD(D.inception), s: "at " + D.nav0.toFixed(2) + " per unit" },
+    { l: "Priced to", v: fmtD(D.asof), s: "dividend-adjusted closes" },
+    { l: "Track record", v: T.months.toFixed(1) + " months", s: T.trading_days + " trading days" },
+    { l: "Ongoing charge", v: F0.fee_bps + "bp a year", s: F0.dealing_bps + "bp per side dealt" }
   ].map((k) => `<div class="kpi${k.perf ? " kpi-perf" : ""}"><div class="kpi-label">${k.l}</div>
       <div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join("");
 
@@ -44,7 +47,8 @@
      lean. The <strong>DAA</strong> runs that book actively, sizing its trend sleeve to the macro state — which
      reads <strong>${D.regime.toLowerCase()}</strong> today. <strong>Alpha</strong> spends an equity-level
      volatility budget of its own. None of them holds mortgage bonds.`;
-  el("nav-sub").textContent = "rebased to 100.00 at inception · net of a 15bp annual fee";
+  el("nav-sub").textContent = `rebased to ${D.nav0.toFixed(2)} at inception · net of a `
+    + `${F0.fee_bps}bp annual fee`;
   el("appbar-status").textContent = "Funds · priced to " + fmtD(D.asof);
   el("status-footer").textContent =
     "NAV from Src/fund_nav.py · books from Src/pc_fs6_build.py · priced to " + fmtD(D.asof)
@@ -80,20 +84,36 @@
 
   // ---------- tables ----------
   function perfTable() {
+    // Discrete cumulative periods, the order a factsheet prints them. A period shorter than the
+    // record is left blank rather than part-filled, and nothing here is annualised — see T.note.
+    const COLS = [["1M", "1 month"], ["3M", "3 months"], ["6M", "6 months"],
+                  ["12M", "12 months"], ["SI", "Since inception"]];
+    el("perf-sub").textContent = `cumulative, not annualised · net of fee and dealing · `
+      + `${T.trading_days} trading days priced`;
     const row = (n) => {
-      const s = D.stats[n], isF = FUNDS.includes(n);
+      const s = D.stats[n], pr = D.periods[n], isF = FUNDS.includes(n);
+      const cells = COLS.map(([k]) => pr[k] === null || pr[k] === undefined
+        ? `<td class="num z">—</td>`
+        : `<td class="num ${cls(pr[k])}">${pp(pr[k])}</td>`).join("");
       return `<tr class="${isF ? "hl" : ""}"><td class="${isF ? "strong" : "z"}">${n}</td>
-        <td class="num">${s.nav.toFixed(2)}</td><td class="num ${cls(s.ret)}">${pp(s.ret)}</td>
+        <td class="num">${s.nav.toFixed(2)}</td>${cells}
         <td class="num">${pct(s.vol, 1)}</td><td class="num neg">${pct(s.maxdd, 1)}</td>
-        <td class="num pos">${pp(s.best)}</td><td class="num neg">${pp(s.worst)}</td>
         <td class="num z">${s.up}/${s.n}</td></tr>`;
     };
     el("perf-table").innerHTML = `<table class="dtbl"><thead><tr><th>Fund or benchmark</th>
-      <th class="num">NAV</th><th class="num">Return</th><th class="num">Vol</th><th class="num">Worst drop</th>
-      <th class="num">Best day</th><th class="num">Worst day</th><th class="num">Days up</th></tr></thead>
+      <th class="num">NAV</th>${COLS.map(([k, t]) => `<th class="num" title="${t}">${k}</th>`).join("")}
+      <th class="num">Vol<span class="z">†</span></th><th class="num">Worst drop</th>
+      <th class="num">Days up</th></tr></thead>
       <tbody>${FUNDS.map(row).join("")}${BENCH.map(row).join("")}</tbody></table>`;
+    el("perf-read").innerHTML = `${T.note} A dash is a period the portfolios did not exist for —
+      they were launched ${T.months.toFixed(1)} months ago, so only the first column and since-inception
+      are real. <strong>†</strong> volatility is annualised from ${T.trading_days - 1} daily observations;
+      the convention is ${T.min_months_for_risk_stats} months before a risk statistic is quoted as an
+      estimate, so read it as a description of this window and nothing more.`;
   }
   function relTable() {
+    el("rel-sub").textContent = `cumulative excess · tracking error and beta on `
+      + `${T.trading_days - 1} daily observations, indicative only`;
     let h = `<table class="dtbl"><thead><tr><th>Fund</th><th>Benchmark</th><th class="num">Excess</th>
       <th class="num">Tracking error</th><th class="num">Beta</th></tr></thead><tbody>`;
     FUNDS.forEach((f) => BENCH.forEach((b, i) => {
@@ -104,6 +124,28 @@
     }));
     el("rel-table").innerHTML = h + "</tbody></table>";
   }
+  function factsTable() {
+    el("facts-sub").textContent =
+      `base currency ${F0.currency} · ${F0.pricing.toLowerCase()} · accumulating`;
+    const rows = FUNDS.map((f) => {
+      const x = D.facts[f];
+      return `<tr><td class="strong">${f}</td><td class="z">${x.role}</td>
+        <td>${x.reference}</td><td>${x.horizon}</td>
+        <td>${x.managed === "active" ? "Actively run" : "Policy weights"}</td>
+        <td class="z">${x.dealing}</td></tr>`;
+    }).join("");
+    el("facts-table").innerHTML = `<table class="dtbl"><thead><tr><th>Portfolio</th><th>Role</th>
+      <th>Reference</th><th>Horizon</th><th>Management</th><th>Dealing</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+    el("facts-read").innerHTML =
+      `All five carry the same terms: a <strong>${F0.fee_bps}bp</strong> annual fee accrued daily,
+       <strong>${F0.dealing_bps}bp</strong> per side on anything dealt, and no single vehicle above
+       <strong>${(F0.vehicle_cap * 100).toFixed(0)}%</strong> of a portfolio. Income is reinvested — there is
+       no distribution. There is deliberately <strong>no fund size, units in issue or ISIN</strong> on this
+       page: these are notional portfolios priced from market closes, and a subscription record they do
+       not have is not something to invent.`;
+  }
+
   function fundChips() {
     el("fund-chips").innerHTML = FUNDS.map((f) =>
       `<button class="chip${f === fund ? " sel" : ""}" data-f="${f}">${f}</button>`).join("");
@@ -163,5 +205,31 @@
     el("mandate-table").innerHTML = h + "</tbody></table>";
   }
 
-  chips(); navChart(); perfTable(); relTable(); fundChips(); holdTable(); mandateTable();
+  function disclosure() {
+    const items = [
+      ["Past performance", `Past performance is not a guide to future performance. The record is
+        ${T.months.toFixed(1)} months long — below the ${T.min_months_to_annualise} months at which a return
+        is annualised and well below the ${T.min_months_for_risk_stats} at which risk statistics are
+        normally quoted. Nothing on this page is annualised.`],
+      ["Two different things called performance", `The series on this page is the <strong>live</strong>
+        NAV from ${fmtD(D.inception)}. The 1997–2026 figures elsewhere on the platform are a
+        <strong>backtest of today's weights</strong> — a different basis, and they are not linked to or
+        continued by this record.`],
+      ["How the NAV is struck", `Daily, from dividend-adjusted closing prices of the vehicles actually
+        held, in ${F0.currency}. A ${F0.fee_bps}bp annual fee accrues daily and ${F0.dealing_bps}bp per
+        side is charged on anything dealt. The whole series is recomputed from inception on every run,
+        so a corrected price corrects the history rather than leaving a step in it.`],
+      ["What this is not", `Not a custodial or audited record, not a price you could have dealt at, and
+        not a fund you can buy. There is no fund size, no units in issue and no ISIN because there are
+        no subscriptions — these are notional portfolios priced against the market.`],
+      ["Data", `Vehicle prices from a public market-data feed (exploratory tier); the cash sleeve uses a
+        FRED T-bill proxy; regime state from the Macro-Regime-Score platform. Priced to
+        ${fmtD(D.asof)}.`]
+    ];
+    el("disclosure").innerHTML = items.map(([h, b]) =>
+      `<div class="vi"><div class="vi-l">${h}</div><div class="vi-v">${b}</div></div>`).join("");
+  }
+
+  chips(); factsTable(); navChart(); perfTable(); relTable(); fundChips(); holdTable();
+  mandateTable(); disclosure();
 })();
