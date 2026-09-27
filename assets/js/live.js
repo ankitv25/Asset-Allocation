@@ -129,82 +129,86 @@
   // ---------- NAV chart ----------
   // Three views of the same series: the level, the same thing rebased to zero so the spread is
   // readable, and the fall from each portfolio's own high — which the level chart cannot show.
-  // Growth of $10,000 is the chart every fund page leads with, and the SEC requires it in annual
-  // reports for exactly this reason: a NAV level of 99.92 against 102.69 is unreadable, while the
-  // same information as "what $10,000 became" is not. The raw level view is gone.
-  const VIEWS = { growth: "Growth of $10,000", cum: "Cumulative return", dd: "Drawdown from high" };
-  let view = "growth";
-  let chartFund = "SAA";      // one fund against its own reference, the way a fund page plots it
-  let compareAll = false;
+  // This is a fund's NAV chart: you pick the product, you see ITS net asset value, and you pick the
+  // period. That is what a product page does. The unreadable version was not the NAV — it was eight
+  // series at once inside a four-point band with no period control.
+  const PERIODS = [["1M", 1], ["3M", 3], ["6M", 6], ["1Y", 12], ["SI", null]];
+  let period = "SI";
+  let chartFund = "SAA";
+  let showRef = false;
+  // Periods longer than the record are not offered — a "1Y" button on a 2.4-month fund is a lie.
   function viewChips() {
-    el("nav-views").innerHTML = Object.entries(VIEWS).map(([k, v]) =>
-      `<button class="chip${k === view ? " sel" : ""}" data-v="${k}">${v}</button>`).join("");
+    el("nav-views").innerHTML = PERIODS.filter(([, m]) => m === null || m <= T.months)
+      .map(([k]) => `<button class="chip${k === period ? " sel" : ""}" data-v="${k}">${
+        k === "SI" ? "Since launch" : k}</button>`).join("")
+      + `<button class="chip${showRef ? " sel" : ""}" data-v="__ref">Compare reference</button>`;
     el("nav-views").querySelectorAll(".chip").forEach((b) => {
-      b.onclick = () => { view = b.dataset.v; viewChips(); navChart(); };
+      b.onclick = () => {
+        if (b.dataset.v === "__ref") showRef = !showRef; else period = b.dataset.v;
+        viewChips(); navChart();
+      };
     });
   }
 
   function chips() {
     el("nav-chips").innerHTML = FUNDS.map((n) =>
-      `<button class="chip${!compareAll && n === chartFund ? " sel" : ""}" data-n="${n}">${n}</button>`)
-      .join("") + `<button class="chip${compareAll ? " sel" : ""}" data-n="__all">All five</button>`;
+      `<button class="chip${n === chartFund ? " sel" : ""}" data-n="${n}">${n}</button>`).join("");
     el("nav-chips").querySelectorAll(".chip").forEach((b) => {
-      b.onclick = () => {
-        if (b.dataset.n === "__all") { compareAll = true; } else { compareAll = false; chartFund = b.dataset.n; }
-        chips(); navChart();
-      };
+      b.onclick = () => { chartFund = b.dataset.n; chips(); navChart(); };
     });
   }
   function navChart() {
     const ser = (n) => D.series[n] || (D.ref_series && D.ref_series[n]);
-    const yOf = (n) => view === "growth" ? ser(n).map((v) => 10000 * v / D.nav0)
-      : view === "cum" ? ser(n).map((v) => 100 * (v / D.nav0 - 1))
-        : (D.drawdown[n] || []).map((v) => 100 * v);
-    const unit = view === "growth" ? "Value of $10,000" : view === "cum" ? "Return since launch, %" : "Drawdown, %";
-    const fmt = view === "growth" ? "$%{y:,.0f}" : "%{y:+.2f}%";
+    // Slice to the chosen period. A NAV chart with no period control is the reason the old one was
+    // unreadable: 52 points of a four-point range, squeezed against seven other series.
+    const months = (PERIODS.find(([k]) => k === period) || [])[1];
+    let i0 = 0;
+    if (months) {
+      const cut = new Date(D.dates[D.dates.length - 1] + "T00:00:00");
+      cut.setMonth(cut.getMonth() - months);
+      i0 = Math.max(0, D.dates.findIndex((d) => new Date(d + "T00:00:00") >= cut));
+    }
+    const dates = D.dates.slice(i0);
+    const navOf = (n) => ser(n).slice(i0);
 
-    // One fund against its own reference — how a fund page plots it. "All five" compares the range.
-    const shown = compareAll || view === "dd" ? (compareAll ? FUNDS.slice() : [chartFund])
-      : [chartFund, D.ref_of[chartFund]];
-    const tr = shown.filter((n) => ser(n)).map((n, i) => {
-      const isRef = !compareAll && i === 1;
-      return {
-        x: D.dates, y: yOf(n), name: n, type: "scatter", mode: "lines",
-        line: { color: isRef ? "#9aa5b1" : (COLOR[n] || "#3083b4"),
-          width: isRef ? 1.4 : 2.6, dash: isRef ? "dot" : "solid" },
-        // NO fill: "tozeroy" drags the y-axis down to $0 and flattens a 2-month series into a
-        // straight line at the top of the panel. The axis must fit the data, not the origin.
-        hovertemplate: fmt + "<extra>" + n + "</extra>"
-      };
-    });
-    el("nav-chart-title").textContent = VIEWS[view]
-      + (compareAll ? " — all five" : ` — ${chartFund} vs ${D.ref_of[chartFund]}`);
-    el("nav-sub").textContent = subOf();
-    const zero = view === "growth" ? 10000 : 0;
+    const refName = D.ref_of[chartFund];
+    const tr = [{
+      x: dates, y: navOf(chartFund), name: chartFund, type: "scatter", mode: "lines",
+      line: { color: COLOR[chartFund], width: 2.4, shape: "linear" },
+      hovertemplate: "%{y:.2f}<extra>" + chartFund + "</extra>"
+    }];
+    if (showRef && ser(refName)) {
+      // The reference rebased to the fund's NAV at the start of the window, so the two are comparable
+      // on one axis without a second scale.
+      const r = navOf(refName), f0 = navOf(chartFund)[0], r0 = r[0];
+      tr.push({
+        x: dates, y: r.map((v) => f0 * v / r0), name: refName, type: "scatter", mode: "lines",
+        line: { color: "#9aa5b1", width: 1.4, dash: "dot" },
+        hovertemplate: "%{y:.2f}<extra>" + refName + " (rebased)</extra>"
+      });
+    }
+
+    const lab = period === "SI" ? "since launch" : "last " + period;
+    el("nav-chart-title").textContent = `${chartFund} — NAV per unit`;
+    el("nav-sub").textContent = `${lab} · ${dates.length} trading days · priced from market closes, `
+      + `net of fee and dealing`;
+
     Plotly.react("nav-chart", tr, L({
       showlegend: false, hovermode: "x unified",
-      yaxis: { title: { text: unit, font: { size: 10 } },
-        ticksuffix: view === "growth" ? "" : "%", autorange: true,
-        tickprefix: view === "growth" ? "$" : "", tickformat: view === "growth" ? ",.0f" : "" },
-      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: zero, y1: zero,
+      yaxis: { title: { text: "NAV per unit", font: { size: 10 } }, tickformat: ".2f",
+        autorange: true },
+      xaxis: { type: "date" },
+      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: D.nav0, y1: D.nav0,
         line: { color: "#c9ced6", width: 1, dash: "dot" } }]
     }), CFG);
-    if (compareAll) {
-      const lo = FUNDS.slice().sort((a, b) => D.stats[a].ret - D.stats[b].ret);
-      el("nav-read").innerHTML =
-        `$10,000 at launch is worth $${(10000 * D.stats[lo[lo.length - 1]].nav / D.nav0).toFixed(0)} in
-         ${lo[lo.length - 1]} and $${(10000 * D.stats[lo[0]].nav / D.nav0).toFixed(0)} in ${lo[0]}. The
-         Bloomberg Aggregate is ${pp(D.stats["Bloomberg US Aggregate"].ret)} over the same window, which is
-         most of why the conservative books sit where they do — the mandate working, not failing.`;
-    } else {
-      const rs = D.ref_stats[chartFund], st = D.stats[chartFund];
-      el("nav-read").innerHTML =
-        `$10,000 in <strong>${chartFund}</strong> at launch is worth
-         <strong>$${(10000 * st.nav / D.nav0).toFixed(0)}</strong> today; the same in its reference
-         (${rs.name}) is $${(10000 * (1 + rs.ret)).toFixed(0)} — a difference of
-         <strong>${pp(rs.excess)}</strong>. ${T.months.toFixed(1)} months is far too short to judge a
-         strategy; it is here because it is the real record.`;
-    }
+
+    const a0 = navOf(chartFund)[0], a1 = navOf(chartFund)[navOf(chartFund).length - 1];
+    const chg = a1 / a0 - 1, st = D.stats[chartFund], rs = D.ref_stats[chartFund];
+    el("nav-read").innerHTML =
+      `<strong>${chartFund}</strong> is priced at <strong>${st.nav.toFixed(2)}</strong>, from
+       ${a0.toFixed(2)} at the start of this window — <strong>${pp(chg)}</strong> ${period === "SI" ? "since launch" : "over the " + period}. Its
+       reference (${rs.name}) returned ${pp(rs.ret)} since launch against the fund's ${pp(st.ret)}.
+       The dotted line is the ${D.nav0.toFixed(2)} launch price.`;
   }
 
   // ---------- tables ----------
@@ -297,6 +301,43 @@
        no distribution. There is deliberately <strong>no fund size, units in issue or ISIN</strong> on this
        page: these are notional portfolios priced from market closes, and a subscription record they do
        not have is not something to invent.`;
+  }
+
+  // What actually separates five multi-asset books. Not the sector split of one equity sleeve — these
+  // hold equity, two bond durations, real assets, trend and cash, so the questions are how much
+  // income they throw off and what they are sensitive to. Shown five-across because the difference
+  // between them IS the product.
+  function charsTable() {
+    const C = D.chars;
+    if (!C) { el("chars-sub").textContent = "characteristics not available"; return; }
+    el("chars-sub").textContent =
+      `income yield weighted from today's holdings · sensitivities measured, not declared`;
+    const row = (label, get, fmt, hint) => `<tr><td>${label}${
+      hint ? `<div class="z" style="font-size:.66rem">${hint}</div>` : ""}</td>`
+      + FUNDS.map((f) => `<td class="num">${fmt(get(C[f]), C[f])}</td>`).join("") + `</tr>`;
+    const n2 = (v) => v === null || v === undefined ? "—" : v.toFixed(2);
+    el("chars-table").innerHTML = `<table class="dtbl"><thead><tr><th>Characteristic</th>
+      ${FUNDS.map((f) => `<th class="num">${f}</th>`).join("")}</tr></thead><tbody>
+      ${row("Income yield", (c) => c.income_yield, (v) => pct(v, 2),
+        "trailing 12m, weighted across what it holds")}
+      ${row("Equity sensitivity", (c) => c.equity_beta, n2, "beta to global equity over cash")}
+      ${row("Rate sensitivity", (c) => c.rate_beta, n2, "beta to rates and the curve, combined")}
+      ${row("Gold", (c) => c.gold, n2, "beta to gold over cash")}
+      ${row("Trend", (c) => c.trend, n2, "beta to managed futures over cash")}
+      ${row("Volatility", (c) => c.vol, (v) => pct(v, 1), "annualised from the live record — short")}
+      ${row("Worst drop", (c) => c.maxdd, (v) => pct(v, 1), "since launch")}
+      ${row("Holdings", (c) => c.n_holdings, (v) => v)}
+      </tbody></table>`;
+    const y = FUNDS.map((f) => C[f].income_yield);
+    el("chars-read").innerHTML =
+      `The ladder is visible in one column: income falls from <strong>${pct(Math.max(...y), 2)}</strong>
+       in ${FUNDS[y.indexOf(Math.max(...y))]} to <strong>${pct(Math.min(...y), 2)}</strong> in
+       ${FUNDS[y.indexOf(Math.min(...y))]} as equity sensitivity rises from
+       ${n2(C[FUNDS[0]].equity_beta)} to ${n2(C[FUNDS[FUNDS.length - 1]].equity_beta)}. That is the
+       range doing what it says: the conservative books are paid to wait, the growth books are not.
+       <strong>Effective duration is deliberately absent</strong> — no vehicle reports it and a figure
+       invented from a maturity guess would not trace to a source, so rate sensitivity is given
+       instead, measured against the rate and curve factors.`;
   }
 
   function fundChips() {
@@ -599,5 +640,5 @@
   }
 
   navCards(); viewChips(); chips(); factsTable(); navChart(); perfTable(); monthlyTable();
-  relTable(); bridgeChips(); facPanel(); sbxPanel(); bridgePanel(); fundChips(); holdTable(); mandateTable(); disclosure();
+  relTable(); charsTable(); bridgeChips(); facPanel(); sbxPanel(); bridgePanel(); fundChips(); holdTable(); mandateTable(); disclosure();
 })();

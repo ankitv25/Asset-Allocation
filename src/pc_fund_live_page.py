@@ -112,6 +112,36 @@ factor = json.load(open(_fa)) if os.path.exists(_fa) else None
 if factor is None:
     print('  note: factor_attrib.json absent — the exposure view will not render')
 
+# ---- what separates five multi-asset books -----------------------------------------------------
+# Income yield, weighted from what each book actually holds today, and its sensitivity to the two
+# things that drive a multi-asset portfolio: equity direction and rates. The sensitivities come from
+# the factor model, so they are measured rather than declared. Effective duration is deliberately
+# absent — see vehicle_data.py; the rate exposure is the sourced answer to the same question.
+_vd = os.path.join(NAVD, 'vehicle_data.json')
+chars = None
+if os.path.exists(_vd):
+    VD = json.load(open(_vd))['vehicles']
+    chars = {}
+    for f in FUNDS:
+        h = N['holdings'][f]
+        tot = sum(h.values())
+        missing = [t for t in h if t not in VD]
+        if missing:
+            raise SystemExit('%s holds %s with no reference data — rerun Src/vehicle_data.py'
+                             % (f, ', '.join(missing)))
+        ytm = sum(w * VD[t]['yield_'] for t, w in h.items()) / tot
+        fx = (factor or {}).get('funds', {}).get(f)
+        gx = (lambda n: next((x['exposure'] for x in fx['factors'] if x['name'] == n), None))             if fx else (lambda n: None)
+        chars[f] = dict(
+            income_yield=float(ytm),
+            equity_beta=gx('Equity'), rate_beta=(None if not fx else
+                                                 round(gx('Rates') + gx('Curve'), 3)),
+            gold=gx('Gold'), trend=gx('Trend'),
+            n_holdings=len(h), vol=stats[f]['vol'], maxdd=stats[f]['maxdd'],
+            categories=sorted({VD[t]['category'] for t in h if VD[t]['category']}))
+else:
+    print('  note: vehicle_data.json absent — characteristics will not render')
+
 # The 3x3 style box: where each portfolio's US equity sleeve sits on size and style, and — priced
 # over the live window by style_box.py — what each of the nine boxes actually paid.
 _sb = os.path.join(SUITE, 'style_box.json')
@@ -164,6 +194,7 @@ D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
                             excess=float(nav[f].iloc[-1] / nav[REF_OF[f]].iloc[-1] - 1))
                     for f in FUNDS},
          drawdown=drawdown, day=day, bridge=bridge, factor=factor, stylebox=stylebox,
+         chars=chars,
          dates=N['dates'], series=N['series'], stats=stats, rel=rel,
          holdings=N['holdings'], trades=N['trades'], books=N['books'], ticker_sleeve=N['ticker_sleeve'],
          funds={f: S['funds'][f] for f in FUNDS}, labels=S['labels'], class_of=S['class_of'],
