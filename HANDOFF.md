@@ -262,3 +262,8 @@ High/Moderate (5.6y); Endowment, SAA, DAA High/Extensive (9–12y); Alpha not me
 
 Check-in-browser standard used: 50 page×portfolio renders (errors, empty charts, undefined/NaN, stale
 "Full System"/"DAA"/"SAA" labels), a 390px iframe for phones (headless Chrome will not go below ~500px).
+
+**Automatic daily refresh** — `daily_nav_refresh.sh` + LaunchAgent `com.summer.navrefresh`, Tue–Sat 07:00.
+Tested by hand (no-new-close path, and the refuse-over-uncommitted-work guard). Under launchd it is
+blocked by macOS privacy protection until `/bin/bash` is granted Full Disk Access — an owner action,
+documented in UPDATING.md. Until then the refresh remains the manual two-minute runbook.

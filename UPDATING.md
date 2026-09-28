@@ -34,6 +34,25 @@ bash Research/Portfolio_Construction/dashboard/deploy_dashboard_public.sh   # ow
 `/usr/bin/python3` is the interpreter with pandas — the homebrew `python3` does not have it.
 `verify_dashboard.py` is stdlib-only and runs on either.
 
+### Automatic daily refresh
+
+`daily_nav_refresh.sh` runs the NAV-refresh chain below plus the two page builders, verifies, commits
+only its own outputs, pushes and deploys. A macOS LaunchAgent (`~/Library/LaunchAgents/
+com.summer.navrefresh.plist`) runs it Tue–Sat at 07:00 local — after every US close — and a run missed
+while the Mac slept fires on wake. It refuses to run over uncommitted work or unpushed commits, and exits
+without publishing when no new close has been priced. Log: `~/Library/Logs/summer_nav_refresh.log`;
+a notification reports each publish or failure.
+
+**One-time permission.** The repo lives under `~/Desktop`, which macOS privacy protection closes to
+background jobs ("Operation not permitted", exit 126). Grant it once: System Settings → Privacy &
+Security → Full Disk Access → + → `/bin/bash` (press ⌘⇧G to type the path). Then test:
+
+```
+launchctl kickstart gui/$(id -u)/com.summer.navrefresh; sleep 30; tail ~/Library/Logs/summer_nav_refresh.log
+```
+
+Stop it: `launchctl bootout gui/$(id -u)/com.summer.navrefresh`.
+
 ### NAV refresh only
 
 The common case. Two steps:
