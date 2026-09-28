@@ -240,7 +240,8 @@
       it("Holdings", Object.keys(D.holdings[f]).length, "no vehicle above " + (x.vehicle_cap * 100).toFixed(0) + "%*"),
       C.dd_cap !== undefined && C.dd_cap !== null
         ? it("Drawdown cap", pct(C.dd_cap, 1) + (C.dd_loosened ? "*" : ""), "construction constraint") : "",
-      it("Distribution", "Accumulating", "income reinvested in the NAV"),
+      styleName(f) ? it("Equity style", sbxIcon(f) + styleName(f), "US equity sleeve")
+        : it("Distribution", "Accumulating", "income reinvested in the NAV"),
     ].join("");
   }
 
@@ -512,8 +513,8 @@
           <td class="num ${c === undefined ? "z" : cls(c)}">${c === undefined ? "—" : sgn(c, 3)}</td>
           <td class="lv-barc">${cb}</td></tr>`;
       }).join("") +
-      `<tr class="lv-total"><td class="strong">Total</td><td></td><td class="num">${pct(tot, 1)}</td><td></td>
-        <td class="num ${cls(csum)}">${sgn(csum, 3)}</td><td class="z lv-note">before ${sgn(B.dealing + B.fee, 3)} of costs</td></tr>
+      `<tr class="lv-total"><td class="strong">Total</td><td></td><td class="num">${pct(tot, 1)}</td><td class="lv-barc"></td>
+        <td class="num ${cls(csum)}">${sgn(csum, 3)}</td><td class="z lv-note lv-barc">before ${sgn(B.dealing + B.fee, 3)} of costs</td></tr>
       </tbody></table>`;
     el("hold-read").innerHTML =
       `Weights drift with markets between rebalances, so these are today's actual weights rather than the
@@ -559,6 +560,78 @@
        commodities and the trend sleeve have no defensible country of risk, so none is asserted.`;
   }
 
+  // ---------- equity style: the Morningstar 3x3 ----------
+  // Same source as the Attribution page (Src/style_box.py, returns-based style analysis); this is the
+  // product-page summary of it — where the US equity sleeve sits — and Attribution keeps the full
+  // analysis. Cells are shaded on one blue ramp by weight (magnitude), the dominant box outlined.
+  const SBX = D.style;
+  const styleName = (f) => {
+    const x = SBX && SBX.funds[f];
+    return x ? `${SBX.sizes[x.dominant[0]]} ${SBX.styles[x.dominant[1]]}` : null;
+  };
+  // The small version a factsheet puts beside "Equity style": nine squares, the dominant one filled.
+  function sbxIcon(f) {
+    const x = SBX && SBX.funds[f];
+    if (!x) return "";
+    let c = "";
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
+      c += `<i class="${i === x.dominant[0] && j === x.dominant[1] ? "on" : ""}"></i>`;
+    return `<span class="lv-sbx-ico" aria-hidden="true">${c}</span>`;
+  }
+  function styleBoxPanel() {
+    const f = fund, x = SBX && SBX.funds[f];
+    if (!x) {
+      el("sbx-sub").textContent = `${f} holds no US equity`;
+      el("sbx-box").innerHTML = `<p class="read">There is no US equity sleeve to place in the box.</p>`;
+      el("sbx-read").textContent = ""; return;
+    }
+    // Share of the book comes from today's exposure, which refreshes with the NAV; the box position
+    // itself is as of the last style_box.py run (it moves only when the US equity vehicles change).
+    const E = (D.exposure || {})[f] || {};
+    const usNow = (E.sleeves || {})["US equity"] !== undefined ? E.sleeves["US equity"] : x.us_equity_weight;
+    const shareOfEq = E.equity_weight ? 100 * usNow / E.equity_weight : null;
+    el("sbx-sub").textContent = `${f} · US equity sleeve · returns-based, ${SBX.window}`;
+    const shade = (v) => `rgba(37,99,235,${(0.06 + 0.84 * Math.min(1, v / 70)).toFixed(3)})`;
+    let g = `<div class="lv-sbx-grid" role="table" aria-label="Equity style box for ${f}">
+      <span></span>${SBX.styles.map((st) => `<span class="lv-sbx-h" role="columnheader">${st}</span>`).join("")}`;
+    SBX.sizes.forEach((sz, i) => {
+      g += `<span class="lv-sbx-r" role="rowheader">${sz}</span>`;
+      SBX.styles.forEach((st, j) => {
+        const v = x.grid[i][j], dom = i === x.dominant[0] && j === x.dominant[1];
+        g += `<span class="lv-sbx-c${dom ? " dom" : ""}${v >= 35 ? " dark" : ""}" role="cell"
+          style="background:${v > 0.05 ? shade(v) : "#f8fafc"}" title="${sz} ${st}: ${v.toFixed(1)}%">
+          ${v > 0.05 ? v.toFixed(0) + "<small>%</small>" : "<em>–</em>"}</span>`;
+      });
+    });
+    g += `</div>`;
+    const tilt = (v, pos, neg) => Math.abs(v) < 0.05 ? "neutral" : (v > 0 ? pos : neg);
+    const mk = SBX.market, mdom = (() => { let b = [0, 0, -1];
+      mk.grid.forEach((r, i) => r.forEach((v, j) => { if (v > b[2]) b = [i, j, v]; })); return b; })();
+    el("sbx-box").innerHTML = `<div class="lv-sbx">${g}
+      <div class="lv-sbx-side">
+        <div class="lv-sbx-name">${styleName(f)}</div>
+        <div class="lv-sbx-kv"><span>Share of the book</span><b>${usNow.toFixed(1)}%</b></div>
+        ${shareOfEq ? `<div class="lv-sbx-kv"><span>Share of its equity</span><b>${shareOfEq.toFixed(0)}%</b></div>` : ""}
+        <div class="lv-sbx-kv"><span>Size vs total market</span><b>${sgn(x.size_active, 2)}</b><em>${tilt(x.size_active, "larger", "smaller")}</em></div>
+        <div class="lv-sbx-kv"><span>Style vs total market</span><b>${sgn(x.style_active, 2)}</b><em>${tilt(x.style_active, "growth", "value")}</em></div>
+        <div class="lv-sbx-kv"><span>Fit (R²)</span><b>${x.r2.toFixed(3)}</b></div>
+      </div></div>`;
+    const same = FUNDS.filter((g2) => styleName(g2) === styleName(f));
+    el("sbx-read").innerHTML = `${f}'s US equity behaves like <strong>${styleName(f)}</strong>
+      (${x.grid[x.dominant[0]][x.dominant[1]].toFixed(0)}% in that box, R² ${x.r2.toFixed(3)} — the fit is
+      close enough to trust the position). ${same.length === FUNDS.length
+        ? `<strong>All five portfolios sit in the same box</strong>: each holds S&P 500 trackers for its US
+           equity, so the range takes <strong>no size or style bet</strong>. Against the total US market
+           (${mk.name}, itself ${SBX.sizes[mdom[0]]} ${SBX.styles[mdom[1]]}) that is a small tilt to larger
+           companies, because the S&P 500 leaves out mid and small caps.`
+        : `${same.length > 1 ? `${same.filter((g2) => g2 !== f).join(", ")} share the same box.` : ""}`}
+      Scores run from −1 to +1: size is large minus small, style is growth minus value.
+      The box covers the US equity sleeve only; developed and emerging-market equity are shown under
+      exposure. Descriptive only — it sets no target or limit, and the tilt layer that would use it
+      (PC-22) is not built. What each of the nine boxes actually earned since launch is on
+      <a href="attribution.html?p=${keyOf(f)}">Attribution</a>.`;
+  }
+
   function dealingPanel() {
     const f = fund, tr = D.trades[f] || [];
     el("trade-table").innerHTML = tr.length
@@ -567,11 +640,12 @@
           <td class="num">${x.turnover.toFixed(1)}%</td></tr>`).join("") + `</tbody></table>`
       : `<p class="read">Funded at inception and not dealt since — no holding has drifted a full point from target.</p>`;
     const b = D.backtest[f];
-    el("bt-table").innerHTML = `<table class="dtbl lv-tbl"><tbody>
-      <tr><td>Return, 1997–2026</td><td class="num">${b.cagr.toFixed(2)}% a year</td></tr>
-      <tr><td>Volatility</td><td class="num">${b.vol.toFixed(1)}% a year</td></tr>
-      <tr><td>Sharpe</td><td class="num">${b.sharpe.toFixed(2)}</td></tr>
-      <tr><td>Worst loss</td><td class="num neg">${b.maxdd.toFixed(1)}%</td></tr></tbody></table>
+    const st = (v, l, c) => `<div class="lv-rs"><b class="${c || ""}">${v}</b><span>${l}</span></div>`;
+    el("bt-table").innerHTML = `<div class="lv-rstats lv-bt">
+      ${st(b.cagr.toFixed(2) + "%", "return a year, 1997–2026")}
+      ${st(b.vol.toFixed(1) + "%", "volatility a year")}
+      ${st(b.sharpe.toFixed(2), "Sharpe ratio")}
+      ${st("\u2212" + Math.abs(b.maxdd).toFixed(1) + "%", "worst loss", "neg")}</div>
       <p class="read">A <strong>backtest of today's weights</strong> over ${b.n} months — the long-run evidence
       behind ${f}, on a different basis from the live NAV and not continued by it.</p>`;
   }
@@ -812,6 +886,8 @@
       ${row("Drawdown cap", (c) => c.dd_cap, (v, c) => v === null ? "—" : pct(v, 1)
         + (c.dd_loosened ? '<span class="z">*</span>' : ""), "construction constraint — what the optimiser was held to")}
       ${row("Holdings", (c) => c.n_holdings, (v) => v)}
+      ${SBX ? `<tr><td>Equity style<div class="z lv-hint">US equity sleeve, 3x3 style box</div></td>${FUNDS.map((f) =>
+        `<td class="num${selCol(f)}">${styleName(f) ? `<span class="lv-sbx-inline">${sbxIcon(f)}${styleName(f)}</span>` : "—"}</td>`).join("")}</tr>` : ""}
       </tbody></table>`;
     bindHeads("chars-table");
     const y = FUNDS.map((f) => C[f].income_yield);
@@ -1027,7 +1103,7 @@
   const PRODUCT = [["switcher", switcher], ["hero", hero], ["key facts", keyFacts], ["nav chart controls", navControls],
     ["NAV chart", navChart], ["range position", posMeters], ["returns", retTable], ["risk", riskPanel],
     ["month by month", monthPanel], ["holdings", holdTable], ["exposure", exposurePanel],
-    ["dealing", dealingPanel], ["holdings bridge", bridgePanel], ["exposure attribution", facPanel]];
+    ["dealing", dealingPanel], ["equity style", styleBoxPanel], ["holdings bridge", bridgePanel], ["exposure attribution", facPanel]];
   const RANGE_SEL = [["range chart", rangeChart], ["characteristics", charsTable], ["discrete returns", perfTable],
     ["monthly", monthlyTable], ["mandates", mandateTable], ["terms", factsTable]];
   const ONCE = [["status", status], ["insight", insight], ["range controls", rangeControls], ["disclosure", disclosure]];

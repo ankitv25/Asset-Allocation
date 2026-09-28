@@ -43,6 +43,10 @@ The common case. Two steps:
 /usr/bin/python3 Src/pc_fund_live_page.py
 ```
 
+The Live NAV page's equity style box keeps its position from the last `style_box.py` run — it only
+moves when the US equity vehicles change, so the daily refresh does not need it. Run `style_box.py`
+before `pc_fund_live_page.py` after any change to the equity vehicles.
+
 **What the ingestion guarantees.** It rebuilds all five books from the CMAs and the optimiser first, so
 the NAV is never computed against stale weights. It pulls dividend-adjusted daily closes for every
 vehicle held plus SPY / ACWI / AGG, and **refuses to run on partial data** — if any vehicle is missing

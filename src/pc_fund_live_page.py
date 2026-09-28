@@ -192,6 +192,20 @@ stylebox = json.load(open(_sb)) if os.path.exists(_sb) else None
 if stylebox is None:
     print('  note: style_box.json absent — the style box will not render')
 
+# What the page shows of it: the Morningstar-style box per portfolio — where the US equity sleeve
+# sits, and how much of the book that sleeve is. The full analysis (active vs the total market, what
+# each box paid) stays on Attribution, which owns it; this is the product-page summary, same source.
+style = None
+if stylebox:
+    _key = {FR.FUNDS[k]['name']: k for k in FR.ORDER}
+    style = dict(sizes=stylebox['sizes'], styles=stylebox['styles'], window=stylebox['window'],
+                 n_months=stylebox['n_months'], method=stylebox['method'],
+                 market=dict(name=stylebox['market']['name'], grid=stylebox['market']['grid']),
+                 funds={f: {k: stylebox['funds'][_key[f]][k]
+                            for k in ('grid', 'dominant', 'r2', 'us_equity_weight',
+                                      'size_active', 'style_active', 'vehicles')}
+                        for f in FUNDS if _key.get(f) in stylebox['funds']})
+
 # The NAV bridge, rolled from vehicles up to sleeves. fund_nav.py already proved it reconciles.
 SLEEVE = N['ticker_sleeve']
 bridge = {}
@@ -242,7 +256,7 @@ D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
                                          - (nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1)))
                     for f in FUNDS},
          day=day, bridge=bridge, factor=factor,
-         chars=chars, exposure=exposure,
+         chars=chars, exposure=exposure, style=style,
          # Colour is a portfolio's identity across the whole platform. It is published from the
          # registry rather than re-typed in the renderer: the hand-copied map had drifted so far that
          # Certain was drawn in SAA's colour, SAA in DAA's, and DAA in a benchmark's.
