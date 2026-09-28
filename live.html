@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="assets/css/style.css" />
 <script src="assets/vendor/plotly.min.js"></script>
 </head>
-<body class="app lv-page">
+<body class="app ui-modern lv-page">
 
 <header class="appbar">
   <div class="brand">MULTI&#8209;ASSET<span>PORTFOLIO</span></div>
@@ -99,26 +99,28 @@
     </article>
   </section>
 
+  <section class="grid grid-1">
+    <article class="tile">
+      <div class="tile-head"><h2>Through the crises <span class="lv-tag">backtest</span></h2>
+        <span class="tile-sub" id="cr-sub"></span></div>
+      <div id="cr-strip" class="lv-crises"></div>
+      <p class="read" id="cr-read"></p>
+    </article>
+  </section>
+
   <div class="section-head" id="s-port"><span class="section-num">02</span>
     <span class="section-title">Portfolio</span>
     <span class="section-q">Every line it holds, and what each has earned since launch.</span></div>
 
   <section class="grid lv-grid-port">
-    <div class="stack">
-      <article class="tile">
+    <article class="tile">
         <div class="tile-head"><h2>Holdings</h2>
           <span class="tile-sub" id="hold-sub"></span></div>
         <div id="hold-table"></div>
         <p class="read" id="hold-read"></p>
       </article>
-      <article class="tile">
-        <div class="tile-head"><h2>Dealing log</h2>
-          <span class="tile-sub">every trade since launch, as turnover of the book</span></div>
-        <div id="trade-table"></div>
-      </article>
-    </div>
     <div class="stack">
-    <article class="tile">
+      <article class="tile">
       <div class="tile-head"><h2>Exposure</h2>
         <span class="tile-sub" id="expo-sub"></span></div>
       <div class="chips lv-seg" id="expo-views" role="group" aria-label="Exposure view" style="margin-bottom:.8rem"></div>
@@ -128,12 +130,27 @@
       <p class="read" id="expo-read"></p>
       </article>
       <article class="tile">
+        <div class="tile-head"><h2>Dealing log</h2>
+          <span class="tile-sub">every trade since launch, as turnover of the book</span></div>
+        <div id="trade-table"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="tile">
         <div class="tile-head"><h2>Equity style</h2>
           <span class="tile-sub" id="sbx-sub"></span></div>
         <div id="sbx-box"></div>
         <p class="read" id="sbx-read"></p>
       </article>
-    </div>
+    <article class="tile">
+        <div class="tile-head"><h2>Bond style</h2>
+          <span class="tile-sub" id="fbx-sub"></span></div>
+        <div id="fbx-box"></div>
+        <div id="fbx-table"></div>
+        <p class="read" id="fbx-read"></p>
+      </article>
   </section>
 
   <section class="grid grid-1">

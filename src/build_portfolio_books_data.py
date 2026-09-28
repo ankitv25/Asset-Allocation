@@ -1164,6 +1164,15 @@ def main():
     open(os.path.join(DASH, 'portfolio_books.js'), 'w').write(
         'window.PORTFOLIO_BOOKS=' + json.dumps(out, separators=(',', ':'), default=float) + ';')
     json.dump(out, open(os.path.join(DASH, 'portfolio_books.json'), 'w'), default=float)
+    # The crisis record per portfolio, also published on its own so the Live NAV product page can show
+    # it without reading another page's payload. Same numbers as the Stress page, same basis: a
+    # backtest of today's weights through each episode, not a live record.
+    json.dump(dict(basis='backtest of today\'s weights, net of cost',
+                   columns=dict(FullSystem_BL='portfolio', b6040='ACWI 60 / Agg 40', all_equity='S&P 500'),
+                   funds={FR.FUNDS[k]['name']: [dict(episode=e['episode'], start=e['start'], end=e['end'],
+                                                    returns=e['returns']) for e in books[k]['stress']['episodes']]
+                          for k in FR.ORDER}),
+              open(os.path.join(SUITE, 'stress_episodes.json'), 'w'), indent=1, allow_nan=False)
     sz = os.path.getsize(os.path.join(DASH, 'portfolio_books.js')) / 1024
     print(f'  {len(books)} portfolio books · {sz:.0f} KB')
     for k in FR.ORDER:

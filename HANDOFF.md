@@ -231,3 +231,34 @@ is ≥ 4.5:1 on every background it sits on (the first draft's faint grey was 2.
 rows that select a portfolio are keyboard-operable. Tooltips carry the series name inside the box —
 Plotly draws a separate `<extra>` name outside it in the series colour, unreadable for pale identity
 colours. Other pages are untouched; the same skin can be widened to them by changing the scope.
+
+## 2026-09-27 (evening) — identity palette, modern skin everywhere, bond style box, crisis strip, label corrections
+
+**Identity colours replaced at the source** (`Src/fund_registry.py`). The old five failed a colour-blind
+check (SAA vs Endowment dE 13.2), DAA was the page navy and Alpha the loss red. New set, validated on
+ALL pairs because the range chart draws all five together: Certain cyan `#0891b2`, Endowment brown
+`#92400e`, SAA violet `#8b5cf6`, DAA plum `#86198f` (SAA's deeper sibling), Alpha amber `#d97706`;
+worst colour-blind dE 12.6, normal-vision 19.2. Benchmarks are slate greys. A path-by-path diff of all
+three payloads proved the rebuild changed 37 colour values and nothing else. Identity colour is a
+marker, never text colour (several are 3–5:1 on white).
+
+**Modern skin on every page** — `body.ui-modern`, one palette (slate / one interaction blue / gain-loss).
+
+**Corrections found on the way — these were live and wrong:**
+- Monte Carlo and Performance printed the payload keys "DAA"/"SAA" for EVERY portfolio: Alpha's page
+  said "DAA finishes ahead of SAA"; Certain's said "Sharpe added by DAA +0". All reader-facing names now
+  go through `roleName()` in app.js; a static portfolio's untilted twin (identical series) is hidden.
+- The Monte Carlo "% of paths" statistic was the share of MONTHS the median path led; relabelled.
+- Hard-coded v3.8 claims ("best tail of any option", "shallower than 60/40", "the whole point of the
+  dynamic process") were false for Alpha. Now derived from the numbers.
+- `SLEEVE_COLOR` / the performance asset-class map knew only v3.8 sleeve codes, so every current sleeve
+  fell through to one blue and the asset-class chart showed a single "Cash" bar. Fixed.
+- Monte Carlo drawdown axis printed fractions as percent ("−0.6%" for a 60% fall). Fixed.
+- "Full System" (v3.8 name) now reads as the portfolio's name on Overview and Stress.
+
+**Bond style box** — `Src/fi_style_box.py` (new, in the refresh chain and the public manifest). Certain
+High/Moderate (5.6y); Endowment, SAA, DAA High/Extensive (9–12y); Alpha not meaningful (0.4% bonds).
+**Crisis strip** — five episodes on each product page, from `stress_episodes.json`.
+
+Check-in-browser standard used: 50 page×portfolio renders (errors, empty charts, undefined/NaN, stale
+"Full System"/"DAA"/"SAA" labels), a 390px iframe for phones (headless Chrome will not go below ~500px).

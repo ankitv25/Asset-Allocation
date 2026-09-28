@@ -37,12 +37,17 @@ PLATFORM_CLASS = {
 }
 PLATFORM_CLASSES = ['Equities', 'FixedIncome', 'Commodities', 'RealEstate', 'Cash', 'AltsInsurance']
 
-# Display colours follow the platform's existing book palette (portfolios.js BOOKS) so the funds read
-# as part of the same system rather than a new visual language.
+# Display colours: the single source for every page. Chosen 2026-09-27 and validated as a set
+# (dataviz validate_palette, ALL pairs, since the range chart draws all five together): colour-blind
+# separation worst dE 12.6, normal-vision worst dE 19.2, every colour >= 3:1 on white. None is a
+# gain green, a loss red or the interaction blue. Meaning where it helps: Certain cyan (cash-like),
+# Endowment brown (real assets), SAA violet (the anchor), DAA plum (SAA's deeper sibling — the same
+# book run actively), Alpha amber (the hot one). Benchmarks are slate greys: references, not products.
+# The previous set failed the checks (SAA/Endowment dE 13.2; DAA was the page navy; Alpha the loss red).
 FUNDS = {
     'certain': dict(
         key='certain', managed='static', name='Certain', engine_label='fs6 certain', order=1,
-        color='#5aa6d4', horizon='3+ years',
+        color='#0891b2', horizon='3+ years',
         role='Capital preservation tier — purchasing power first',
         status='Live since 2026-07-15',
         reference='ACWI 40 / Agg 60',
@@ -52,7 +57,7 @@ FUNDS = {
         dials={'loss limit': '−8%', 'volatility budget': '5%'}),
     'endowment': dict(
         key='endowment', managed='static', name='Endowment', engine_label='fs6 endowment', order=2,
-        color='#2f7d5e', horizon='10+ years',
+        color='#92400e', horizon='10+ years',
         role='Long-horizon real-asset tier',
         status='Live since 2026-07-15',
         reference='ACWI 60 / Agg 40',
@@ -61,7 +66,7 @@ FUNDS = {
         dials={'loss limit': '−20%', 'volatility budget': '9.5%'}),
     'saa': dict(
         key='saa', managed='static', name='SAA', engine_label='fs6 saa', order=3,
-        color='#3083b4', horizon='20+ years',
+        color='#8b5cf6', horizon='20+ years',
         role='House policy portfolio — the strategic anchor',
         status='Live since 2026-07-15',
         reference='ACWI 80 / Agg 20',
@@ -70,7 +75,7 @@ FUNDS = {
         dials={'loss limit': '−22%', 'volatility budget': '12%'}),
     'daa': dict(
         key='daa', managed='active', name='DAA', engine_label='fs6 daa', order=4,
-        color='#0e2233', horizon='20+ years',
+        color='#86198f', horizon='20+ years',
         role='The policy portfolio run actively',
         status='Live since 2026-07-15',
         reference='ACWI 80 / Agg 20',
@@ -81,7 +86,7 @@ FUNDS = {
         dials={'tilt budget': '12pp one-sided', 'rebalance band': '0.6pp'}),
     'alpha': dict(
         key='alpha', managed='active', base_series='Alpha book, untilted', name='Alpha', engine_label='fs6 alpha', order=5,
-        color='#c0392b', horizon='10+ years',
+        color='#d97706', horizon='10+ years',
         role='Equity-level risk, run actively',
         status='Live since 2026-07-15',
         reference='S&P 500',
@@ -95,12 +100,12 @@ NAME_TO_KEY = {v['name']: k for k, v in FUNDS.items()}
 
 # Benchmarks the funds are measured against. Built from real indices (see pc_fs6_build).
 BENCHMARKS = {
-    'spy': dict(key='spy', name='S&P 500', color='#8b97a3'),
-    'acwi': dict(key='acwi', name='MSCI ACWI', color='#a8b2bd'),
-    'agg': dict(key='agg', name='Bloomberg US Aggregate', color='#c2c9d1'),
-    'acwi8020': dict(key='acwi8020', name='ACWI 80 / Agg 20', color='#d68a13'),
-    'acwi6040': dict(key='acwi6040', name='ACWI 60 / Agg 40', color='#c9932b'),
-    'acwi4060': dict(key='acwi4060', name='ACWI 40 / Agg 60', color='#b8a15e'),
+    'spy': dict(key='spy', name='S&P 500', color='#334155'),
+    'acwi': dict(key='acwi', name='MSCI ACWI', color='#64748b'),
+    'agg': dict(key='agg', name='Bloomberg US Aggregate', color='#94a3b8'),
+    'acwi8020': dict(key='acwi8020', name='ACWI 80 / Agg 20', color='#475569'),
+    'acwi6040': dict(key='acwi6040', name='ACWI 60 / Agg 40', color='#7c8aa0'),
+    'acwi4060': dict(key='acwi4060', name='ACWI 40 / Agg 60', color='#a3adbb'),
 }
 
 

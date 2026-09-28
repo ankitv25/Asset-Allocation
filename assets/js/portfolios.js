@@ -218,7 +218,7 @@
       ["CVaR 5%", "cvar5", "pct", +1], ["Beta to 60/40", "beta_6040", "num", 0]];
     const cols = [...P5, "acwi6040", "spy"];
     let h = `<table class="dtbl"><thead><tr><th>Metric</th>` +
-      cols.map((k) => `<th class="num" style="color:${col(k)}">${lab(k)}</th>`).join("") + `</tr></thead><tbody>`;
+      cols.map((k) => `<th class="num"><span class="swatch" style="background:${col(k)}"></span>${lab(k)}</th>`).join("") + `</tr></thead><tbody>`;
     rows.forEach(([label, f, kind, dir]) => {
       const vals = P5.map((k) => M(k)[f]);
       const bestv = dir === 0 ? null : (dir > 0 ? Math.max(...vals) : Math.min(...vals));
@@ -239,7 +239,7 @@
     const ddOf = (k) => { let pk = -Infinity; return NAV[k].map((v) => {
       if (v == null) return null; pk = Math.max(pk, v); return 100 * (v / pk - 1); }); };
     const tr = [{ x: dates, y: ddOf("acwi6040"), name: lab("acwi6040"), type: "scatter", mode: "lines",
-      line: { color: "#c9932b", width: 1.1, dash: "dot" }, fill: "tozeroy", fillcolor: "rgba(201,147,43,0.08)",
+      line: { color: col("acwi6040"), width: 1.1, dash: "dot" }, fill: "tozeroy", fillcolor: "rgba(124,138,160,0.08)",
       hovertemplate: "%{y:.1f}%<extra>" + lab("acwi6040") + "</extra>" }]
       .concat(P5.map((k) => ({ x: dates, y: ddOf(k), name: lab(k), type: "scatter", mode: "lines",
         line: { color: col(k), width: 1.8 }, hovertemplate: "%{y:.1f}%<extra>" + lab(k) + "</extra>" })));
@@ -269,7 +269,7 @@
     const tr = P5.map((k) => ({ type: "bar", name: lab(k), x: years, y: yr(k), marker: { color: col(k) },
       hovertemplate: "%{y:.1f}%<extra>" + lab(k) + "</extra>" }))
       .concat([{ type: "scatter", mode: "markers", name: lab("acwi6040"), x: years, y: yr("acwi6040"),
-        marker: { color: "#c9932b", size: 6, symbol: "diamond" },
+        marker: { color: col("acwi6040"), size: 6, symbol: "diamond" },
         hovertemplate: "%{y:.1f}%<extra>60/40</extra>" }]);
     Plotly.newPlot("annual-chart", tr, L({ barmode: "group", showlegend: false,
       margin: { l: 44, r: 10, t: 10, b: 40 }, yaxis: Object.assign({}, { ticksuffix: "%" }),
@@ -361,7 +361,7 @@
   (function fi() {
     const legs = ["Govt", "IG", "TIPS", "HY"];
     let h = `<table class="dtbl"><thead><tr><th>FI leg (% of book)</th>` +
-      P5.map((k) => `<th class="num" style="color:${col(k)}">${lab(k)}</th>`).join("") +
+      P5.map((k) => `<th class="num"><span class="swatch" style="background:${col(k)}"></span>${lab(k)}</th>`).join("") +
       `</tr></thead><tbody>`;
     legs.forEach((l) => {
       h += `<tr><td class="strong">${l}</td>` + P5.map((k) => {
@@ -381,7 +381,7 @@
   (function constraints() {
     if (!BOOKS || !BOOKS.books) { el("constraint-table").innerHTML = ""; return; }
     let h = `<table class="dtbl"><thead><tr><th>Constraint</th>` +
-      P5.map((k) => `<th class="num" style="color:${col(k)}">${lab(k)}</th>`).join("") +
+      P5.map((k) => `<th class="num"><span class="swatch" style="background:${col(k)}"></span>${lab(k)}</th>`).join("") +
       `</tr></thead><tbody>`;
     const get = (k) => (BOOKS.books[k] || {}).risk || {};
     const row = (label, f, suf) => {
@@ -417,14 +417,14 @@
       y: eps.map((e) => 100 * e.returns[k]), marker: { color: col(k) },
       hovertemplate: "%{x} · " + lab(k) + " %{y:.1f}%<extra></extra>" }))
       .concat([{ type: "scatter", mode: "markers", name: "60/40", x: eps.map((e) => e.name),
-        y: eps.map((e) => 100 * e.returns.acwi6040), marker: { color: "#c9932b", size: 9, symbol: "diamond" },
+        y: eps.map((e) => 100 * e.returns.acwi6040), marker: { color: col("acwi6040"), size: 9, symbol: "diamond" },
         hovertemplate: "%{x} · 60/40 %{y:.1f}%<extra></extra>" }]);
     Plotly.newPlot("crisis-chart", tr, L({ barmode: "group", showlegend: false,
       margin: { l: 44, r: 10, t: 10, b: 62 }, yaxis: Object.assign({}, { ticksuffix: "%" }),
       xaxis: Object.assign({}, { tickangle: -22, tickfont: { size: 9 } }) }), CFG);
 
     let h = `<table class="dtbl"><thead><tr><th>Episode</th>` +
-      P5.map((k) => `<th class="num" style="color:${col(k)}">${lab(k)}</th>`).join("") +
+      P5.map((k) => `<th class="num"><span class="swatch" style="background:${col(k)}"></span>${lab(k)}</th>`).join("") +
       `<th class="num z">60/40</th></tr></thead><tbody>`;
     eps.forEach((e) => {
       const b = e.returns.acwi6040;

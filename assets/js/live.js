@@ -242,6 +242,8 @@
         ? it("Drawdown cap", pct(C.dd_cap, 1) + (C.dd_loosened ? "*" : ""), "construction constraint") : "",
       styleName(f) ? it("Equity style", sbxIcon(f) + styleName(f), "US equity sleeve")
         : it("Distribution", "Accumulating", "income reinvested in the NAV"),
+      FBX && FBX.funds[f] ? it("Bond style", fbxOk(f) ? fbxIcon(f) + fbxName(f) : "Not meaningful",
+        fbxOk(f) ? `duration ${FBX.funds[f].effective_duration.toFixed(1)} yrs` : `bonds ${FBX.funds[f].bond_weight.toFixed(1)}% of book`) : "",
     ].join("");
   }
 
@@ -489,6 +491,39 @@
       Bloomberg Aggregate${ref === "S&P 500" ? " — for Alpha it is the S&P 500 itself" : ""}.</p>`;
   }
 
+  // ---------- through the crises ----------
+  // The question a buyer asks that a 2.4-month record cannot answer: how did this book behave when it
+  // mattered? Today's weights through five recognised episodes — the Stress page's own numbers, labelled
+  // as the backtest they are. Bars share one scale across all five cards so depth is comparable.
+  function crisisPanel() {
+    const C = D.crises, f = fund, eps = C && C.funds[f];
+    if (!eps || !eps.length) { el("cr-sub").textContent = "not available"; el("cr-strip").innerHTML = ""; return; }
+    const K = [["FullSystem_BL", f], ["b6040", C.columns.b6040], ["all_equity", C.columns.all_equity]];
+    const mx = Math.max(...eps.flatMap((e) => K.map(([k]) => Math.abs(e.returns[k] || 0))), 1);
+    const mon = (s) => new Date(s + "-01T00:00:00").toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    el("cr-sub").textContent = `${f} · ${C.basis} · the Stress page has the sleeve-by-sleeve detail`;
+    el("cr-strip").innerHTML = eps.map((e) => {
+      const me = e.returns.FullSystem_BL;
+      return `<div class="lv-cr">
+        <div class="lv-cr-h"><b>${e.episode}</b><span>${mon(e.start)} – ${mon(e.end)}</span></div>
+        <div class="lv-cr-v ${me < 0 ? "neg" : "pos"}">${me > 0 ? "+" : me < 0 ? "\u2212" : ""}${Math.abs(me).toFixed(1)}%</div>
+        ${K.map(([k, n], i) => { const v = e.returns[k]; return `<div class="lv-cr-row${i ? "" : " me"}">
+          <span class="lv-cr-n" title="${i ? n : f}">${i ? n.replace(" / Agg ", "/") : f}</span>
+          <span class="lv-cr-t"><span style="width:${(100 * Math.abs(v) / mx).toFixed(1)}%;${i ? "" : `background:${COLOR[f]}`}"></span></span>
+          <span class="lv-cr-x">${v > 0 ? "+" : v < 0 ? "\u2212" : ""}${Math.abs(v).toFixed(1)}%</span></div>`; }).join("")}
+      </div>`;
+    }).join("");
+    const better = eps.filter((e) => e.returns.FullSystem_BL > e.returns.b6040).length;
+    const worst = eps.reduce((a, e) => (e.returns.FullSystem_BL < a.returns.FullSystem_BL ? e : a));
+    el("cr-read").innerHTML = `${f}'s current weights fell less than the ${C.columns.b6040} blend in
+      <strong>${better} of ${eps.length}</strong> episodes and less than the ${C.columns.all_equity} in
+      ${eps.filter((e) => e.returns.FullSystem_BL > e.returns.all_equity).length}. Its deepest was
+      <strong>${worst.episode}</strong> at ${pct(worst.returns.FullSystem_BL / 100, 1)}. These are the book as held
+      today run through history — a backtest, not the live record — so they show what the construction does
+      under stress, not what was experienced. <a href="stress.html?p=${keyOf(f)}">Which sleeves lost and which
+      protected →</a>`;
+  }
+
   // ---------- holdings ----------
   // Weight and what each line has earned since launch, side by side: the two facts a holder asks of a
   // holding. A vehicle sold since launch still shows its contribution, at zero weight.
@@ -570,14 +605,20 @@
     return x ? `${SBX.sizes[x.dominant[0]]} ${SBX.styles[x.dominant[1]]}` : null;
   };
   // The small version a factsheet puts beside "Equity style": nine squares, the dominant one filled.
+  const boxIcon = (r, c) => {
+    let h = "";
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) h += `<i class="${i === r && j === c ? "on" : ""}"></i>`;
+    return `<span class="lv-sbx-ico" aria-hidden="true">${h}</span>`;
+  };
   function sbxIcon(f) {
     const x = SBX && SBX.funds[f];
-    if (!x) return "";
-    let c = "";
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
-      c += `<i class="${i === x.dominant[0] && j === x.dominant[1] ? "on" : ""}"></i>`;
-    return `<span class="lv-sbx-ico" aria-hidden="true">${c}</span>`;
+    return x ? boxIcon(x.dominant[0], x.dominant[1]) : "";
   }
+  // Fixed-income box (Src/fi_style_box.py): Morningstar's method on issuer-sourced durations.
+  const FBX = D.fi_style;
+  const fbxOk = (f) => !!(FBX && FBX.funds[f] && FBX.funds[f].meaningful);
+  const fbxName = (f) => fbxOk(f) ? `${FBX.funds[f].quality} / ${FBX.funds[f].sensitivity}` : null;
+  const fbxIcon = (f) => fbxOk(f) ? boxIcon(FBX.funds[f].cell[0], FBX.funds[f].cell[1]) : "";
   function styleBoxPanel() {
     const f = fund, x = SBX && SBX.funds[f];
     if (!x) {
@@ -630,6 +671,56 @@
       exposure. Descriptive only — it sets no target or limit, and the tilt layer that would use it
       (PC-22) is not built. What each of the nine boxes actually earned since launch is on
       <a href="attribution.html?p=${keyOf(f)}">Attribution</a>.`;
+  }
+
+  function bondStylePanel() {
+    const f = fund, x = FBX && FBX.funds[f];
+    if (!x) { el("fbx-sub").textContent = "not available"; el("fbx-box").innerHTML = ""; el("fbx-table").innerHTML = "";
+      el("fbx-read").textContent = ""; return; }
+    const R = FBX.reference;
+    el("fbx-sub").textContent = `${f} · bond sleeves · Morningstar method, issuer-sourced durations`;
+    if (!x.meaningful) {
+      el("fbx-box").innerHTML = `<p class="muted-note"><strong>Not meaningful for ${f}.</strong> Bonds are
+        ${x.bond_weight.toFixed(1)}% of the book${x.vehicles && x.vehicles.length ? ` (${x.vehicles.map((v) => v.ticker).join(", ")})` : ""}
+        — a box built on a position that small describes the position, not the portfolio. ${f}'s defence
+        comes from gold, the trend sleeve and cash (${x.cash_weight.toFixed(1)}% in T-bills), not from bonds.</p>`;
+      el("fbx-table").innerHTML = ""; el("fbx-read").textContent = ""; return;
+    }
+    let g = `<div class="lv-sbx-grid" role="table" aria-label="Bond style box for ${f}">
+      <span></span>${FBX.sensitivities.map((c) => `<span class="lv-sbx-h" role="columnheader">${c}</span>`).join("")}`;
+    FBX.qualities.forEach((q, i) => {
+      g += `<span class="lv-sbx-r" role="rowheader">${q}</span>`;
+      FBX.sensitivities.forEach((c, j) => {
+        const on = i === x.cell[0] && j === x.cell[1];
+        g += `<span class="lv-sbx-c${on ? " dom dark" : ""}" role="cell" style="background:${on ? "rgba(37,99,235,0.85)" : "#f8fafc"}"
+          title="${q} quality, ${c} interest-rate sensitivity">${on ? "●" : "<em>–</em>"}</span>`;
+      });
+    });
+    g += `</div>`;
+    el("fbx-box").innerHTML = `<div class="lv-sbx">${g}<div class="lv-sbx-side">
+      <div class="lv-sbx-name">${x.quality} quality · ${x.sensitivity}</div>
+      <div class="lv-sbx-kv"><span>Bonds, share of the book</span><b>${x.bond_weight.toFixed(1)}%</b></div>
+      <div class="lv-sbx-kv"><span>Effective duration</span><b>${x.effective_duration.toFixed(1)} yrs</b></div>
+      <div class="lv-sbx-kv"><span>Average credit</span><b>${x.avg_grade}</b></div>
+      <div class="lv-sbx-kv"><span>Reference duration</span><b>${R.effective_duration.toFixed(2)} yrs</b><em>${R.vehicle}</em></div>
+      ${x.cash_weight > 0.05 ? `<div class="lv-sbx-kv"><span>T-bills, held as cash</span><b>${x.cash_weight.toFixed(1)}%</b><em>not in box</em></div>` : ""}
+      </div></div>`;
+    el("fbx-table").innerHTML = `<table class="dtbl lv-tbl" style="margin-top:.9rem"><thead><tr><th>Vehicle</th>
+      <th class="num">Share of bonds</th><th class="num">Duration</th><th class="num">Credit</th><th class="num lv-wide">As of</th></tr></thead><tbody>`
+      + x.vehicles.map((v) => { const src = FBX.sources[v.ticker] || {};
+        return `<tr><td><a href="${src.url}" target="_blank" rel="noopener" title="${(src.source || "").replace(/"/g, "&quot;")}"
+          class="lv-src"><strong>${v.ticker}</strong></a>${v.proxy ? '<span class="z"> †</span>' : ""}</td>
+          <td class="num">${v.weight_in_bonds.toFixed(1)}%</td><td class="num">${v.effective_duration.toFixed(1)} yrs</td>
+          <td class="num">${v.grade}</td><td class="num z lv-wide">${fmtD(v.as_of)}</td></tr>`; }).join("")
+      + `</tbody></table>`;
+    const proxied = x.vehicles.filter((v) => v.proxy).map((v) => v.ticker);
+    el("fbx-read").innerHTML = `${f}'s bonds sit in <strong>${x.quality} quality, ${x.sensitivity}</strong>
+      interest-rate sensitivity: an effective duration of ${x.effective_duration.toFixed(1)} years against
+      ${R.effective_duration.toFixed(2)} for the ${R.name} (Limited below ${R.limited_below.toFixed(2)}, Extensive from
+      ${R.extensive_from.toFixed(2)}). Credit is averaged the way Morningstar does it — on default rates, not
+      letter grades — and US Treasuries grade AA, matching two of the three agencies. ${FBX.limitation}
+      Each vehicle links to its source document.${proxied.length ? ` <strong>†</strong> ${proxied.join(", ")}: the issuer's
+      site refuses automated access, so the figure is its index's duration, from a fund tracking the same index.` : ""}`;
   }
 
   function dealingPanel() {
@@ -886,6 +977,10 @@
       ${row("Drawdown cap", (c) => c.dd_cap, (v, c) => v === null ? "—" : pct(v, 1)
         + (c.dd_loosened ? '<span class="z">*</span>' : ""), "construction constraint — what the optimiser was held to")}
       ${row("Holdings", (c) => c.n_holdings, (v) => v)}
+      ${FBX ? `<tr><td>Bond style<div class="z lv-hint">credit quality / rate sensitivity, Morningstar method</div></td>${FUNDS.map((f) =>
+        `<td class="num${selCol(f)}">${fbxOk(f) ? `<span class="lv-sbx-inline">${fbxIcon(f)}${fbxName(f)}</span>` : '<span class="z">not meaningful</span>'}</td>`).join("")}</tr>
+      <tr><td>Bond duration<div class="z lv-hint">effective, bond sleeves only — issuer fact sheets</div></td>${FUNDS.map((f) =>
+        `<td class="num${selCol(f)}">${fbxOk(f) ? FBX.funds[f].effective_duration.toFixed(1) + " yrs" : "—"}</td>`).join("")}</tr>` : ""}
       ${SBX ? `<tr><td>Equity style<div class="z lv-hint">US equity sleeve, 3x3 style box</div></td>${FUNDS.map((f) =>
         `<td class="num${selCol(f)}">${styleName(f) ? `<span class="lv-sbx-inline">${sbxIcon(f)}${styleName(f)}</span>` : "—"}</td>`).join("")}</tr>` : ""}
       </tbody></table>`;
@@ -897,9 +992,9 @@
        ${FUNDS[y.indexOf(Math.min(...y))]} as equity sensitivity rises from
        ${n2(C[FUNDS[0]].equity_beta)} to ${n2(C[FUNDS[FUNDS.length - 1]].equity_beta)}. That is the
        range doing what it says: the conservative books are paid to wait, the growth books are not.
-       <strong>Effective duration is deliberately absent</strong> — no vehicle reports it and a figure
-       invented from a maturity guess would not trace to a source, so rate sensitivity is given
-       instead, measured against the rate and curve factors. The drawdown cap is a
+       Rate sensitivity is measured against the rate and curve factors; <strong>bond duration</strong> is the
+       effective duration of the bond sleeves, transcribed from each issuer's fact sheet with its date — the
+       two answer different questions (how the whole book has behaved, and what the bonds hold). The drawdown cap is a
        <strong>construction constraint</strong> — the limit the optimiser was actually held to, read
        from the build record — not a mandate limit and not a budget.${
         FUNDS.some((f) => C[f].dd_loosened)
@@ -1102,8 +1197,8 @@
   // footer and the rest of the page still renders.
   const PRODUCT = [["switcher", switcher], ["hero", hero], ["key facts", keyFacts], ["nav chart controls", navControls],
     ["NAV chart", navChart], ["range position", posMeters], ["returns", retTable], ["risk", riskPanel],
-    ["month by month", monthPanel], ["holdings", holdTable], ["exposure", exposurePanel],
-    ["dealing", dealingPanel], ["equity style", styleBoxPanel], ["holdings bridge", bridgePanel], ["exposure attribution", facPanel]];
+    ["month by month", monthPanel], ["crises", crisisPanel], ["holdings", holdTable], ["exposure", exposurePanel],
+    ["dealing", dealingPanel], ["equity style", styleBoxPanel], ["bond style", bondStylePanel], ["holdings bridge", bridgePanel], ["exposure attribution", facPanel]];
   const RANGE_SEL = [["range chart", rangeChart], ["characteristics", charsTable], ["discrete returns", perfTable],
     ["monthly", monthlyTable], ["mandates", mandateTable], ["terms", factsTable]];
   const ONCE = [["status", status], ["insight", insight], ["range controls", rangeControls], ["disclosure", disclosure]];

@@ -206,6 +206,24 @@ if stylebox:
                                       'size_active', 'style_active', 'vehicles')}
                         for f in FUNDS if _key.get(f) in stylebox['funds']})
 
+# The fixed-income box (fi_style_box.py): the bond sleeves' interest-rate sensitivity and credit
+# quality on Morningstar's method, from issuer-sourced durations. Published whole — it is small, and
+# its sources travel with it so the page can cite each figure.
+_fi = os.path.join(SUITE, 'fi_style_box.json')
+fi_style = json.load(open(_fi)) if os.path.exists(_fi) else None
+if fi_style is None:
+    print('  note: fi_style_box.json absent — the fixed-income style box will not render')
+else:
+    _key = {FR.FUNDS[k]['name']: k for k in FR.ORDER}
+    fi_style = dict(fi_style, funds={f: fi_style['funds'][_key[f]] for f in FUNDS if _key[f] in fi_style['funds']})
+
+# The crisis record: how each portfolio's CURRENT weights came through five recognised episodes, from
+# the same computation as the Stress page (build_portfolio_books_data.py). A backtest, and labelled so.
+_st = os.path.join(SUITE, 'stress_episodes.json')
+crises = json.load(open(_st)) if os.path.exists(_st) else None
+if crises is None:
+    print('  note: stress_episodes.json absent — the crisis strip will not render')
+
 # The NAV bridge, rolled from vehicles up to sleeves. fund_nav.py already proved it reconciles.
 SLEEVE = N['ticker_sleeve']
 bridge = {}
@@ -256,7 +274,7 @@ D = dict(inception=N['inception'], asof=N['dates'][-1], nav0=N['nav0'],
                                          - (nav[REF_OF[f]].iloc[-1] / N['nav0'] - 1)))
                     for f in FUNDS},
          day=day, bridge=bridge, factor=factor,
-         chars=chars, exposure=exposure, style=style,
+         chars=chars, exposure=exposure, style=style, fi_style=fi_style, crises=crises,
          # Colour is a portfolio's identity across the whole platform. It is published from the
          # registry rather than re-typed in the renderer: the hand-copied map had drifted so far that
          # Certain was drawn in SAA's colour, SAA in DAA's, and DAA in a benchmark's.

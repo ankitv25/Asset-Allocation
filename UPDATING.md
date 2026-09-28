@@ -23,6 +23,7 @@ reads, and it degrades gracefully (prints a note) if either is absent.
 /usr/bin/python3 Src/factor_attrib.py                   # factor attribution of the live NAV
 /usr/bin/python3 Src/pit_backtest.py                    # walk-forward series (slow-ish, cacheable)
 /usr/bin/python3 Src/style_box.py                       # 3x3 style box (fetches 9 ETFs, cached)
+/usr/bin/python3 Src/fi_style_box.py                    # bond 3x3 from bond_vehicle_data.json (issuer-sourced)
 /usr/bin/python3 Src/build_portfolios_dashboard_data.py # Portfolios page payload
 /usr/bin/python3 Src/build_portfolio_books_data.py      # the five deep-page payloads
 /usr/bin/python3 Src/pc_fund_live_page.py               # Live NAV page + feed
@@ -46,6 +47,12 @@ The common case. Two steps:
 The Live NAV page's equity style box keeps its position from the last `style_box.py` run — it only
 moves when the US equity vehicles change, so the daily refresh does not need it. Run `style_box.py`
 before `pc_fund_live_page.py` after any change to the equity vehicles.
+
+The fixed-income box reads `validation/fund_suite_v6/bond_vehicle_data.json`: each bond vehicle's
+effective duration and credit mix, transcribed from the issuer's fact sheet with its source and date.
+Update it when issuers publish new fact sheets (Vanguard quarterly), then run `Src/fi_style_box.py`.
+`fi_style_box.py` exits if a held bond vehicle has no entry — adding a bond vehicle to a book means
+sourcing its duration first.
 
 **What the ingestion guarantees.** It rebuilds all five books from the CMAs and the optimiser first, so
 the NAV is never computed against stale weights. It pulls dividend-adjusted daily closes for every

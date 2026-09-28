@@ -11,7 +11,17 @@ const SLEEVE_COLOR = {
   USEq: "#1f5e8f", IntlDM: "#3083b4", EM: "#5aa6d4", HY: "#92c4e3",
   IG: "#2f7d5e", Govt: "#54a07d", RealA: "#8ec7a6", Cash: "#8b97a3",
 };
-const BLOCK_COLOR = { Growth: "#1f5e8f", Diversifier: "#2f7d5e", Cash: "#8b97a3" };
+// The v6 sleeve codes (US_EQ, USTL, GOLD, …) were missing, so every current sleeve fell through to
+// one blue: treemaps and per-sleeve lines read as a single colour. Grouped by block — equities blue,
+// bonds teal, real assets amber, diversifiers violet, cash grey. The old codes stay for legacy pages.
+Object.assign(SLEEVE_COLOR, {
+  US_EQ: "#1e40af", DM_EQ: "#3b82f6", EM_EQ: "#93c5fd",
+  UST: "#0f766e", USTL: "#115e59", TIPS: "#14b8a6", IG: "#5eead4", HY: "#99f6e4", MBS: "#2dd4bf",
+  REIT: "#92400e", INFRA: "#b45309", CMDTY: "#d97706", GOLD: "#ca8a04", CHF: "#a16207",
+  MF: "#7c3aed", Cash: "#94a3b8" });
+const BLOCK_COLOR = { Growth: "#1f5e8f", Diversifier: "#2f7d5e", Cash: "#94a3b8",
+  Equities: "#1e40af", FixedIncome: "#0f766e", Commodities: "#b45309", RealEstate: "#92400e",
+  AltsInsurance: "#7c3aed" };
 const CODE_BLOCK = { USEq: "Growth", IntlDM: "Growth", EM: "Growth", HY: "Growth",
   IG: "Diversifier", Govt: "Diversifier", RealA: "Diversifier", Cash: "Cash" };
 const LABEL2CODE = {
@@ -20,6 +30,20 @@ const LABEL2CODE = {
   "High Yield / EM Debt": "HY", "Govt / TIPS": "Govt", "Government / TIPS": "Govt",
   "Real Assets": "RealA", "Real Assets / Commodities": "RealA", "Cash & Alts": "Cash", "Cash": "Cash",
 };
+// ================= The selected portfolio, as the reader sees it =================
+// Payload keys stay "DAA" / "SAA" — the v3.8 lineage names for "this portfolio as run" and "its
+// untilted policy book" — so the renderer and contract are unchanged. Printed raw, they put "DAA
+// finishes ahead of SAA" on Alpha's and Certain's pages, naming two OTHER products. Everything a
+// reader sees goes through roleName(); a static portfolio's untilted twin is the same series, so it
+// is not drawn twice or offered as a comparison that cannot differ.
+const PF = (window.PORTFOLIO_BOOKS && window.SUMMER_PORTFOLIO
+  && window.PORTFOLIO_BOOKS.portfolios[window.SUMMER_PORTFOLIO]) || null;
+const PF_ACTIVE = !PF || PF.managed === "active";
+const roleName = (k) => !PF ? k : k === "DAA" ? PF.name : k === "SAA" ? `${PF.name} — untilted` : k;
+const liveRoles = (keys) => PF_ACTIVE ? keys : keys.filter((k) => k !== "SAA");
+// The track-record and stress payloads call this portfolio "Full System" (its v3.8 name).
+const dispName = (n) => !PF ? n : String(n).replace(/^Full System( \(live\))?$/, PF.name);
+
 const codeColor = (k) => SLEEVE_COLOR[k] || SLEEVE_COLOR[LABEL2CODE[k]] || C.accent;
 
 const FONT = { family: "-apple-system, Segoe UI, Roboto, sans-serif", size: 11, color: "#46535f" };
@@ -548,8 +572,8 @@ function renderDiversification(d) {
 
 // ---------------- Stress tests ----------------
 function renderStress(s) {
-  const eps = s.episodes, keys = s.strategy_keys, names = s.strategies;
-  const colors = { FullSystem_BL: C.navy, FullSystem: "#9aa7b3", b6040: C.warn, all_equity: "#b0bcc8" };
+  const eps = s.episodes, keys = s.strategy_keys, names = s.strategies.map(dispName);
+  const colors = { FullSystem_BL: PF ? PF.color : C.navy, FullSystem: "#9aa7b3", b6040: "#64748b", all_equity: "#b6c0cc" };
   const traces = keys.map((k, i) => ({
     type: "bar", name: names[i], x: eps.map(e => e.episode), y: eps.map(e => e.returns[k]),
     marker: { color: colors[k] || C.muted }, hovertemplate: names[i] + " %{y:.1f}%<extra></extra>",
@@ -588,7 +612,7 @@ function renderStressDetail(s) {
     const fs = cur.returns.FullSystem_BL, ae = cur.returns.all_equity;
     const best = cur.sleeves[cur.sleeves.length - 1], worst = cur.sleeves[0];
     if (el("stress-ep-read")) el("stress-ep-read").innerHTML =
-      `In <strong>${cur.episode}</strong> (${cur.start} → ${cur.end}) the full system held to `
+      `In <strong>${cur.episode}</strong> (${cur.start} → ${cur.end}) ${PF ? PF.name : "the full system"} held to `
       + `<strong>${fs >= 0 ? "+" : "−"}${Math.abs(fs)}%</strong> vs ${ae}% all-equity — a `
       + `<strong>${cur.protection >= 0 ? "+" : "−"}${Math.abs(cur.protection)}pp cushion</strong>, with `
       + `${best.sleeve} protecting most and ${worst.sleeve} the main drag.`;
@@ -607,9 +631,9 @@ function renderStressDetail(s) {
 // ---------------- Performance ----------------
 // Keyed on the raw nav.csv column names.
 const NAV_META = {
-  FullSystem_BL: { label: "Full System (live)", color: C.navy,    width: 2.6 },
-  SAA_static_BL: { label: "Static policy",      color: C.accent,  width: 1.4 },
-  b6040:         { label: "60/40",              color: C.warn,    width: 1.6 },
+  FullSystem_BL: { label: PF ? PF.name : "Full System (live)", color: PF ? PF.color : C.navy, width: 2.6 },
+  SAA_static_BL: { label: PF ? `${PF.name} — untilted` : "Static policy", color: "#64748b", width: 1.4 },
+  b6040:         { label: "60/40",              color: "#94a3b8", width: 1.6 },
   FullSystem:    { label: "PC16 anchor (ref)",  color: "#9aa7b3", width: 1.1 },
   all_equity:    { label: "All-equity",         color: "#c1ccd6", width: 1.0 },
 };
@@ -622,7 +646,7 @@ function renderPerformance(t) {
   const dStart = periodFrom(fsNav, HEADLINE_PERIODS.find(x => x.key === HEADLINE_PERIOD) || HEADLINE_PERIODS[0]);
   if (el("nav-chart")) mountRebaseGrowth({
     chartId: "nav-chart", controlsId: "nav-controls", labelId: "nav-rebase-label",
-    seriesMap: t.nav, order: order.filter(k => t.nav[k]),
+    seriesMap: t.nav, order: order.filter(k => t.nav[k] && (PF_ACTIVE || k !== "SAA_static_BL")),
     colorOf: (k) => (NAV_META[k] || {}).color || C.muted,
     widthOf: (k) => (NAV_META[k] || {}).width || 1.3,
     labelOf: (k) => (NAV_META[k] || {}).label || k, defaultLog: false,
@@ -632,15 +656,19 @@ function renderPerformance(t) {
   // Metrics cards
   el("metrics-table").innerHTML = t.metrics.map(m => {
     const hl = m.strategy.startsWith("Full System (live)") ? "hl" : "";
-    return `<div class="mcard ${hl}"><span class="nm">${m.strategy}</span>
+    return `<div class="mcard ${hl}"><span class="nm">${dispName(m.strategy)}</span>
       <span class="mv">${m.cagr}%<small>CAGR</small></span>
       <span class="mv">${m.sharpe}<small>Sharpe</small></span>
       <span class="mv">${m.maxdd}%<small>Max DD</small></span></div>`;
   }).join("");
   const fs = t.metrics.find(m => m.strategy.startsWith("Full System (live)"));
   const bm = t.metrics.find(m => m.strategy === "60/40");
-  el("perf-read").innerHTML = `Full system Sharpe <strong>${fs.sharpe}</strong>, max drawdown `
-    + `<strong>${fs.maxdd}%</strong> — best tail of any option (60/40 ${bm.maxdd}%). Risk-managed compounding, not return-maximisation.`;
+  // Stated from the numbers: "best tail" only when it is, and never for a book built to take more risk.
+  const deeper = fs.maxdd < bm.maxdd;
+  el("perf-read").innerHTML = `${dispName(fs.strategy)} Sharpe <strong>${fs.sharpe}</strong>, max drawdown `
+    + `<strong>${fs.maxdd}%</strong> against 60/40's ${bm.maxdd}% — `
+    + (deeper ? `a deeper worst loss than 60/40, the price of the extra risk this portfolio is built to take.`
+      : `a shallower worst loss than 60/40.`);
 
   // Drawdown (underwater) for the live Full System (BL), with a faint 60/40 ghost
   // so the comparison is visual, plus crisis bands behind both.
@@ -651,22 +679,27 @@ function renderPerformance(t) {
   const ddTraces = [];
   if (t.nav["b6040"]) { const g = underwater(t.nav["b6040"]);
     ddTraces.push({ type: "scatter", mode: "lines", name: "60/40", x: g.map(d => d.date), y: g.map(d => d.dd),
-      line: { color: "rgba(214,138,19,0.55)", width: 1, dash: "dot" }, hovertemplate: "60/40 %{y:.1f}%<extra></extra>" }); }
-  ddTraces.push({ type: "scatter", mode: "lines", name: "Full System", x: dd.map(d => d.date), y: dd.map(d => d.dd),
+      line: { color: "rgba(100,116,139,0.7)", width: 1, dash: "dot" }, hovertemplate: "60/40 %{y:.1f}%<extra></extra>" }); }
+  const fsName = PF ? PF.name : "Full System";
+  ddTraces.push({ type: "scatter", mode: "lines", name: fsName, x: dd.map(d => d.date), y: dd.map(d => d.dd),
     fill: "tozeroy", line: { color: C.neg, width: 1.4 }, fillcolor: "rgba(192,57,43,0.12)",
-    hovertemplate: "Full System %{y:.1f}%<extra></extra>" });
+    hovertemplate: fsName + " %{y:.1f}%<extra></extra>" });
   const ddCr = crisisOverlay({ from: dd[0].date, to: dd[dd.length - 1].date, label: false });
   Plotly.newPlot("drawdown-chart", ddTraces, { ...BASE, margin: { l: 44, r: 10, t: 8, b: 34 },
     shapes: ddCr.shapes, showlegend: true, legend: { orientation: "h", y: 1.18, font: { size: 9 } },
     xaxis: { ...BASE.xaxis, type: "date", dtick: "M36", tickformat: "%Y", tickangle: 0 },
     yaxis: { ...BASE.yaxis, ticksuffix: "%" } }, CFG);
   const trough = Math.min(...dd.map(d => d.dd));
-  el("dd-read").innerHTML = `Deepest drawdown <strong>${trough.toFixed(1)}%</strong> (2008 GFC) — shallower than 60/40 (faint), the regime overlay de-risking in confirmed downturns.`;
+  const g6040 = t.nav["b6040"] ? Math.min(...underwater(t.nav["b6040"]).map(d => d.dd)) : null;
+  const tDate = dd.find(d => d.dd === trough).date.slice(0, 7);
+  el("dd-read").innerHTML = `Deepest drawdown <strong>${trough.toFixed(1)}%</strong> (${tDate})`
+    + (g6040 === null ? "." : trough > g6040 ? ` — shallower than 60/40's ${g6040.toFixed(1)}% (faint).`
+      : ` — deeper than 60/40's ${g6040.toFixed(1)}% (faint), the cost of the risk this portfolio is built to carry.`);
 
   // Annual returns
   const a = t.annual;
   Plotly.newPlot("annual-chart", [
-    { type: "bar", name: "Full System", x: a.map(d => d.year), y: a.map(d => d.full),
+    { type: "bar", name: PF ? PF.name : "Full System", x: a.map(d => d.year), y: a.map(d => d.full),
       marker: { color: a.map(d => d.full >= 0 ? C.accent : C.neg) }, hovertemplate: "%{x}: %{y:.1f}%<extra></extra>" },
     { type: "scatter", mode: "markers", name: "60/40", x: a.map(d => d.year), y: a.map(d => d.b6040),
       marker: { symbol: "line-ew-open", size: 12, color: C.warn, line: { width: 2.5 } },
@@ -713,31 +746,46 @@ function renderScenarios(s) {
 }
 
 // ================= SAA vs DAA vs benchmarks (Performance page) =================
-const CMP_COLOR = { "SAA": "#5b8c9f", "DAA": "#0e2233", "PC16 anchor": "#9aa7b3", "S&P 500": "#c0392b",
-  "60/40": "#d68a13", "Equal-Weight": "#5aa6d4", "All-Equity": "#aab6c2" };
-const CMP_WIDTH = { "SAA": 2.4, "DAA": 3, "PC16 anchor": 1.2, "S&P 500": 1.6 };
+// The portfolio in its registry identity colour; its untilted book in slate; benchmarks and
+// references in greys. Keys carry date windows ("Equal-Weight (2007–2026)"), so match on the prefix —
+// an exact-key map silently fell through to Plotly's default palette.
+const CMP_GREY = [["S&P 500", "#334155"], ["60/40", "#64748b"], ["All-Equity", "#94a3b8"],
+  ["Equal-Weight", "#7c8aa0"], ["Walk-forward", "#a3adbb"], ["PC16 anchor", "#b6c0cc"]];
+const cmpColor = (k) => {
+  if (k === "DAA" || (PF && k === PF.name)) return PF ? PF.color : "#0e2233";
+  if (k === "SAA" || / — untilted$/.test(k)) return "#64748b";
+  const g = CMP_GREY.find(([p]) => k.startsWith(p));
+  return g ? g[1] : "#94a3b8";
+};
+const CMP_COLOR = new Proxy({}, { get: (_, k) => cmpColor(String(k)) });
+const CMP_WIDTH = { "SAA": 2.2, "DAA": 3, "PC16 anchor": 1.2, "S&P 500": 1.6 };
 
 function renderComparison(c) {
-  if (el("value-add")) {
+  if (el("value-add") && !PF_ACTIVE) {
+    el("value-add").innerHTML = `<p class="muted-note"><strong>${PF.name}</strong> holds its policy weights, so
+      there is no dynamic layer to add or subtract: its untilted book is the same book. The comparison that
+      matters is against the benchmarks below.</p>`;
+  } else if (el("value-add")) {
     const v = c.value_added;
     el("value-add").innerHTML = `
       <div class="bigstat"><div class="bigstat-v">${v.sharpe_delta >= 0 ? "+" : ""}${v.sharpe_delta}</div>
-        <div class="bigstat-l">Sharpe added by DAA</div><div class="bigstat-h">dynamic vs static strategic</div></div>
+        <div class="bigstat-l">Sharpe added by the active process</div><div class="bigstat-h">${roleName("DAA")} vs ${roleName("SAA")}</div></div>
       <div class="bigstat"><div class="bigstat-v">${v.maxdd_delta >= 0 ? "+" : ""}${v.maxdd_delta}pp</div>
-        <div class="bigstat-l">Shallower max drawdown</div><div class="bigstat-h">DAA vs SAA</div></div>
+        <div class="bigstat-l">Shallower max drawdown</div><div class="bigstat-h">${roleName("DAA")} vs ${roleName("SAA")}</div></div>
       <div class="bigstat"><div class="bigstat-v">${v.vol_delta >= 0 ? "+" : ""}${v.vol_delta}pp</div>
-        <div class="bigstat-l">Volatility difference</div><div class="bigstat-h">DAA vs SAA</div></div>`;
+        <div class="bigstat-l">Volatility difference</div><div class="bigstat-h">${roleName("DAA")} vs ${roleName("SAA")}</div></div>`;
   }
   if (el("cmp-narrative")) el("cmp-narrative").innerHTML = c.narrative;
   if (el("cmp-metrics")) {
     el("cmp-metrics").innerHTML = `<table class="dtbl"><thead><tr><th>Portfolio / benchmark</th>
       <th class="num">CAGR</th><th class="num">Vol</th><th class="num">Sharpe</th>
       <th class="num">Sortino</th><th class="num">Max DD</th></tr></thead><tbody>`
-      + c.metrics.map(m => {
-          const hl = m.name === "DAA" ? "hl" : "";
-          const tag = m.kind === "portfolio" ? `<span class="kindtag">${m.name === "DAA" ? "dynamic" : "strategic"}</span>` : "";
+      + c.metrics.filter(m => PF_ACTIVE || !/ — untilted$/.test(m.name)).map(m => {
+          const me = m.name === "DAA" || (PF && m.name === PF.name);
+          const hl = me ? "hl" : "";
+          const tag = m.kind === "portfolio" ? `<span class="kindtag">${me ? (PF_ACTIVE ? "as run" : "policy weights") : "untilted"}</span>` : "";
           return `<tr class="${hl}"><td><span class="swatch" style="background:${CMP_COLOR[m.name]}"></span>
-            <b>${m.name}</b> ${tag}</td><td class="num">${m.cagr}%</td><td class="num">${m.vol}%</td>
+            <b>${roleName(m.name)}</b> ${tag}</td><td class="num">${m.cagr}%</td><td class="num">${m.vol}%</td>
             <td class="num">${m.sharpe}</td><td class="num">${m.sortino}</td>
             <td class="num neg">${m.maxdd}%</td></tr>`;
         }).join("") + `</tbody></table>`;
@@ -857,23 +905,23 @@ function renderGrowth(c) {
   const dStart = periodFrom(daa, HEADLINE_PERIODS.find(x => x.key === HEADLINE_PERIOD) || HEADLINE_PERIODS[0]);
   mountRebaseGrowth({
     chartId: "growth-chart", controlsId: "growth-controls", labelId: "growth-rebase-label",
-    ddId: "growth-dd", seriesMap: c.series, order: c.order,
-    colorOf: (k) => CMP_COLOR[k], widthOf: (k) => CMP_WIDTH[k] || 1.3,
-    ddSeries: c.dd_series, ddKeys: ["DAA", "SAA"], defaultLog: false,
+    ddId: "growth-dd", seriesMap: c.series, order: liveRoles(c.order),
+    colorOf: (k) => CMP_COLOR[k], widthOf: (k) => CMP_WIDTH[k] || 1.3, labelOf: roleName,
+    ddSeries: c.dd_series, ddKeys: liveRoles(["DAA", "SAA"]), defaultLog: false,
     defaultStart: dStart, onMount: (api) => { GROWTH_API = api; },
   });
 }
 
 function renderRolling(c) {
   const specs = [["rolling-ret", "ret", "%"], ["rolling-vol", "vol", "%"], ["rolling-sharpe", "sharpe", ""]];
-  const keys = ["DAA", "SAA", "S&P 500"];
+  const keys = liveRoles(["DAA", "SAA", "S&P 500"]).filter(k => c.rolling[k]);
   specs.forEach(([id, field, suf]) => {
     if (!el(id)) return;
     const traces = keys.map(k => {
       const s = c.rolling[k][field];
-      return { type: "scatter", mode: "lines", name: k, x: s.map(p => p.date), y: s.map(p => p.v),
+      return { type: "scatter", mode: "lines", name: roleName(k), x: s.map(p => p.date), y: s.map(p => p.v),
         line: { width: CMP_WIDTH[k] || 1.3, color: CMP_COLOR[k] },
-        hovertemplate: k + " %{y:.2f}" + suf + "<extra></extra>" };
+        hovertemplate: roleName(k) + " %{y:.2f}" + suf + "<extra></extra>" };
     });
     const cr = crisisOverlay({ label: id === "rolling-ret" });  // label once across the 3-up
     const shapes = [...cr.shapes], annotations = [...cr.annotations];
@@ -881,7 +929,7 @@ function renderRolling(c) {
     // reads each window as hot or calm vs normal (the "budget line" pattern).
     if (id === "rolling-vol") {
       const daa = c.rolling.DAA.vol, avg = daa.reduce((a, p) => a + p.v, 0) / daa.length;
-      const rl = refLine(avg, `DAA avg ${avg.toFixed(1)}%`, C.navy);
+      const rl = refLine(avg, `${roleName("DAA")} avg ${avg.toFixed(1)}%`, C.navy);
       shapes.push(rl.shape); annotations.push(rl.annotation);
     }
     Plotly.newPlot(id, traces, { ...BASE, margin: { l: 40, r: 10, t: 22, b: 24 },
@@ -912,7 +960,7 @@ function renderRolling(c) {
 // ================= Performance attribution depth (Performance page) =================
 const ASSET_CLASS = { USEq: "Equity", IntlDM: "Equity", EM: "Equity",
   IG: "Fixed Income", HY: "Fixed Income", Govt: "Fixed Income", RealA: "Real Assets", Cash: "Cash" };
-const CLASS_COLOR = { "Equity": "#1f5e8f", "Fixed Income": "#2f7d5e", "Real Assets": "#8ec7a6", "Cash": "#8b97a3" };
+const CLASS_COLOR = { "Equity": "#1e40af", "Fixed Income": "#0f766e", "Real Assets": "#b45309", "Diversifiers": "#7c3aed", "Cash": "#94a3b8" };
 
 function renderPerformanceAttribution(d) {
   const a = d.attribution; if (!a || !el("perf-attr-sleeve-table")) return;
@@ -931,15 +979,20 @@ function renderPerformanceAttribution(d) {
           <td class="num">${s.contrib_pct_of_total}%</td>
           <td style="width:120px"><span class="cbar"><span style="width:${w}%;background:${pos ? "var(--pos)" : "var(--neg)"}"></span></span></td></tr>`;
       }).join("")
-    + `<tr class="hl"><td colspan="3"><b>Total — Full System (DAA)</b></td>
+    + `<tr class="hl"><td colspan="3"><b>Total — ${roleName("DAA")}</b></td>
         <td class="num strong">${ret.total_ann}%/yr</td><td class="num">100%</td><td></td></tr></tbody></table>`;
   if (el("perf-attr-read")) el("perf-attr-read").innerHTML = ret.narrative;
 
   // 2) asset-class contribution (Equity / Fixed Income / Real Assets / Cash)
   if (el("perf-attr-class-chart")) {
     const agg = {};
-    ret.sleeves.forEach(s => { const c = ASSET_CLASS[s.key] || "Other"; agg[c] = (agg[c] || 0) + s.contrib_bp; });
-    const order = ["Equity", "Fixed Income", "Real Assets", "Cash"].filter(c => c in agg);
+    // Aggregate on the block the payload publishes; the old code map only knew v3.8 sleeve codes, so
+    // every current sleeve but Cash fell out and the chart showed one bar.
+    const BLOCK_LABEL = { Equities: "Equity", FixedIncome: "Fixed Income", Commodities: "Real Assets",
+      RealEstate: "Real Assets", AltsInsurance: "Diversifiers", Cash: "Cash" };
+    ret.sleeves.forEach(s => { const c = BLOCK_LABEL[s.block] || ASSET_CLASS[s.key] || "Other";
+      agg[c] = (agg[c] || 0) + s.contrib_bp; });
+    const order = ["Equity", "Fixed Income", "Real Assets", "Diversifiers", "Cash"].filter(c => c in agg);
     Plotly.newPlot("perf-attr-class-chart", [{
       type: "bar", x: order, y: order.map(c => +(agg[c] / 100).toFixed(2)),
       marker: { color: order.map(c => CLASS_COLOR[c]) }, text: order.map(c => `${(agg[c] / 100).toFixed(2)}%`),
@@ -1038,8 +1091,8 @@ function renderConstructionDetail(con) {
   // strategic -> dynamic bridge table
   if (el("bridge-table") && con.bridge) {
     el("bridge-table").innerHTML = `<table class="dtbl"><thead><tr><th>Sleeve</th>
-      <th class="num">SAA baseline</th><th class="num">+ Regime</th><th class="num">+ Tilt</th>
-      <th class="num">DAA final</th></tr></thead><tbody>`
+      <th class="num">Policy baseline</th><th class="num">+ Regime</th><th class="num">+ Tilt</th>
+      <th class="num">${roleName("DAA")} final</th></tr></thead><tbody>`
       + con.bridge.map(b => {
           const d = (x) => x === 0 ? '<span class="z">0.0</span>' : `${x > 0 ? "+" : ""}${x}`;
           return `<tr><td><b>${b.sleeve}</b></td><td class="num">${b.baseline}%</td>
@@ -1532,9 +1585,11 @@ function renderHoldings(d) {
 }
 
 // ================= Monte Carlo (Monte Carlo page) =================
-const MC_COLOR = { DAA: "#0e2233", SAA: "#5b8c9f", "60/40": "#d68a13" };
+const MC_COLOR = new Proxy({}, { get: (_, k) => cmpColor(String(k)) });
 function renderMonteCarlo(mc) {
   if (!el("mc-fan")) return;
+  // Same naming rule as the Performance page: payload keys, reader-facing names.
+  mc = { ...mc, labels: liveRoles(mc.labels), summary: mc.summary.filter(r => liveRoles([r.strategy]).length) };
   const byName = {}; mc.summary.forEach(r => byName[r.name = r.strategy] = r);
   const P = mc.params;
 
@@ -1574,12 +1629,12 @@ function renderMonteCarlo(mc) {
         hovertemplate: "yr %{x:.0f}: median $%{y:.2f}<extra></extra>" },
     ], { ...BASE, margin: { l: 50, r: 14, t: 10, b: 36 }, showlegend: false,
       xaxis: { ...BASE.xaxis, title: { text: "years forward", font: { size: 11, color: C.muted } }, dtick: 1 },
-      yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$", title: { text: `growth of $1 (${cur})`, font: { size: 10, color: C.muted } } },
+      yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$", title: { text: `growth of $1 (${roleName(cur)})`, font: { size: 10, color: C.muted } } },
     }, CFG);
   };
   if (el("mc-fan-pick")) {
     el("mc-fan-pick").innerHTML = mc.labels.map((k, i) =>
-      `<span class="chip clickable ${k === cur ? "sel" : ""}" data-k="${k}">${k}</span>`).join("");
+      `<span class="chip clickable ${k === cur ? "sel" : ""}" data-k="${k}">${roleName(k)}</span>`).join("");
     [...el("mc-fan-pick").children].forEach(ch => ch.addEventListener("click", () => {
       cur = ch.dataset.k;
       [...el("mc-fan-pick").children].forEach(c => c.classList.toggle("sel", c.dataset.k === cur));
@@ -1592,7 +1647,7 @@ function renderMonteCarlo(mc) {
   if (el("mc-scenarios")) {
     const sc = mc.scenarios, cases = [["bull", "Bull · 95th pct"], ["base", "Base · median"], ["bear", "Bear · 5th pct"]];
     el("mc-scenarios").innerHTML = `<table class="dtbl"><thead><tr><th>Case</th>`
-      + mc.labels.map(l => `<th class="num"><span class="swatch" style="background:${MC_COLOR[l]}"></span>${l}</th>`).join("")
+      + mc.labels.map(l => `<th class="num"><span class="swatch" style="background:${MC_COLOR[l]}"></span>${roleName(l)}</th>`).join("")
       + `</tr></thead><tbody>`
       + cases.map(([k, lab]) => `<tr><td><b>${lab}</b></td>`
           + mc.labels.map(l => `<td class="num">$${sc[l][k].terminal.toFixed(2)}<br><span class="sub">${sc[l][k].cagr.toFixed(1)}%/yr</span></td>`).join("") + `</tr>`).join("")
@@ -1600,12 +1655,23 @@ function renderMonteCarlo(mc) {
       + mc.labels.map(l => { const v = sc[l].cvar5; return `<td class="num ${v < 1 ? "neg" : ""}">$${v.toFixed(2)}</td>`; }).join("") + `</tr>`
       + `</tbody></table>`;
   }
-  if (el("mc-scenarios-read") && byName.DAA && byName.SAA)
-    el("mc-scenarios-read").innerHTML = `The case for the dynamic book is the <strong>bear row and the tail</strong>: in the `
-      + `5th-percentile future it still ends at <strong>$${mc.scenarios.DAA.bear.terminal.toFixed(2)}</strong> (vs SAA `
-      + `$${mc.scenarios.SAA.bear.terminal.toFixed(2)}), and across the worst 5% of paths it averages `
-      + `<strong>$${mc.scenarios.DAA.cvar5.toFixed(2)}</strong> vs SAA $${mc.scenarios.SAA.cvar5.toFixed(2)} — it gives up `
-      + `bull-case upside to protect the downside.`;
+  // The sentence follows the numbers: it only claims downside protection if the bear case and the
+  // tail are actually better, and only claims given-up upside if the bull case is actually lower.
+  if (el("mc-scenarios-read") && byName.DAA && byName.SAA && PF_ACTIVE) {
+    const A = mc.scenarios.DAA, B = mc.scenarios.SAA, n = roleName("DAA"), b = roleName("SAA");
+    const betterBear = A.bear.terminal > B.bear.terminal, betterTail = A.cvar5 > B.cvar5,
+      lowerBull = A.bull.terminal < B.bull.terminal;
+    el("mc-scenarios-read").innerHTML = `In the 5th-percentile future <strong>${n}</strong> ends at `
+      + `<strong>$${A.bear.terminal.toFixed(2)}</strong> against $${B.bear.terminal.toFixed(2)} for ${b}, and across `
+      + `the worst 5% of paths it averages <strong>$${A.cvar5.toFixed(2)}</strong> against $${B.cvar5.toFixed(2)}. `
+      + (betterBear && betterTail && lowerBull ? `It gives up a little bull-case upside ($${A.bull.terminal.toFixed(2)} vs `
+          + `$${B.bull.terminal.toFixed(2)}) to protect the downside — that trade is the case for running it actively.`
+        : betterBear && betterTail ? `It protects the downside without giving up the bull case.`
+        : `On these draws the active process does not improve the downside.`);
+  } else if (el("mc-scenarios-read") && !PF_ACTIVE) {
+    el("mc-scenarios-read").innerHTML = `${PF.name} holds its policy weights, so the cases above are for the one `
+      + `book it holds, against a 60/40 portfolio.`;
+  }
 
   // ---- sample-path overlay (spaghetti) — see the dispersion and where paths diverge
   let pcur = "DAA";
@@ -1618,12 +1684,12 @@ function renderMonteCarlo(mc) {
       name: "median", hovertemplate: "yr %{x:.0f}: median $%{y:.2f}<extra></extra>" });
     Plotly.react("mc-paths", traces, { ...BASE, margin: { l: 50, r: 14, t: 10, b: 34 }, showlegend: false,
       xaxis: { ...BASE.xaxis, title: { text: "years forward", font: { size: 11, color: C.muted } }, dtick: 1 },
-      yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$", title: { text: `${pcur} sample paths`, font: { size: 10, color: C.muted } } } }, CFG);
+      yaxis: { ...BASE.yaxis, type: "log", tickprefix: "$", title: { text: `${roleName(pcur)} sample paths`, font: { size: 10, color: C.muted } } } }, CFG);
   };
   if (el("mc-paths")) {
     if (el("mc-paths-pick")) {
       el("mc-paths-pick").innerHTML = mc.labels.map(k =>
-        `<span class="chip clickable ${k === pcur ? "sel" : ""}" data-k="${k}">${k}</span>`).join("");
+        `<span class="chip clickable ${k === pcur ? "sel" : ""}" data-k="${k}">${roleName(k)}</span>`).join("");
       [...el("mc-paths-pick").children].forEach(ch => ch.addEventListener("click", () => {
         pcur = ch.dataset.k; [...el("mc-paths-pick").children].forEach(c => c.classList.toggle("sel", c.dataset.k === pcur));
         drawPaths();
@@ -1643,8 +1709,8 @@ function renderMonteCarlo(mc) {
     });
     mc.labels.forEach(l => {
       const f = mc.fan[l];
-      traces.push({ type: "scatter", mode: "lines", name: l, x: f.years, y: f.p50,
-        line: { width: 2.4, color: MC_COLOR[l] }, hovertemplate: l + " median $%{y:.2f} (yr %{x:.0f})<extra></extra>" });
+      traces.push({ type: "scatter", mode: "lines", name: roleName(l), x: f.years, y: f.p50,
+        line: { width: 2.4, color: MC_COLOR[l] }, hovertemplate: roleName(l) + " median $%{y:.2f} (yr %{x:.0f})<extra></extra>" });
     });
     Plotly.newPlot("mc-compare", traces, { ...BASE, margin: { l: 50, r: 14, t: 10, b: 34 },
       legend: { orientation: "h", y: 1.1, font: { size: 10 } },
@@ -1655,14 +1721,14 @@ function renderMonteCarlo(mc) {
   // ---- terminal-value distribution (DAA vs SAA), shared bins
   const te = mc.hist.terminal_edges, tc = (te.slice(0, -1)).map((e, i) => (e + te[i + 1]) / 2);
   if (el("mc-terminal")) {
-    const bar = (lab) => ({ type: "bar", name: lab, x: tc, y: mc.hist[lab].terminal_counts,
-      marker: { color: MC_COLOR[lab], opacity: 0.55 }, hovertemplate: lab + " $%{x:.2f}: %{y} paths<extra></extra>" });
-    const liveLabels = ["DAA", "SAA"].filter(l => byName[l]);
+    const bar = (lab) => ({ type: "bar", name: roleName(lab), x: tc, y: mc.hist[lab].terminal_counts,
+      marker: { color: MC_COLOR[lab], opacity: 0.55 }, hovertemplate: roleName(lab) + " $%{x:.2f}: %{y} paths<extra></extra>" });
+    const liveLabels = liveRoles(["DAA", "SAA"]).filter(l => byName[l]);
     const medShapes = liveLabels.map(l => ({ type: "line", yref: "paper", y0: 0, y1: 1,
       x0: byName[l].terminal_median, x1: byName[l].terminal_median,
       line: { color: MC_COLOR[l], width: 1.5, dash: "dot" } }));
     const medAnn = liveLabels.map(l => ({ xref: "x", yref: "paper", x: byName[l].terminal_median, xanchor: "left",
-      xshift: 3, y: 1, yanchor: "top", text: `${l} median ${fmtUsd(byName[l].terminal_median)}`,
+      xshift: 3, y: 1, yanchor: "top", text: `${roleName(l)} median ${fmtUsd(byName[l].terminal_median)}`,
       showarrow: false, font: { size: 9, color: MC_COLOR[l] } }));
     // Breakeven marker ($1 in = $1 out): everything left of it is a real-terms loss.
     const breakeven = { type: "line", yref: "paper", y0: 0, y1: 1, x0: 1, x1: 1,
@@ -1678,11 +1744,13 @@ function renderMonteCarlo(mc) {
   }
 
   // ---- worst-drawdown distribution (DAA vs SAA)
-  const de = mc.hist.dd_edges, dc = (de.slice(0, -1)).map((e, i) => (e + de[i + 1]) / 2);
+  // dd_edges are fractions (−0.6 = −60%) while every other drawdown figure is in percent; the axis
+  // printed "−0.6%" for a 60% fall.
+  const de = mc.hist.dd_edges, dc = (de.slice(0, -1)).map((e, i) => 100 * (e + de[i + 1]) / 2);
   if (el("mc-drawdown")) {
-    const bar = (lab) => ({ type: "bar", name: lab, x: dc, y: mc.hist[lab].dd_counts,
-      marker: { color: MC_COLOR[lab], opacity: 0.55 }, hovertemplate: lab + " −%{x:.0f}%: %{y} paths<extra></extra>" });
-    Plotly.newPlot("mc-drawdown", ["DAA", "SAA"].filter(l => mc.hist[l]).map(bar),
+    const bar = (lab) => ({ type: "bar", name: roleName(lab), x: dc, y: mc.hist[lab].dd_counts,
+      marker: { color: MC_COLOR[lab], opacity: 0.55 }, hovertemplate: roleName(lab) + " %{x:.0f}%: %{y} paths<extra></extra>" });
+    Plotly.newPlot("mc-drawdown", liveRoles(["DAA", "SAA"]).filter(l => mc.hist[l]).map(bar),
       { ...BASE, barmode: "overlay", margin: { l: 44, r: 12, t: 10, b: 36 },
         legend: { orientation: "h", y: 1.16, font: { size: 10 } },
         xaxis: { ...BASE.xaxis, ticksuffix: "%", title: { text: "worst peak-to-trough drawdown", font: { size: 10, color: C.muted } } },
@@ -1696,7 +1764,7 @@ function renderMonteCarlo(mc) {
       <th class="num">P(2x)</th><th class="num">P(loss)</th><th class="num">P(DD&gt;${P.dd_threshold_pct}%)</th>
       <th class="num">Median worst DD</th></tr></thead><tbody>`
       + mc.summary.map(r => { const hl = r.strategy === "DAA" ? "hl" : "";
-          return `<tr class="${hl}"><td><span class="swatch" style="background:${MC_COLOR[r.strategy]}"></span><b>${r.strategy}</b></td>
+          return `<tr class="${hl}"><td><span class="swatch" style="background:${MC_COLOR[r.strategy]}"></span><b>${roleName(r.strategy)}</b></td>
             <td class="num">${fmtUsd(r.terminal_median)}</td>
             <td class="num">${fmtUsd(r.terminal_p5)}–${fmtUsd(r.terminal_p95)}</td>
             <td class="num">${r.cagr_median.toFixed(1)}%</td>
@@ -1706,12 +1774,21 @@ function renderMonteCarlo(mc) {
             <td class="num neg">${r.maxdd_median.toFixed(0)}%</td></tr>`; }).join("")
       + `</tbody></table>`;
   }
-  if (el("mc-table-read") && mc.prob_daa_beats_saa != null)
-    el("mc-table-read").innerHTML = `On paired draws, <strong>DAA finishes ahead of SAA in `
-      + `${mc.prob_daa_beats_saa.toFixed(0)}% of paths</strong> — its edge is the far shallower drawdown `
-      + `distribution (P(DD&gt;${P.dd_threshold_pct}%) ${byName.DAA.prob_dd_gt_threshold.toFixed(0)}% vs `
-      + `${byName.SAA.prob_dd_gt_threshold.toFixed(0)}%), not a higher median. All distributions are `
-      + `block-bootstrapped from realised returns, so they inherit the historical fat tail rather than a Normal assumption.`;
+  // `prob_daa_beats_saa` is the share of the horizon's MONTHS in which the active book's median path is
+  // at or above the untilted book's — it was printed as "% of paths", which it is not.
+  if (el("mc-table-read") && PF_ACTIVE && mc.prob_daa_beats_saa != null && byName.DAA && byName.SAA) {
+    const ddA = byName.DAA.prob_dd_gt_threshold, ddB = byName.SAA.prob_dd_gt_threshold, gap = ddB - ddA;
+    el("mc-table-read").innerHTML = `The median path of <strong>${roleName("DAA")}</strong> is at or above `
+      + `${roleName("SAA")}'s in <strong>${mc.prob_daa_beats_saa.toFixed(0)}% of the ${P.horizon_months} months</strong>. `
+      + `The chance of a drawdown worse than ${P.dd_threshold_pct}% is ${ddA.toFixed(0)}% against ${ddB.toFixed(0)}%`
+      + (gap >= 5 ? ` — the active process earns its keep mainly by cutting the deep-loss paths.`
+        : gap > 0 ? ` — only slightly lower.` : ` — no lower.`)
+      + ` All distributions are block-bootstrapped from realised returns, so they inherit the historical fat `
+      + `tail rather than a Normal assumption.`;
+  } else if (el("mc-table-read")) {
+    el("mc-table-read").innerHTML = `All distributions are block-bootstrapped from realised returns, so they `
+      + `inherit the historical fat tail rather than a Normal assumption.`;
+  }
 }
 
 // ================= Attribution over time (Attribution page) =================
