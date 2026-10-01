@@ -34,24 +34,36 @@ bash Research/Portfolio_Construction/dashboard/deploy_dashboard_public.sh   # ow
 `/usr/bin/python3` is the interpreter with pandas — the homebrew `python3` does not have it.
 `verify_dashboard.py` is stdlib-only and runs on either.
 
-### Automatic daily refresh
+### Scheduled refresh (Mon / Wed / Fri)
 
-`daily_nav_refresh.sh` runs the NAV-refresh chain below plus the two page builders, verifies, commits
-only its own outputs, pushes and deploys. A macOS LaunchAgent (`~/Library/LaunchAgents/
-com.summer.navrefresh.plist`) runs it Tue–Sat at 07:00 local — after every US close — and a run missed
-while the Mac slept fires on wake. It refuses to run over uncommitted work or unpushed commits, and exits
-without publishing when no new close has been priced. Log: `~/Library/Logs/summer_nav_refresh.log`;
-a notification reports each publish or failure.
+`scheduled_refresh.sh` runs the whole chain above except `pc_fs6_build.py` (strategy changes stay a
+deliberate, hand-run step), verifies, commits its outputs, pushes and deploys. A macOS LaunchAgent
+(`~/Library/LaunchAgents/com.summer.dashboardrefresh.plist`) runs it **Monday, Wednesday and Friday at
+07:00 local** — after the previous US close — and a run missed while the Mac slept fires on wake. It
+refuses to run over uncommitted work or unpushed commits. On any failure it discards the pipeline's
+outputs, so the dashboard keeps the last good refresh.
+
+**Every run is documented** in [REFRESH_LOG.md](REFRESH_LOG.md): when it ran, the close it priced to,
+the previous close, each step's time, and whether it published or which step it failed at. The log is
+committed with the refresh and ships with the public mirror. The full console output is in
+`~/Library/Logs/summer_dashboard_refresh.log`, and a notification reports each publish or failure.
+
+```
+bash Research/Portfolio_Construction/dashboard/scheduled_refresh.sh                    # a refresh now
+SUMMER_DRY_RUN=1 bash Research/Portfolio_Construction/dashboard/scheduled_refresh.sh   # chain + verify only, tree restored
+```
 
 **One-time permission.** The repo lives under `~/Desktop`, which macOS privacy protection closes to
 background jobs ("Operation not permitted", exit 126). Grant it once: System Settings → Privacy &
 Security → Full Disk Access → + → `/bin/bash` (press ⌘⇧G to type the path). Then test:
 
 ```
-launchctl kickstart gui/$(id -u)/com.summer.navrefresh; sleep 30; tail ~/Library/Logs/summer_nav_refresh.log
+launchctl kickstart gui/$(id -u)/com.summer.dashboardrefresh; tail -f ~/Library/Logs/summer_dashboard_refresh.log
 ```
 
-Stop it: `launchctl bootout gui/$(id -u)/com.summer.navrefresh`.
+Stop it: `launchctl bootout gui/$(id -u)/com.summer.dashboardrefresh`. This replaced the Tue–Sat
+NAV-only job (`daily_nav_refresh.sh`, `com.summer.navrefresh`) on 2026-10-01; that job never ran
+because the permission above was never granted.
 
 ### NAV refresh only
 
@@ -64,7 +76,7 @@ The common case. Two steps:
 ```
 
 The Live NAV page's equity style box keeps its position from the last `style_box.py` run — it only
-moves when the US equity vehicles change, so the daily refresh does not need it. Run `style_box.py`
+moves when the US equity vehicles change, so a NAV-only refresh by hand does not need it. Run `style_box.py`
 before `pc_fund_live_page.py` after any change to the equity vehicles.
 
 The fixed-income box reads `validation/fund_suite_v6/bond_vehicle_data.json`: each bond vehicle's
