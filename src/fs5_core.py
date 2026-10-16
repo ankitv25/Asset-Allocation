@@ -243,12 +243,13 @@ def daa_targets(w_saa, E, b):
     idx = E['Trend'].index
     base = w_saa.reindex(S5).fillna(0.0) * 100
     D = sum(E[k] for k in ENGINES).reindex(idx)[S5]
-    cap = np.maximum(MANDATE['sleeve_min'], MANDATE['sleeve_cap'] * base)
+    # Plain arrays, positionally indexed by S5: pandas 3 no longer falls back to position for int keys.
+    cap = np.maximum(MANDATE['sleeve_min'], MANDATE['sleeve_cap'] * base.to_numpy())
     for k, v in MANDATE.get('room', {}).items():                  # sleeves whose size is a macro call
         if k in S5:
             cap[S5.index(k)] = max(cap[S5.index(k)], v)
-    lo = np.maximum(MANDATE['floor'] * base - base, -cap)
-    hi = np.minimum(MANDATE['ceil'] * base - base, cap)
+    lo = np.maximum(MANDATE['floor'] * base.to_numpy() - base.to_numpy(), -cap)
+    hi = np.minimum(MANDATE['ceil'] * base.to_numpy() - base.to_numpy(), cap)
     # T-bills are the residual, not a position: what the fund may hold in cash is set by the mandate band,
     # not by a fraction of a 2% strategic weight, which would make the cash lever unusable by construction.
     i = S5.index('Cash')

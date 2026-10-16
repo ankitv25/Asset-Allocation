@@ -263,7 +263,7 @@ High/Moderate (5.6y); Endowment, SAA, DAA High/Extensive (9–12y); Alpha not me
 Check-in-browser standard used: 50 page×portfolio renders (errors, empty charts, undefined/NaN, stale
 "Full System"/"DAA"/"SAA" labels), a 390px iframe for phones (headless Chrome will not go below ~500px).
 
-**Scheduled refresh** — `scheduled_refresh.sh` + LaunchAgent `com.summer.dashboardrefresh`, Mon/Wed/Fri
-07:00 (replaced the Tue–Sat NAV-only `daily_nav_refresh.sh` on 2026-10-01). Full refresh chain, verify,
-publish; every run, published or failed, is recorded in `REFRESH_LOG.md`. Under launchd it needs
-`/bin/bash` granted Full Disk Access once — an owner action, documented in UPDATING.md.
+**Scheduled refresh** — `scheduled_refresh.sh` run by GitHub Actions (`.github/workflows/scheduled-refresh.yml`),
+Mon/Wed/Fri 07:00 New York, like MRS. Full refresh chain, verify, publish; every run, published or failed,
+is recorded in `REFRESH_LOG.md`. Publishes with `PUBLIC_DEPLOY_KEY` (write access to Asset-Allocation only).
+Nothing runs on the Mac.

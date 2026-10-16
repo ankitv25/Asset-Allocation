@@ -37,33 +37,29 @@ bash Research/Portfolio_Construction/dashboard/deploy_dashboard_public.sh   # ow
 ### Scheduled refresh (Mon / Wed / Fri)
 
 `scheduled_refresh.sh` runs the whole chain above except `pc_fs6_build.py` (strategy changes stay a
-deliberate, hand-run step), verifies, commits its outputs, pushes and deploys. A macOS LaunchAgent
-(`~/Library/LaunchAgents/com.summer.dashboardrefresh.plist`) runs it **Monday, Wednesday and Friday at
-07:00 local** — after the previous US close — and a run missed while the Mac slept fires on wake. It
+deliberate, hand-run step), verifies, commits its outputs, pushes and deploys. It runs
+**Monday, Wednesday and Friday at 07:00 New York** — after the previous US close — on GitHub Actions. It
 refuses to run over uncommitted work or unpushed commits. On any failure it discards the pipeline's
 outputs, so the dashboard keeps the last good refresh.
 
 **Every run is documented** in [REFRESH_LOG.md](REFRESH_LOG.md): when it ran, the close it priced to,
 the previous close, each step's time, and whether it published or which step it failed at. The log is
-committed with the refresh and ships with the public mirror. The full console output is in
-`~/Library/Logs/summer_dashboard_refresh.log`, and a notification reports each publish or failure.
+committed with the refresh and ships with the public mirror. The full console output is in the Actions run log.
 
 ```
 bash Research/Portfolio_Construction/dashboard/scheduled_refresh.sh                    # a refresh now
 SUMMER_DRY_RUN=1 bash Research/Portfolio_Construction/dashboard/scheduled_refresh.sh   # chain + verify only, tree restored
 ```
 
-**One-time permission.** The repo lives under `~/Desktop`, which macOS privacy protection closes to
-background jobs ("Operation not permitted", exit 126). Grant it once: System Settings → Privacy &
-Security → Full Disk Access → + → `/bin/bash` (press ⌘⇧G to type the path). Then test:
+**Where it runs.** GitHub Actions in this private repo — `.github/workflows/scheduled-refresh.yml`, cron
+`0 11 * * 1,3,5` (07:00 New York in summer, 06:00 in winter), the same way MRS refreshes. Nothing runs on
+the Mac. The run commits to main with its own token and publishes to `Asset-Allocation` with
+`PUBLIC_DEPLOY_KEY`, a deploy key that can write to that one repo only. Run it now: Actions →
+*Scheduled dashboard refresh* → Run workflow (or `gh workflow run scheduled-refresh.yml`). Failures show
+in the Actions tab and as a failed row in REFRESH_LOG.md.
 
-```
-launchctl kickstart gui/$(id -u)/com.summer.dashboardrefresh; tail -f ~/Library/Logs/summer_dashboard_refresh.log
-```
-
-Stop it: `launchctl bootout gui/$(id -u)/com.summer.dashboardrefresh`. This replaced the Tue–Sat
-NAV-only job (`daily_nav_refresh.sh`, `com.summer.navrefresh`) on 2026-10-01; that job never ran
-because the permission above was never granted.
+This replaced a Mac LaunchAgent (first Tue–Sat NAV-only, then Mon/Wed/Fri) on 2026-10-03: macOS blocks
+background jobs from `~/Desktop`, so neither ever ran unattended.
 
 ### NAV refresh only
 
