@@ -16,3 +16,4 @@ Actions run log. How the refresh works: [UPDATING.md](UPDATING.md).
 | Wed 2026-10-14 11:40 | — | 2026-10-01 |  | 3s | **failed** at `fund_nav`: step failed at line 55 — see the run log |
 | Fri 2026-10-16 11:06 | — | 2026-10-01 |  | 3s | **failed** at `fund_nav`: step failed at line 55 — see the run log |
 | Fri 2026-10-16 16:30 | 2026-10-16 | 2026-10-01 | fund_nav 10s · vehicle_data 4s · factor_attrib 1s · pit_backtest 3s · style_box 1s · fi_style_box 0s · build_portfolios_dashboard_data 2s · build_portfolio_books_data 15s · pc_fund_live_page 1s · verify_dashboard 0s | 38s | published · 16 file(s) changed |
+| Mon 2026-10-19 13:18 | 2026-10-19 | 2026-10-16 | fund_nav 10s · vehicle_data 6s · factor_attrib 0s · pit_backtest 3s · style_box 1s · fi_style_box 0s · build_portfolios_dashboard_data 1s · build_portfolio_books_data 10s · pc_fund_live_page 1s · verify_dashboard 0s | 32s | published · 25 file(s) changed |
