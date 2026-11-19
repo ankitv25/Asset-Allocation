@@ -63,6 +63,12 @@ STYLE_SCORE = {'Value': -1.0, 'Blend': 0.0, 'Growth': 1.0}
 
 def prices(refresh=False):
     tick = sorted({t for _, _, t in CORNERS} | set(HELD))
+    # The live-window grid prices each corner from this cache up to the last NAV date, so a cache that
+    # stops short of it reports a window it does not cover.
+    navf = os.path.join(NAVD, 'fund_nav.json')
+    if os.path.exists(PX) and os.path.exists(navf):
+        last = pd.read_csv(PX, index_col=0, parse_dates=True, usecols=[0]).index.max()
+        refresh = refresh or last < pd.Timestamp(json.load(open(navf))['dates'][-1])
     if refresh or not os.path.exists(PX):
         import yfinance as yf
         px = yf.download(tick, start='1995-01-01', auto_adjust=True, progress=False)['Close']

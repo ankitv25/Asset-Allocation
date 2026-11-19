@@ -89,7 +89,7 @@ re-checks that every day's target weights sum to 1. That is not theoretical: the
 dropped SPLG, which left Alpha 17% in cash and understated both its return and its volatility. **SPLG
 must not be reintroduced** — ITOT and SCHX are the substitutes in the US equity split. The whole series
 is recomputed from inception every run, so a bad print cannot persist once the source is fixed. A 15bp
-annual fee is charged daily and 10bp per side whenever a fund deals.
+annual fee is charged daily and 10bp per side whenever a fund deals. It prices **completed sessions only**: before 17:00 New York the day's in-progress bar is dropped, because GitHub often starts the scheduled run hours late, inside the session. `factor_attrib.py` and `style_box.py` re-download their cached prices whenever the cache stops short of the last NAV date.
 
 **Dealing rules.** Certain / Endowment / SAA hold policy weights and deal only when a holding drifts
 1pp from target. DAA / Alpha re-read the five engines at each month end, same 1pp band on execution.

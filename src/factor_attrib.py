@@ -95,12 +95,14 @@ LOOKBACK = '2018-01-01'   # long enough for a stable beta, short enough to be th
 MIN_OBS = 250             # a year of daily data before a beta is quoted
 
 
-def prices(tickers):
-    """Daily dividend-adjusted closes, cached — the betas do not change between runs."""
+def prices(tickers, through):
+    """Daily dividend-adjusted closes, cached — the betas do not change between runs. The cache must
+    still reach the last NAV date: the live window reads factor returns from it, and days past its end
+    were filled with zero, pushing all of that period's return into the residual."""
     want = sorted(set(tickers))
     if os.path.exists(PX):
         have = pd.read_csv(PX, index_col=0, parse_dates=True)
-        if not set(want) - set(have.columns):
+        if not set(want) - set(have.columns) and have.index[-1] >= pd.Timestamp(through):
             return have[want]
     import yfinance as yf
     px = yf.download(want, start=LOOKBACK, auto_adjust=True, progress=False)['Close']
@@ -121,7 +123,7 @@ def main():
                    for leg in (a, b) if leg
                    for t in ((leg,) if isinstance(leg, str) else leg)} | {CASH})
 
-    px = prices(vehicles + legs)
+    px = prices(vehicles + legs, nav['dates'][-1])
     ret = px.pct_change(fill_method=None).dropna(how='all').fillna(0.0)
 
     def leg(x):

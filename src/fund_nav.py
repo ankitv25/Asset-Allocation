@@ -67,6 +67,12 @@ def prices(tickers, start='2026-06-25'):
     want = sorted(set(tickers))
     px = yf.download(want, start=start, auto_adjust=True, progress=False)['Close']
     px = px.dropna(how='all').ffill()
+    # Before the close Yahoo returns today's bar at the live price. The scheduled run is meant to go at
+    # 07:00 New York, but GitHub starts it hours late, inside the session — so every published NAV
+    # ended on an intraday print labelled as a close. Price only completed sessions.
+    now = pd.Timestamp.now(tz='America/New_York')
+    if len(px) and px.index[-1].date() >= now.date() and now.hour < 17:
+        px = px.iloc[:-1]
     missing = [t for t in want if t not in px.columns or px[t].notna().sum() < 20]
     if missing:
         raise SystemExit(f'price feed incomplete for {missing} — refusing to compute a NAV on partial data')
